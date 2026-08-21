@@ -12,11 +12,11 @@ public class pantallaCarga {
             // Cargar el GIF
             ImageIcon iconOriginal = new ImageIcon(pantallaCarga.class.getResource("/gui/cargador/VideoCarga1.gif"));
 
-            // Definir dimensiones
+            // Definir dimensiones (450x300)
             int anchoDeseado = 450;
             int altoDeseado = 300;
 
-            // Crear el JLabel
+            // Crear el JLabel que redimensiona el GIF
             JLabel labelGIF = new JLabel(iconOriginal) {
                 @Override
                 protected void paintComponent(Graphics g) {
@@ -38,16 +38,13 @@ public class pantallaCarga {
             splash.setLocationRelativeTo(null); // Centrar en la pantalla
             splash.setVisible(true);
 
-            // Temporizador de 7 segundos
-            Timer timer = new Timer(9000, e -> {
-                splash.dispose();
+            // Temporizador de 9 segundos (9000 ms)
+            Timer timer = new Timer(10000, e -> {
+                splash.dispose(); // Cierra el splash
 
-                // ESTO SE CAMBIA DESPUES, cuando esté el login
-                JFrame ventanaPrincipal = new JFrame("Mi Aplicación");
-                ventanaPrincipal.setSize(1024, 768);
-                ventanaPrincipal.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-                ventanaPrincipal.setLocationRelativeTo(null); // Centrar ventana principal
-                ventanaPrincipal.setVisible(true);
+                // Abrir la pantalla de Login
+                pantallaLogin login = new pantallaLogin();
+                login.setVisible(true);
             });
             
             timer.setRepeats(false);
