@@ -52,16 +52,25 @@ public class pantallaLogin {
             JComponent.WHEN_IN_FOCUSED_WINDOW
         );
 
-        JPanel root = new JPanel(new GridLayout(1, 2));
+        JPanel root = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.gridy = 0;
 
-        // ---------- Panel izquierdo: imagen de comida ----------
+        // ---------- Panel izquierdo: imagen de comida (46% de la pantalla) ----------
         ImagePanel panelImagen = new ImagePanel(loadImage("/gui/images/imagen1.png"));
-        root.add(panelImagen);
+        gbc.gridx = 0;
+        gbc.weightx = 0.46;
+        gbc.weighty = 1.0;
+        root.add(panelImagen, gbc);
 
-        // ---------- Panel derecho: formulario ----------
+        // ---------- Panel derecho: formulario (54% de la pantalla) ----------
         JPanel panelDerecho = new JPanel(new GridBagLayout());
         panelDerecho.setBackground(BEIGE);
-        root.add(panelDerecho);
+        gbc.gridx = 1;
+        gbc.weightx = 0.54;
+        gbc.weighty = 1.0;
+        root.add(panelDerecho, gbc);
 
         JPanel card = crearTarjetaLogin(frame);
         panelDerecho.add(card);
@@ -79,9 +88,9 @@ public class pantallaLogin {
         RoundedPanel card = new RoundedPanel(36, Color.WHITE);
         card.setLayout(new GridBagLayout());
         
-        // Tamaño adecuado para pantalla completa evitando recortes del botón
-        card.setPreferredSize(new Dimension(540, 680));
-        card.setBorder(new EmptyBorder(32, 48, 32, 48));
+        // Cuadro más amplio (Ancho: 620px, Alto: 740px)
+        card.setPreferredSize(new Dimension(620, 740));
+        card.setBorder(new EmptyBorder(40, 56, 40, 56));
 
         GridBagConstraints gc = new GridBagConstraints();
         gc.gridx = 0;
@@ -91,12 +100,12 @@ public class pantallaLogin {
         Image logo = loadImage("/gui/images/logo.png");
         JLabel logoLabel = new JLabel();
         if (logo != null) {
-            int w = 270;
+            int w = 290;
             int h = (int) (logo.getHeight(null) * (w / (double) logo.getWidth(null)));
             logoLabel.setIcon(new ImageIcon(logo.getScaledInstance(w, h, Image.SCALE_SMOOTH)));
         } else {
             logoLabel.setText("GIT & EAT!");
-            logoLabel.setFont(new Font("SansSerif", Font.BOLD, 32));
+            logoLabel.setFont(new Font("SansSerif", Font.BOLD, 34));
         }
         logoLabel.setHorizontalAlignment(SwingConstants.CENTER);
         gc.gridy = 0;
@@ -105,7 +114,7 @@ public class pantallaLogin {
 
         // Título
         JLabel titulo = new JLabel("BIENVENIDO!", SwingConstants.CENTER);
-        titulo.setFont(new Font("SansSerif", Font.BOLD, 28));
+        titulo.setFont(new Font("SansSerif", Font.BOLD, 30));
         titulo.setForeground(Color.BLACK);
         gc.gridy = 1;
         gc.insets = new Insets(0, 0, 8, 0);
@@ -115,10 +124,10 @@ public class pantallaLogin {
         JLabel subtitulo = new JLabel(
                 "<html><div style='text-align:center;'>¡Listo para otro gran turno!<br>Inicia sesión y comencemos.</div></html>",
                 SwingConstants.CENTER);
-        subtitulo.setFont(new Font("SansSerif", Font.PLAIN, 15));
+        subtitulo.setFont(new Font("SansSerif", Font.PLAIN, 16));
         subtitulo.setForeground(GRIS_TXT);
         gc.gridy = 2;
-        gc.insets = new Insets(0, 0, 24, 0);
+        gc.insets = new Insets(0, 0, 28, 0);
         card.add(subtitulo, gc);
 
         // Campo: Código de empleado
@@ -126,7 +135,7 @@ public class pantallaLogin {
         RoundedFieldPanel panelUsuario = new RoundedFieldPanel(
                 IconoFactory.icono("persona"), campoUsuario, null);
         gc.gridy = 3;
-        gc.insets = new Insets(0, 0, 16, 0);
+        gc.insets = new Insets(0, 0, 18, 0);
         card.add(panelUsuario, gc);
 
         // Campo: PIN (con botón mostrar/ocultar)
@@ -149,9 +158,9 @@ public class pantallaLogin {
         gc.insets = new Insets(0, 0, 28, 0);
         card.add(panelPin, gc);
 
-        // Botón Ingresar
+        // Botón rojo directo en la tarjeta, estirado al ancho de los campos
         RoundButton botonIngresar = new RoundButton("Ingresar", ROJO, Color.WHITE);
-        botonIngresar.setPreferredSize(new Dimension(160, 52));
+        botonIngresar.setPreferredSize(new Dimension(480, 56)); // Altura proporcionada y cómoda
         botonIngresar.addActionListener(e -> {
             String usuario = campoUsuario.getRealText();
             String pin = new String(campoPin.getRealPassword());
@@ -165,8 +174,10 @@ public class pantallaLogin {
                         "Git & Eat!", JOptionPane.INFORMATION_MESSAGE);
             }
         });
+
         gc.gridy = 5;
-        gc.insets = new Insets(0, 0, 0, 0);
+        gc.fill = GridBagConstraints.HORIZONTAL; // Hace que el botón ocupe todo el ancho
+        gc.insets = new Insets(8, 0, 8, 0);
         card.add(botonIngresar, gc);
 
         return card;
@@ -187,7 +198,6 @@ public class pantallaLogin {
         return null;
     }
 
-    // Escalado Cover: cubre completamente el panel lateral sin bordes amarillos
     static class ImagePanel extends JPanel {
         private final Image imagen;
 
@@ -243,16 +253,16 @@ public class pantallaLogin {
     static class RoundedFieldPanel extends JPanel {
         RoundedFieldPanel(Icon icono, JTextField campo, JButton extra) {
             setOpaque(false);
-            setLayout(new BorderLayout(10, 0));
-            setBorder(new EmptyBorder(10, 16, 10, 16));
-            setPreferredSize(new Dimension(380, 50));
+            setLayout(new BorderLayout(12, 0));
+            setBorder(new EmptyBorder(12, 20, 12, 20));
+            setPreferredSize(new Dimension(480, 56)); // Campos más anchos acorde a la tarjeta
 
             JLabel iconoLabel = new JLabel(icono);
             add(iconoLabel, BorderLayout.WEST);
 
             campo.setOpaque(false);
             campo.setBorder(null);
-            campo.setFont(new Font("SansSerif", Font.PLAIN, 15));
+            campo.setFont(new Font("SansSerif", Font.PLAIN, 16));
             add(campo, BorderLayout.CENTER);
 
             if (extra != null) {
@@ -341,7 +351,7 @@ public class pantallaLogin {
             super(texto);
             this.colorFondo = colorFondo;
             setForeground(colorTexto);
-            setFont(new Font("SansSerif", Font.BOLD, 17));
+            setFont(new Font("SansSerif", Font.BOLD, 18));
             setFocusPainted(false);
             setContentAreaFilled(false);
             setBorderPainted(false);
