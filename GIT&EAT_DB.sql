@@ -17,8 +17,9 @@ CREATE TABLE categoria (
 -- ---------------------------------------------------------------------
 CREATE TABLE usuario (
     id_usuario      INT AUTO_INCREMENT PRIMARY KEY,
-    nombre          VARCHAR(80)                    NOT NULL,
-    pin_acceso      VARCHAR(10)                    NOT NULL UNIQUE,
+    nombre          VARCHAR(50)                    NOT NULL,
+    apellido        VARCHAR(50)                    NOT NULL,
+    codigo_empleado VARCHAR(10)                    NOT NULL UNIQUE,
     contrasena      VARCHAR(255)                   NULL,
     rol             ENUM('ADMINISTRADOR','CAJERO') NOT NULL DEFAULT 'CAJERO',
     estado          TINYINT(1)                     NOT NULL DEFAULT 1
@@ -191,8 +192,8 @@ CREATE TABLE pago_orden (
 -- Inserción de datos iniciales mínimos
 -- ---------------------------------------------------------------------
 INSERT INTO turno_menu (nombre, hora_inicio, hora_fin) VALUES 
-('Mañana', '06:00:00', '11:59:59'),
-('Tarde', '12:00:00', '05:59:59');
+('Mañana', '04:00:00', '11:00:00'),
+('Tarde', '11:01:00', '02:00:00');
 
 -- ---------------------------------------------------------------------
 -- Índices optimizados
