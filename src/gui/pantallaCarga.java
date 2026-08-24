@@ -13,7 +13,7 @@ public class pantallaCarga {
             ImageIcon iconOriginal = new ImageIcon(pantallaCarga.class.getResource("/gui/cargador/VideoCarga1.gif"));
 
             // Definir dimensiones (450x300)
-            int anchoDeseado = 450;
+            int anchoDeseado = 470;
             int altoDeseado = 300;
 
             // Crear el JLabel que redimensiona el GIF
