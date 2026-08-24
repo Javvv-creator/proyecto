@@ -1,5 +1,7 @@
 package gui;
 
+import main.Conexion.Conexion;
+
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -8,10 +10,13 @@ import java.awt.event.*;
 import java.awt.geom.RoundRectangle2D;
 import java.io.InputStream;
 import java.net.URL;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class pantallaLogin {
 
-    // Paleta de colores usada en el diseño
     static final Color ROJO       = new Color(0xD8, 0x1E, 0x3B);
     static final Color VERDE      = new Color(0x6B, 0xA5, 0x39);
     static final Color AMARILLO   = new Color(0xF2, 0xC0, 0x2C);
@@ -34,7 +39,6 @@ public class pantallaLogin {
         frame = new JFrame("Git & Eat! - Iniciar sesión");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         
-        // --- CONFIGURACIÓN DE PANTALLA COMPLETA ---
         frame.setUndecorated(true);
         GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
         GraphicsDevice gd = ge.getDefaultScreenDevice();
@@ -45,7 +49,6 @@ public class pantallaLogin {
             frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
         }
 
-        // Presionar 'ESC' para salir
         frame.getRootPane().registerKeyboardAction(
             e -> System.exit(0),
             KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
@@ -57,14 +60,12 @@ public class pantallaLogin {
         gbc.fill = GridBagConstraints.BOTH;
         gbc.gridy = 0;
 
-        // ---------- Panel izquierdo: imagen de comida (46% de la pantalla) ----------
         ImagePanel panelImagen = new ImagePanel(loadImage("/gui/images/imagen1.png"));
         gbc.gridx = 0;
         gbc.weightx = 0.46;
         gbc.weighty = 1.0;
         root.add(panelImagen, gbc);
 
-        // ---------- Panel derecho: formulario (54% de la pantalla) ----------
         JPanel panelDerecho = new JPanel(new GridBagLayout());
         panelDerecho.setBackground(BEIGE);
         gbc.gridx = 1;
@@ -87,8 +88,6 @@ public class pantallaLogin {
     private static JPanel crearTarjetaLogin(JFrame frame) {
         RoundedPanel card = new RoundedPanel(36, Color.WHITE);
         card.setLayout(new GridBagLayout());
-        
-        // Cuadro más amplio (Ancho: 620px, Alto: 740px)
         card.setPreferredSize(new Dimension(620, 740));
         card.setBorder(new EmptyBorder(40, 56, 40, 56));
 
@@ -96,7 +95,6 @@ public class pantallaLogin {
         gc.gridx = 0;
         gc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Logo
         Image logo = loadImage("/gui/images/logo.png");
         JLabel logoLabel = new JLabel();
         if (logo != null) {
@@ -112,7 +110,6 @@ public class pantallaLogin {
         gc.insets = new Insets(0, 0, 20, 0);
         card.add(logoLabel, gc);
 
-        // Título
         JLabel titulo = new JLabel("BIENVENIDO!", SwingConstants.CENTER);
         titulo.setFont(new Font("SansSerif", Font.BOLD, 30));
         titulo.setForeground(Color.BLACK);
@@ -120,7 +117,6 @@ public class pantallaLogin {
         gc.insets = new Insets(0, 0, 8, 0);
         card.add(titulo, gc);
 
-        // Subtítulo
         JLabel subtitulo = new JLabel(
                 "<html><div style='text-align:center;'>¡Listo para otro gran turno!<br>Inicia sesión y comencemos.</div></html>",
                 SwingConstants.CENTER);
@@ -130,7 +126,6 @@ public class pantallaLogin {
         gc.insets = new Insets(0, 0, 28, 0);
         card.add(subtitulo, gc);
 
-        // Campo: Código de empleado
         PlaceholderField campoUsuario = new PlaceholderField("Código de empleado");
         RoundedFieldPanel panelUsuario = new RoundedFieldPanel(
                 IconoFactory.icono("persona"), campoUsuario, null);
@@ -138,7 +133,6 @@ public class pantallaLogin {
         gc.insets = new Insets(0, 0, 18, 0);
         card.add(panelUsuario, gc);
 
-        // Campo: PIN (con botón mostrar/ocultar)
         PlaceholderPasswordField campoPin = new PlaceholderPasswordField("PIN");
         JButton toggleOjo = new JButton();
         toggleOjo.setIcon(IconoFactory.icono("ojo"));
@@ -158,29 +152,76 @@ public class pantallaLogin {
         gc.insets = new Insets(0, 0, 28, 0);
         card.add(panelPin, gc);
 
-        // Botón rojo directo en la tarjeta, estirado al ancho de los campos
         RoundButton botonIngresar = new RoundButton("Ingresar", ROJO, Color.WHITE);
-        botonIngresar.setPreferredSize(new Dimension(480, 56)); // Altura proporcionada y cómoda
+        botonIngresar.setPreferredSize(new Dimension(480, 56));
         botonIngresar.addActionListener(e -> {
             String usuario = campoUsuario.getRealText();
-            String pin = new String(campoPin.getRealPassword());
+            String pin = new String(campoPin.getRealPassword()).trim();
+
             if (usuario.isEmpty() || pin.isEmpty()) {
                 JOptionPane.showMessageDialog(frame,
                         "Ingresá tu código de empleado y tu PIN.",
                         "Datos incompletos", JOptionPane.WARNING_MESSAGE);
-            } else {
-                JOptionPane.showMessageDialog(frame,
-                        "Bienvenido, " + usuario + "!",
-                        "Git & Eat!", JOptionPane.INFORMATION_MESSAGE);
+                return;
             }
+
+            validarUsuario(frame, usuario, pin);
         });
 
         gc.gridy = 5;
-        gc.fill = GridBagConstraints.HORIZONTAL; // Hace que el botón ocupe todo el ancho
+        gc.fill = GridBagConstraints.HORIZONTAL;
         gc.insets = new Insets(8, 0, 8, 0);
         card.add(botonIngresar, gc);
 
         return card;
+    }
+
+    private static void validarUsuario(JFrame frame, String codigoEmpleado, String pin) {
+        String sql = "SELECT nombre, apellido, rol, estado FROM usuario WHERE codigo_empleado = ? AND contrasena = ?";
+        Conexion conexionBD = new Conexion();
+
+        try (Connection conn = conexionBD.getConnection()) {
+            if (conn == null) {
+                JOptionPane.showMessageDialog(frame,
+                        "No se pudo establecer conexión con la base de datos.",
+                        "Error de Conexión", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, codigoEmpleado);
+                stmt.setString(2, pin);
+
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) {
+                        boolean estadoActivo = rs.getBoolean("estado");
+
+                        if (!estadoActivo) {
+                            JOptionPane.showMessageDialog(frame,
+                                    "El usuario ingresado se encuentra inactivo.",
+                                    "Acceso Denegado", JOptionPane.WARNING_MESSAGE);
+                            return;
+                        }
+
+                        String nombre = rs.getString("nombre");
+                        String apellido = rs.getString("apellido");
+                        String rol = rs.getString("rol");
+
+                        JOptionPane.showMessageDialog(frame,
+                                "¡Autenticación exitosa!\n\nBienvenido, " + nombre + " " + apellido + "\nRol: " + rol,
+                                "Git & Eat!", JOptionPane.INFORMATION_MESSAGE);
+                    } else {
+                        JOptionPane.showMessageDialog(frame,
+                                "Código de empleado o PIN incorrectos.",
+                                "Error de Autenticación", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(frame,
+                    "Error de SQL: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     static Image loadImage(String ruta) {
@@ -255,7 +296,7 @@ public class pantallaLogin {
             setOpaque(false);
             setLayout(new BorderLayout(12, 0));
             setBorder(new EmptyBorder(12, 20, 12, 20));
-            setPreferredSize(new Dimension(480, 56)); // Campos más anchos acorde a la tarjeta
+            setPreferredSize(new Dimension(480, 56));
 
             JLabel iconoLabel = new JLabel(icono);
             add(iconoLabel, BorderLayout.WEST);
