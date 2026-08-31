@@ -1,9 +1,15 @@
 package gui;
 
+import main.Conexion.Conexion;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.plaf.basic.BasicComboBoxUI;
 import java.awt.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class nuevoEmpleadoDialog extends JDialog {
 
@@ -31,10 +37,17 @@ public class nuevoEmpleadoDialog extends JDialog {
 
     private boolean guardado = false;
 
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            nuevoEmpleadoDialog dialog = new nuevoEmpleadoDialog(null);
+            dialog.setVisible(true);
+        });
+    }
+
     public nuevoEmpleadoDialog(Frame parent) {
         super(parent, "Nuevo empleado", true);
         setUndecorated(true);
-        setSize(420, 560);
+        setSize(420, 580);
         setLocationRelativeTo(parent);
 
         setBackground(new Color(0, 0, 0, 0));
@@ -60,18 +73,18 @@ public class nuevoEmpleadoDialog extends JDialog {
         styleComboBox(cbRol);
 
         // 4. Campo: Contraseña
-        JLabel lblContrasena = createFieldLabel("Contraseña");
+        JLabel lblContrasena = createFieldLabel("PIN / Contraseña");
         txtContrasena = new RoundedPasswordField(FIELD_RADIUS);
         styleTextField(txtContrasena);
 
-        JLabel lblSubtext = new JLabel("Debe ser unico, se usa para iniciar sesión");
+        JLabel lblSubtext = new JLabel("Se utilizará junto al código de empleado para iniciar sesión");
         lblSubtext.setFont(new Font("SansSerif", Font.PLAIN, 11));
         lblSubtext.setForeground(COLOR_TEXT_BROWN);
         lblSubtext.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // 5. Campo: Turno (ComboBox)
         JLabel lblTurno = createFieldLabel("Turno");
-        cbTurno = new RoundedComboBox<>(new String[]{"Seleccionar turno...", "Mañana", "Tarde", "Noche"}, FIELD_RADIUS);
+        cbTurno = new RoundedComboBox<>(new String[]{"Seleccionar turno...", "Mañana", "Tarde"}, FIELD_RADIUS);
         styleComboBox(cbTurno);
 
         // 6. Checkbox: Empleado activo
@@ -106,10 +119,7 @@ public class nuevoEmpleadoDialog extends JDialog {
 
         btnGuardar = new RoundedButton("Guardar empleado", BTN_RADIUS);
         styleButton(btnGuardar, COLOR_BTN_SAVE, Color.WHITE);
-        btnGuardar.addActionListener(e -> {
-            guardado = true;
-            dispose();
-        });
+        btnGuardar.addActionListener(e -> procesarGuardado());
 
         actionsPanel.add(btnCancelar);
         actionsPanel.add(btnGuardar);
@@ -117,7 +127,7 @@ public class nuevoEmpleadoDialog extends JDialog {
         // Ensamblado
         mainPanel.add(lblTitulo);
         mainPanel.add(Box.createRigidArea(new Dimension(0, 18)));
-        
+
         mainPanel.add(lblNombre);
         mainPanel.add(Box.createRigidArea(new Dimension(0, 5)));
         mainPanel.add(txtNombre);
@@ -146,6 +156,98 @@ public class nuevoEmpleadoDialog extends JDialog {
         mainPanel.add(actionsPanel);
 
         add(mainPanel);
+    }
+
+    // --- Lógica de procesamiento e inserción en Base de Datos ---
+
+    private void procesarGuardado() {
+        String nombreCompleto = txtNombre.getText().trim();
+        String contrasena = new String(txtContrasena.getPassword()).trim();
+        int indexRol = cbRol.getSelectedIndex();
+        int indexTurno = cbTurno.getSelectedIndex();
+
+        // Validaciones de campos
+        if (nombreCompleto.isEmpty()) {
+            mostrarMensaje("Ingresa el nombre completo del empleado.", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        if (indexRol <= 0) {
+            mostrarMensaje("Selecciona un rol válido.", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        if (contrasena.isEmpty()) {
+            mostrarMensaje("Ingresa una contraseña o PIN.", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        if (indexTurno <= 0) {
+            mostrarMensaje("Selecciona un turno de trabajo.", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        // Separar nombre y apellido
+        String[] partesNombre = nombreCompleto.split("\\s+", 2);
+        String nombre = partesNombre[0];
+        String apellido = partesNombre.length > 1 ? partesNombre[1] : "-";
+
+        String rol = ((String) cbRol.getSelectedItem()).toUpperCase(); // ADMINISTRADOR o CAJERO
+        String turno = (String) cbTurno.getSelectedItem();
+        boolean activo = chkActivo.isSelected();
+
+        // Guardar en la Base de Datos
+        Conexion conexionBD = new Conexion();
+        try (Connection conn = conexionBD.getConnection()) {
+            if (conn == null) {
+                mostrarMensaje("No se pudo conectar a la base de datos.", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // Generar código de empleado automático (ej: ADM01, CAJ02)
+            String codigoEmpleado = generarCodigoEmpleado(conn, rol);
+
+            String sql = "INSERT INTO usuario (nombre, apellido, codigo_empleado, contrasena, rol, estado, turno) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, nombre);
+                stmt.setString(2, apellido);
+                stmt.setString(3, codigoEmpleado);
+                stmt.setString(4, contrasena);
+                stmt.setString(5, rol);
+                stmt.setBoolean(6, activo);
+                stmt.setString(7, turno);
+
+                int filasAfectadas = stmt.executeUpdate();
+                if (filasAfectadas > 0) {
+                    mostrarMensaje("¡Empleado registrado exitosamente!\n\nCódigo asignado: " + codigoEmpleado, JOptionPane.INFORMATION_MESSAGE);
+                    this.guardado = true;
+                    dispose();
+                }
+            }
+
+        } catch (SQLException ex) {
+            mostrarMensaje("Error al guardar en la base de datos: " + ex.getMessage(), JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private String generarCodigoEmpleado(Connection conn, String rol) throws SQLException {
+        String prefijo = rol.equalsIgnoreCase("ADMINISTRADOR") ? "ADM" : "CAJ";
+        String sql = "SELECT COUNT(*) FROM usuario WHERE rol = ?";
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, rol);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    int total = rs.getInt(1) + 1;
+                    return String.format("%s%02d", prefijo, total);
+                }
+            }
+        }
+        return prefijo + "01";
+    }
+
+    private void mostrarMensaje(String mensaje, int tipo) {
+        JOptionPane.showMessageDialog(this, mensaje, "Git & Eat!", tipo);
     }
 
     private JLabel createFieldLabel(String text) {
@@ -326,7 +428,6 @@ public class nuevoEmpleadoDialog extends JDialog {
         }
     }
 
-    // Clase contenedora del diálogo con fondo blanco y borde negro redondeado
     private static class RoundedPanel extends JPanel {
         private final int cornerRadius;
         private final Color backgroundColor;
@@ -343,13 +444,11 @@ public class nuevoEmpleadoDialog extends JDialog {
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             
-            // Dibujar fondo blanco
             g2.setColor(backgroundColor);
             g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, cornerRadius, cornerRadius);
             
-            // Dibujar borde negro exterior
             g2.setColor(Color.BLACK);
-            g2.setStroke(new BasicStroke(2.0f)); // Modifica este número si deseas cambiar el grosor
+            g2.setStroke(new BasicStroke(2.0f));
             g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, cornerRadius, cornerRadius);
             
             g2.dispose();
