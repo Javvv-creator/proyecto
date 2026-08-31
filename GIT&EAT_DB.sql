@@ -22,7 +22,8 @@ CREATE TABLE usuario (
     codigo_empleado VARCHAR(10)                    NOT NULL UNIQUE,
     contrasena      VARCHAR(255)                   NULL,
     rol             ENUM('ADMINISTRADOR','CAJERO') NOT NULL DEFAULT 'CAJERO',
-    estado          TINYINT(1)                     NOT NULL DEFAULT 1
+    estado          TINYINT(1)                     NOT NULL DEFAULT 1,
+    turno 			VARCHAR(50)					   NOT NULL
 );
 
 -- ---------------------------------------------------------------------
@@ -37,15 +38,12 @@ CREATE TABLE turno_menu (
 );
 
 -- ---------------------------------------------------------------------
--- Tabla: ingrediente (con columnas de control de inventario/stock)
+-- Tabla: ingrediente
 -- ---------------------------------------------------------------------
 CREATE TABLE ingrediente (
     id_ingrediente          INT AUTO_INCREMENT PRIMARY KEY,
     nombre                  VARCHAR(100)  NOT NULL,
     precio_extra_defecto    DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    stock_actual            DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    stock_minimo            DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    unidad_medida           VARCHAR(20)   NOT NULL DEFAULT 'unidades',
     estado                  TINYINT(1)    NOT NULL DEFAULT 1
 );
 
@@ -107,9 +105,9 @@ CREATE TABLE combo_componente (
 -- Tabla: combo_opcion_intercambio
 -- ---------------------------------------------------------------------
 CREATE TABLE combo_opcion_intercambio (
-    id_opcion            INT AUTO_INCREMENT PRIMARY KEY,
-    costo_extra          DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    id_componente        INT           NOT NULL,
+    id_opcion           INT AUTO_INCREMENT PRIMARY KEY,
+    costo_extra         DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    id_componente       INT           NOT NULL,
     id_producto_opcion  INT           NOT NULL,
     CONSTRAINT fk_comboopc_componente
         FOREIGN KEY (id_componente) REFERENCES combo_componente(id_componente)
@@ -122,7 +120,7 @@ CREATE TABLE combo_opcion_intercambio (
 );
 
 -- ---------------------------------------------------------------------
--- Tabla: orden
+-- Tabla: orden (sin el campo subtotal)
 -- ---------------------------------------------------------------------
 CREATE TABLE orden (
     id_orden        INT AUTO_INCREMENT PRIMARY KEY,
@@ -178,7 +176,7 @@ CREATE TABLE modificacion_orden (
 );
 
 -- ---------------------------------------------------------------------
--- Tabla: pago_orden
+-- Tabla: pago_orden (con ENUM de metodo_pago)
 -- ---------------------------------------------------------------------
 CREATE TABLE pago_orden (
     id_pago         INT AUTO_INCREMENT PRIMARY KEY,
@@ -197,11 +195,6 @@ CREATE TABLE pago_orden (
 INSERT INTO turno_menu (nombre, hora_inicio, hora_fin) VALUES 
 ('Mañana', '04:00:00', '11:00:00'),
 ('Tarde', '11:01:00', '02:00:00');
-
--- Usuarios de prueba para el programa
-INSERT INTO usuario (nombre, apellido, codigo_empleado, contrasena, rol, estado)
-VALUES ('Carlos', 'Gómez', 'EMP001', '1234', 'CAJERO', 1),
-		('Mario','Tumax','EMP002','12345','Administrador',1);
 
 -- ---------------------------------------------------------------------
 -- Índices optimizados
