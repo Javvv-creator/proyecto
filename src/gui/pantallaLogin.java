@@ -17,11 +17,12 @@ import java.sql.SQLException;
 
 public class pantallaLogin {
 
-    static final Color ROJO       = new Color(0xD8, 0x1E, 0x3B);
-    static final Color VERDE      = new Color(0x6B, 0xA5, 0x39);
-    static final Color AMARILLO   = new Color(0xF2, 0xC0, 0x2C);
-    static final Color BEIGE      = new Color(0xEF, 0xEB, 0xE7);
-    static final Color GRIS_TXT   = new Color(0x6B, 0x6B, 0x6B);
+    // Paleta de colores para la interfaz gráfica
+    static final Color ROJO = new Color(0xD8, 0x1E, 0x3B);
+    static final Color VERDE = new Color(0x6B, 0xA5, 0x39);
+    static final Color AMARILLO = new Color(0xF2, 0xC0, 0x2C);
+    static final Color BEIGE = new Color(0xEF, 0xEB, 0xE7);
+    static final Color GRIS_TXT = new Color(0x6B, 0x6B, 0x6B);
     static final Color GRIS_CAMPO = new Color(0xF0, 0xF0, 0xF0);
     static final Color GRIS_BORDE = new Color(0xDD, 0xDD, 0xDD);
 
@@ -34,38 +35,42 @@ public class pantallaLogin {
     public pantallaLogin() {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception ignored) { }
+        } catch (Exception ignored) {
+        }
 
+        // Configuración de la ventana principal en pantalla completa
         frame = new JFrame("Git & Eat! - Iniciar sesión");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        
         frame.setUndecorated(true);
-        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-        GraphicsDevice gd = ge.getDefaultScreenDevice();
 
+        GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
         if (gd.isFullScreenSupported()) {
             gd.setFullScreenWindow(frame);
         } else {
             frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
         }
 
+        // Cierra la aplicación al presionar la tecla ESC
         frame.getRootPane().registerKeyboardAction(
-            e -> System.exit(0),
-            KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
-            JComponent.WHEN_IN_FOCUSED_WINDOW
-        );
+                e -> System.exit(0),
+                KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
+                JComponent.WHEN_IN_FOCUSED_WINDOW);
 
+        // Estructura principal: Dividida en panel izquierdo (imagen) y derecho
+        // (formulario)
         JPanel root = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.BOTH;
         gbc.gridy = 0;
 
+        // Panel izquierdo: Imagen lateral (46% del ancho)
         ImagePanel panelImagen = new ImagePanel(loadImage("/gui/images/imagen1.png"));
         gbc.gridx = 0;
         gbc.weightx = 0.46;
         gbc.weighty = 1.0;
         root.add(panelImagen, gbc);
 
+        // Panel derecho: Contenedor del formulario de acceso (54% del ancho)
         JPanel panelDerecho = new JPanel(new GridBagLayout());
         panelDerecho.setBackground(BEIGE);
         gbc.gridx = 1;
@@ -73,6 +78,7 @@ public class pantallaLogin {
         gbc.weighty = 1.0;
         root.add(panelDerecho, gbc);
 
+        // Agrega la tarjeta de login al panel derecho
         JPanel card = crearTarjetaLogin(frame);
         panelDerecho.add(card);
 
@@ -85,6 +91,7 @@ public class pantallaLogin {
         }
     }
 
+    // Construye la tarjeta flotante con los campos de entrada y botón
     private static JPanel crearTarjetaLogin(JFrame frame) {
         RoundedPanel card = new RoundedPanel(36, Color.WHITE);
         card.setLayout(new GridBagLayout());
@@ -95,6 +102,7 @@ public class pantallaLogin {
         gc.gridx = 0;
         gc.fill = GridBagConstraints.HORIZONTAL;
 
+        // Logo
         Image logo = loadImage("/gui/images/logo.png");
         JLabel logoLabel = new JLabel();
         if (logo != null) {
@@ -110,6 +118,7 @@ public class pantallaLogin {
         gc.insets = new Insets(0, 0, 20, 0);
         card.add(logoLabel, gc);
 
+        // Títulos
         JLabel titulo = new JLabel("BIENVENIDO!", SwingConstants.CENTER);
         titulo.setFont(new Font("SansSerif", Font.BOLD, 30));
         titulo.setForeground(Color.BLACK);
@@ -126,6 +135,7 @@ public class pantallaLogin {
         gc.insets = new Insets(0, 0, 28, 0);
         card.add(subtitulo, gc);
 
+        // Campo de texto: Código de empleado
         PlaceholderField campoUsuario = new PlaceholderField("Código de empleado");
         RoundedFieldPanel panelUsuario = new RoundedFieldPanel(
                 IconoFactory.icono("persona"), campoUsuario, null);
@@ -133,6 +143,7 @@ public class pantallaLogin {
         gc.insets = new Insets(0, 0, 18, 0);
         card.add(panelUsuario, gc);
 
+        // Campo de contraseña: PIN con botón para alternar visibilidad
         PlaceholderPasswordField campoPin = new PlaceholderPasswordField("PIN");
         JButton toggleOjo = new JButton();
         toggleOjo.setIcon(IconoFactory.icono("ojo"));
@@ -140,29 +151,47 @@ public class pantallaLogin {
         toggleOjo.setContentAreaFilled(false);
         toggleOjo.setFocusPainted(false);
         toggleOjo.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        final boolean[] visible = {false};
+
+        final boolean[] visible = { false };
         toggleOjo.addActionListener(e -> {
             visible[0] = !visible[0];
             campoPin.setEchoVisible(visible[0]);
             toggleOjo.setIcon(IconoFactory.icono(visible[0] ? "ojo_cerrado" : "ojo"));
         });
+
         RoundedFieldPanel panelPin = new RoundedFieldPanel(
                 IconoFactory.icono("candado"), campoPin, toggleOjo);
         gc.gridy = 4;
         gc.insets = new Insets(0, 0, 28, 0);
         card.add(panelPin, gc);
 
+        // Botón "Ingresar" con validación previa de campos vacíos
         RoundButton botonIngresar = new RoundButton("Ingresar", ROJO, Color.WHITE);
         botonIngresar.setPreferredSize(new Dimension(480, 56));
         botonIngresar.addActionListener(e -> {
             String usuario = campoUsuario.getRealText();
             String pin = new String(campoPin.getRealPassword()).trim();
+            String rol ="" ;
 
             if (usuario.isEmpty() || pin.isEmpty()) {
                 JOptionPane.showMessageDialog(frame,
                         "Ingresá tu código de empleado y tu PIN.",
                         "Datos incompletos", JOptionPane.WARNING_MESSAGE);
                 return;
+            }
+            // Después de mostrar el JOptionPane de éxito:
+            frame.dispose(); // Cierra la pantalla de login actual
+
+            switch (rol.toLowerCase()) {
+                case "administrador":
+                    new dashboardAdmin().setVisible(true);
+                    break;
+                case "cajero":
+                    new pantallaCajero().setVisible(true);
+                    break;
+                default:
+                    JOptionPane.showMessageDialog(null, "El rol asignado no tiene una interfaz configurada.");
+                    break;
             }
 
             validarUsuario(frame, usuario, pin);
@@ -176,6 +205,8 @@ public class pantallaLogin {
         return card;
     }
 
+    // Consulta la base de datos para verificar credenciales y el estado activo del
+    // usuario
     private static void validarUsuario(JFrame frame, String codigoEmpleado, String pin) {
         String sql = "SELECT nombre, apellido, rol, estado FROM usuario WHERE codigo_empleado = ? AND contrasena = ?";
         Conexion conexionBD = new Conexion();
@@ -194,8 +225,8 @@ public class pantallaLogin {
 
                 try (ResultSet rs = stmt.executeQuery()) {
                     if (rs.next()) {
+                        // Comprueba si el usuario no está dado de baja
                         boolean estadoActivo = rs.getBoolean("estado");
-
                         if (!estadoActivo) {
                             JOptionPane.showMessageDialog(frame,
                                     "El usuario ingresado se encuentra inactivo.",
@@ -203,6 +234,7 @@ public class pantallaLogin {
                             return;
                         }
 
+                        // Autenticación correcta
                         String nombre = rs.getString("nombre");
                         String apellido = rs.getString("apellido");
                         String rol = rs.getString("rol");
@@ -211,6 +243,7 @@ public class pantallaLogin {
                                 "¡Autenticación exitosa!\n\nBienvenido, " + nombre + " " + apellido + "\nRol: " + rol,
                                 "Git & Eat!", JOptionPane.INFORMATION_MESSAGE);
                     } else {
+                        // Credenciales incorrectas
                         JOptionPane.showMessageDialog(frame,
                                 "Código de empleado o PIN incorrectos.",
                                 "Error de Autenticación", JOptionPane.ERROR_MESSAGE);
@@ -224,6 +257,7 @@ public class pantallaLogin {
         }
     }
 
+    // Carga de imágenes desde las rutas de recursos
     static Image loadImage(String ruta) {
         try {
             URL resource = pantallaLogin.class.getResource(ruta);
@@ -235,10 +269,14 @@ public class pantallaLogin {
             if (is != null) {
                 return ImageIO.read(is);
             }
-        } catch (Exception ignored) { }
+        } catch (Exception ignored) {
+        }
         return null;
     }
 
+    // --- Clases de diseño y componentes personalizados ---
+
+    // Panel izquierdo que escala la imagen manteniendo la proporción
     static class ImagePanel extends JPanel {
         private final Image imagen;
 
@@ -250,24 +288,26 @@ public class pantallaLogin {
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
-            if (imagen == null) return;
+            if (imagen == null)
+                return;
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
                     RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-            
+
             int pw = getWidth(), ph = getHeight();
             int iw = imagen.getWidth(null), ih = imagen.getHeight(null);
-            
+
             double scale = Math.max((double) pw / iw, (double) ph / ih);
-            
+
             int sw = (int) (iw * scale), sh = (int) (ih * scale);
             int x = (pw - sw) / 2, y = (ph - sh) / 2;
-            
+
             g2.drawImage(imagen, x, y, sw, sh, this);
             g2.dispose();
         }
     }
 
+    // Tarjeta con bordes redondeados y sombra
     static class RoundedPanel extends JPanel {
         private final int radio;
         private final Color colorFondo;
@@ -291,6 +331,8 @@ public class pantallaLogin {
         }
     }
 
+    // Contenedor estético para los campos de entrada (ícono + texto + botón
+    // opcional)
     static class RoundedFieldPanel extends JPanel {
         RoundedFieldPanel(Icon icono, JTextField campo, JButton extra) {
             setOpaque(false);
@@ -324,6 +366,7 @@ public class pantallaLogin {
         }
     }
 
+    // Campo de texto con placeholder cuando está vacío
     static class PlaceholderField extends JTextField {
         private final String placeholder;
 
@@ -351,6 +394,7 @@ public class pantallaLogin {
         }
     }
 
+    // Campo de contraseña con placeholder cuando está vacío
     static class PlaceholderPasswordField extends JPasswordField {
         private final String placeholder;
         private final char echoOculto = '•';
@@ -384,6 +428,7 @@ public class pantallaLogin {
         }
     }
 
+    // Botón redondeado con efecto visual al pasar el cursor (Hover)
     static class RoundButton extends JButton {
         private final Color colorFondo;
         private boolean hover = false;
@@ -398,8 +443,17 @@ public class pantallaLogin {
             setBorderPainted(false);
             setCursor(new Cursor(Cursor.HAND_CURSOR));
             addMouseListener(new MouseAdapter() {
-                @Override public void mouseEntered(MouseEvent e) { hover = true; repaint(); }
-                @Override public void mouseExited(MouseEvent e) { hover = false; repaint(); }
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    hover = true;
+                    repaint();
+                }
+
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    hover = false;
+                    repaint();
+                }
             });
         }
 
@@ -415,6 +469,7 @@ public class pantallaLogin {
         }
     }
 
+    // Dibujado vectorial de íconos en 2D (persona, candado, ojo)
     static class IconoFactory {
         static Icon icono(String tipo) {
             return new Icon() {
@@ -448,8 +503,16 @@ public class pantallaLogin {
                     }
                     g2.dispose();
                 }
-                @Override public int getIconWidth() { return 24; }
-                @Override public int getIconHeight() { return 24; }
+
+                @Override
+                public int getIconWidth() {
+                    return 24;
+                }
+
+                @Override
+                public int getIconHeight() {
+                    return 24;
+                }
             };
         }
     }
