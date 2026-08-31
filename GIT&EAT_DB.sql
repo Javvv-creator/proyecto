@@ -198,6 +198,11 @@ INSERT INTO turno_menu (nombre, hora_inicio, hora_fin) VALUES
 ('Mañana', '04:00:00', '11:00:00'),
 ('Tarde', '11:01:00', '02:00:00');
 
+-- Usuarios de prueba para el programa
+INSERT INTO usuario (nombre, apellido, codigo_empleado, contrasena, rol, estado)
+VALUES ('Carlos', 'Gómez', 'EMP001', '1234', 'CAJERO', 1),
+		('Mario','Tumax','EMP002','12345','Administrador',1);
+
 -- ---------------------------------------------------------------------
 -- Índices optimizados
 -- ---------------------------------------------------------------------
