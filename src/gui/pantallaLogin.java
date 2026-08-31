@@ -171,7 +171,6 @@ public class pantallaLogin {
         botonIngresar.addActionListener(e -> {
             String usuario = campoUsuario.getRealText();
             String pin = new String(campoPin.getRealPassword()).trim();
-            String rol ="" ;
 
             if (usuario.isEmpty() || pin.isEmpty()) {
                 JOptionPane.showMessageDialog(frame,
@@ -179,21 +178,8 @@ public class pantallaLogin {
                         "Datos incompletos", JOptionPane.WARNING_MESSAGE);
                 return;
             }
-            // Después de mostrar el JOptionPane de éxito:
-            frame.dispose(); // Cierra la pantalla de login actual
 
-            switch (rol.toLowerCase()) {
-                case "administrador":
-                    new dashboardAdmin().setVisible(true);
-                    break;
-                case "cajero":
-                    new pantallaCajero().setVisible(true);
-                    break;
-                default:
-                    JOptionPane.showMessageDialog(null, "El rol asignado no tiene una interfaz configurada.");
-                    break;
-            }
-
+            // Se llama directamente a la función de validación
             validarUsuario(frame, usuario, pin);
         });
 
@@ -225,7 +211,7 @@ public class pantallaLogin {
 
                 try (ResultSet rs = stmt.executeQuery()) {
                     if (rs.next()) {
-                        // Comprueba si el usuario no está dado de baja
+                        // 1. Comprueba estado del usuario
                         boolean estadoActivo = rs.getBoolean("estado");
                         if (!estadoActivo) {
                             JOptionPane.showMessageDialog(frame,
@@ -234,14 +220,32 @@ public class pantallaLogin {
                             return;
                         }
 
-                        // Autenticación correcta
+                        // 2. Obtiene los datos del ResultSet
                         String nombre = rs.getString("nombre");
                         String apellido = rs.getString("apellido");
-                        String rol = rs.getString("rol");
+                        String rol = rs.getString("rol"); // 'ADMINISTRADOR' o 'CAJERO' desde MySQL
 
                         JOptionPane.showMessageDialog(frame,
                                 "¡Autenticación exitosa!\n\nBienvenido, " + nombre + " " + apellido + "\nRol: " + rol,
                                 "Git & Eat!", JOptionPane.INFORMATION_MESSAGE);
+
+                        // 3. Cierra la ventana actual SOLO si la autenticación fue exitosa
+                        frame.dispose();
+
+                        // 4. Redirige a la pantalla correspondiente según el rol
+                        switch (rol.toLowerCase()) {
+                            case "administrador":
+                                new dashboardAdmin().setVisible(true);
+                                break;
+                            case "cajero":
+                                new pantallaCajero().setVisible(true);
+                                break;
+                            default:
+                                JOptionPane.showMessageDialog(null,
+                                        "El rol asignado no tiene una interfaz configurada.");
+                                break;
+                        }
+
                     } else {
                         // Credenciales incorrectas
                         JOptionPane.showMessageDialog(frame,
