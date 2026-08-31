@@ -4,6 +4,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -13,32 +14,35 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-/**
- * Dashboard Administrador - GIT & EAT!
- * Aplicación Java Swing con diseño moderno, interactividad, reloj en vivo e íconos HD.
- */
-public class dashboardAdmin extends JFrame {
+public class gestionEmpleados extends JFrame {
 
-    // Paleta de colores principal
+    // Paleta de colores exacta extraída del diseño (idéntica a dashboardAdmin)
     private static final Color COLOR_BG = new Color(231, 221, 202);
     private static final Color COLOR_SIDEBAR = new Color(139, 94, 52);
     private static final Color COLOR_HEADER = new Color(139, 94, 52);
-    private static final Color COLOR_CARD_BG = Color.WHITE;
-    private static final Color COLOR_GREEN = new Color(106, 161, 46);
-    private static final Color COLOR_YELLOW = new Color(243, 205, 59);
-    private static final Color COLOR_RED = new Color(211, 53, 58);
-    private static final Color COLOR_PREPARANDO = new Color(214, 201, 168);
+    private static final Color COLOR_SEARCH = new Color(106, 161, 46);
+    private static final Color COLOR_COMBO = new Color(230, 115, 45);
+    private static final Color COLOR_BTN_NUEVO = new Color(243, 205, 59);
+    private static final Color COLOR_TABLE_HEADER = new Color(92, 53, 22);
     private static final Color COLOR_TABLE_GRID = new Color(222, 210, 191);
+    private static final Color COLOR_TEXT_GREEN = new Color(106, 161, 46);
+    private static final Color COLOR_TEXT_RED = new Color(211, 53, 58);
     private static final Color COLOR_SIDEBAR_HOVER = new Color(160, 110, 65);
     private static final Color COLOR_SIDEBAR_ACTIVE = new Color(110, 72, 38);
 
+    // Colores de las tarjetas de resumen inferiores
+    private static final Color COLOR_CARD_ADMIN = new Color(243, 205, 59);
+    private static final Color COLOR_CARD_CAJEROS = new Color(230, 115, 45);
+    private static final Color COLOR_CARD_ACTIVOS = new Color(106, 161, 46);
+    private static final Color COLOR_CARD_INACTIVOS = new Color(211, 53, 58);
+
+    private int selectedMenuIndex = 0; // "Gestión de empleados" seleccionado por defecto en esta vista
+    private JPanel[] menuButtons;
     private JLabel lblClock;
     private JLabel lblDate;
-    private int selectedMenuIndex = 0;
-    private JPanel[] menuButtons;
 
-    public dashboardAdmin() {
-        setTitle("GIT & EAT! - Dashboard Administrador");
+    public gestionEmpleados() {
+        setTitle("GIT & EAT! - Gestión de Empleados");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setMinimumSize(new Dimension(1280, 720));
@@ -47,15 +51,15 @@ public class dashboardAdmin extends JFrame {
         mainContainer.setBackground(COLOR_BG);
         mainContainer.setBorder(new EmptyBorder(15, 15, 15, 15));
 
-        // 1. BARRA LATERAL (SIDEBAR)
+        // 1. BARRA LATERAL (idéntica a dashboardAdmin)
         mainContainer.add(createSidebarPanel(), BorderLayout.WEST);
 
-        // 2. PANEL CENTRAL (HEADER + DASHBOARD)
+        // 2. PANEL CENTRAL (HEADER + CONTENIDO)
         JPanel contentPanel = new JPanel(new BorderLayout(15, 15));
         contentPanel.setOpaque(false);
 
         contentPanel.add(createHeaderPanel(), BorderLayout.NORTH);
-        contentPanel.add(createDashboardBody(), BorderLayout.CENTER);
+        contentPanel.add(createMainBody(), BorderLayout.CENTER);
 
         mainContainer.add(contentPanel, BorderLayout.CENTER);
         add(mainContainer);
@@ -63,21 +67,33 @@ public class dashboardAdmin extends JFrame {
         startLiveClock();
     }
 
-    // --- BARRA LATERAL ---
+    // ==========================================
+    // --- BARRA LATERAL (REPLICA EXACTA DE DASHBOARDADMIN) ---
+    // ==========================================
     private JPanel createSidebarPanel() {
         RoundedPanel sidebar = new RoundedPanel(25, COLOR_SIDEBAR);
         sidebar.setLayout(new BorderLayout(0, 15));
         sidebar.setPreferredSize(new Dimension(320, 0));
         sidebar.setBorder(new EmptyBorder(15, 15, 20, 15));
 
-        // Tarjeta contenedora blanca para el logo
+        // Tarjeta contenedora blanca para el logo (clic = volver al Dashboard)
         RoundedPanel logoCard = new RoundedPanel(20, Color.WHITE);
         logoCard.setPreferredSize(new Dimension(290, 140));
         logoCard.setLayout(new GridBagLayout());
         logoCard.add(createLogoLabel());
+        logoCard.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        logoCard.setToolTipText("Volver al Dashboard");
+        logoCard.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                dashboardAdmin app = new dashboardAdmin();
+                app.setVisible(true);
+                dispose();
+            }
+        });
         sidebar.add(logoCard, BorderLayout.NORTH);
 
-        // Menú de navegación con íconos vectoriales HD estilizados
+        // Menú de navegación con íconos vectoriales HD estilizados (igual que dashboardAdmin)
         JPanel menuPanel = new JPanel(new GridLayout(7, 1, 0, 8));
         menuPanel.setOpaque(false);
 
@@ -132,15 +148,14 @@ public class dashboardAdmin extends JFrame {
                 @Override
                 public void mouseClicked(MouseEvent e) {
                     if (index == 0) {
-                        // Navegar a la ventana de Gestión de Empleados
-                        gestionEmpleados app = new gestionEmpleados();
-                        app.setVisible(true);
-                        dispose();
+                        // Ya estamos en la ventana de Gestión de Empleados
+                        selectedMenuIndex = index;
+                        updateSidebarSelection();
                         return;
                     }
                     // Las demás ventanas todavía no existen
                     JOptionPane.showMessageDialog(
-                            dashboardAdmin.this,
+                            gestionEmpleados.this,
                             "aun no  JAJAJAJAJA.",
                             "........",
                             JOptionPane.INFORMATION_MESSAGE
@@ -190,7 +205,7 @@ public class dashboardAdmin extends JFrame {
         if (logoUrl == null) {
             logoUrl = getClass().getResource("/images/logo.png");
         }
-        
+
         if (logoUrl != null) {
             ImageIcon icon = new ImageIcon(logoUrl);
             Image img = icon.getImage();
@@ -211,14 +226,18 @@ public class dashboardAdmin extends JFrame {
         return lblLogo;
     }
 
-    // --- HEADER ---
+    // ==========================================
+    // --- VISTA PRINCIPAL (GESTIÓN DE EMPLEADOS) ---
+    // ==========================================
+    // Header idéntico al de dashboardAdmin (mismo layout, fuente, reloj en vivo y botón
+    // de refrescar), solo cambia el texto del título.
     private JPanel createHeaderPanel() {
         RoundedPanel header = new RoundedPanel(20, COLOR_HEADER);
         header.setLayout(new BorderLayout());
         header.setPreferredSize(new Dimension(0, 125));
         header.setBorder(new EmptyBorder(20, 35, 20, 35));
 
-        JLabel title = new JLabel("Dashboard Administrador");
+        JLabel title = new JLabel("Gestión de empleados");
         title.setFont(new Font("SansSerif", Font.BOLD, 40));
         title.setForeground(Color.WHITE);
         header.add(title, BorderLayout.WEST);
@@ -269,90 +288,103 @@ public class dashboardAdmin extends JFrame {
         timer.start();
     }
 
-    // --- CUERPO DEL DASHBOARD ---
-    private JPanel createDashboardBody() {
+    private JPanel createMainBody() {
         JPanel body = new JPanel(new GridBagLayout());
         body.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.BOTH;
-        gbc.insets = new Insets(6, 6, 6, 6);
+        gbc.insets = new Insets(8, 6, 8, 6);
 
-        // Fila 1: Empleados de hoy + Ventas Semanales
-        gbc.gridy = 0;
-        gbc.gridx = 0; gbc.weightx = 0.55; gbc.weighty = 0.30;
-        body.add(createEmpleadosCard(), gbc);
+        // Fila 1: Controles de búsqueda y filtros
+        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 1.0; gbc.weighty = 0.08;
+        body.add(createTopBar(), gbc);
 
-        gbc.gridx = 1; gbc.weightx = 0.45;
-        body.add(createVentasSemanalesCard(), gbc);
+        // Fila 2: Tabla de Empleados
+        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 1.0; gbc.weighty = 0.62;
+        body.add(createTableCard(), gbc);
 
-        // Fila 2: Pedidos Recientes
-        gbc.gridy = 1; gbc.gridx = 0;
-        gbc.gridwidth = 2; gbc.weightx = 1.0; gbc.weighty = 0.14;
-        body.add(createPedidosRecientesCard(), gbc);
-
-        // Fila 3: Tarjetas Inferiores
-        JPanel bottomRow = new JPanel(new GridLayout(1, 3, 12, 0));
-        bottomRow.setOpaque(false);
-        bottomRow.add(createRendimientoCard());
-        bottomRow.add(createTotalVentasCard());
-        bottomRow.add(createPedidosAbiertosCard());
-
-        gbc.gridy = 2; gbc.gridx = 0;
-        gbc.gridwidth = 2; gbc.weighty = 0.56;
-        body.add(bottomRow, gbc);
+        // Fila 3: Tarjetas resumen inferiores
+        gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 1.0; gbc.weighty = 0.30;
+        body.add(createSummaryCardsRow(), gbc);
 
         return body;
     }
 
-    // --- CARDS ESPECÍFICAS ---
+    private JPanel createTopBar() {
+        JPanel bar = new JPanel(new GridBagLayout());
+        bar.setOpaque(false);
 
-    private JPanel createEmpleadosCard() {
-        RoundedPanel panel = createBaseCard("Empleados de hoy", null);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.insets = new Insets(0, 0, 0, 15);
+        gbc.weighty = 1.0;
 
-        JPanel listPanel = new JPanel(new GridLayout(3, 1, 0, 8));
-        listPanel.setOpaque(false);
-        listPanel.setBorder(new EmptyBorder(6, 15, 10, 15));
+        // 1. Campo Búsqueda (Verde)
+        RoundedPanel searchPill = new RoundedPanel(20, COLOR_SEARCH);
+        searchPill.setLayout(new BorderLayout(10, 0));
+        searchPill.setBorder(new EmptyBorder(8, 15, 8, 15));
 
-        listPanel.add(createEmployeePill("Karla Patal - Cajera", "Mañana", COLOR_GREEN));
-        listPanel.add(createEmployeePill("Javier Top - Cajero", "Tarde", COLOR_YELLOW));
-        listPanel.add(createEmployeePill("Luis Muñoz - Cajero", "Noche", COLOR_RED));
+        JLabel searchIcon = new JLabel("🔍");
+        searchIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 18));
+        searchIcon.setForeground(Color.WHITE);
 
-        panel.add(listPanel, BorderLayout.CENTER);
-        return panel;
+        JTextField txtSearch = new JTextField("Buscar por nombre o código");
+        txtSearch.setOpaque(false);
+        txtSearch.setBorder(null);
+        txtSearch.setForeground(Color.WHITE);
+        txtSearch.setFont(new Font("SansSerif", Font.BOLD, 18));
+        txtSearch.setCaretColor(Color.WHITE);
+
+        searchPill.add(searchIcon, BorderLayout.WEST);
+        searchPill.add(txtSearch, BorderLayout.CENTER);
+
+        gbc.gridx = 0; gbc.weightx = 0.45;
+        bar.add(searchPill, gbc);
+
+        // 2. Filtro de Roles (Naranja)
+        RoundedPanel comboPill = new RoundedPanel(20, COLOR_COMBO);
+        comboPill.setLayout(new BorderLayout());
+        comboPill.setBorder(new EmptyBorder(5, 15, 5, 15));
+
+        JComboBox<String> cbRoles = new JComboBox<>(new String[]{"Todos los roles", "Administrador", "Cajero"});
+        cbRoles.setOpaque(false);
+        cbRoles.setBackground(COLOR_COMBO);
+        cbRoles.setForeground(Color.WHITE);
+        cbRoles.setFont(new Font("SansSerif", Font.BOLD, 18));
+        cbRoles.setBorder(BorderFactory.createEmptyBorder());
+        cbRoles.setFocusable(false);
+
+        comboPill.add(cbRoles, BorderLayout.CENTER);
+
+        gbc.gridx = 1; gbc.weightx = 0.30;
+        bar.add(comboPill, gbc);
+
+        // 3. Botón + Nuevo empleado (Amarillo)
+        RoundedPanel btnPill = new RoundedPanel(20, COLOR_BTN_NUEVO);
+        btnPill.setLayout(new GridBagLayout());
+        btnPill.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        JLabel lblNuevo = new JLabel("+ Nuevo empleado");
+        lblNuevo.setForeground(Color.WHITE);
+        lblNuevo.setFont(new Font("SansSerif", Font.BOLD, 18));
+        btnPill.add(lblNuevo);
+
+        gbc.gridx = 2; gbc.weightx = 0.25; gbc.insets = new Insets(0, 0, 0, 0);
+        bar.add(btnPill, gbc);
+
+        return bar;
     }
 
-    private JPanel createEmployeePill(String name, String shift, Color bg) {
-        RoundedPanel pill = new RoundedPanel(12, bg);
-        pill.setLayout(new BorderLayout());
-        pill.setBorder(new EmptyBorder(6, 15, 6, 15));
+    private JPanel createTableCard() {
+        RoundedPanel card = new RoundedPanel(20, Color.WHITE);
+        card.setLayout(new BorderLayout());
+        card.setBorder(new EmptyBorder(12, 12, 12, 12));
 
-        JLabel lblName = new JLabel(name);
-        lblName.setForeground(Color.WHITE);
-        lblName.setFont(new Font("SansSerif", Font.BOLD, 14));
-
-        JLabel lblShift = new JLabel(shift);
-        lblShift.setForeground(Color.WHITE);
-        lblShift.setFont(new Font("SansSerif", Font.BOLD, 14));
-
-        pill.add(lblName, BorderLayout.WEST);
-        pill.add(lblShift, BorderLayout.EAST);
-        return pill;
-    }
-
-    private JPanel createVentasSemanalesCard() {
-        RoundedPanel panel = createBaseCard("Ventas Semanales", null);
-        panel.add(new AreaChartPanel(), BorderLayout.CENTER);
-        return panel;
-    }
-
-    private JPanel createPedidosRecientesCard() {
-        RoundedPanel panel = createBaseCard("Pedidos Recientes", null);
-
-        String[] columns = {"Pedido", "Mesa", "Hora", "Total", "Estado"};
+        String[] columns = {"Empleado", "Código", "Rol", "Estado", "Acciones"};
         Object[][] data = {
-            {"#1035", "Mesa 5", "12:54", "Q45.80", "Preparando"},
-            {"#1034", "Mesa 6", "12:56", "Q45.80", "Preparando"},
-            {"#1030", "Mesa 8", "13:05", "Q45.80", "Preparando"}
+            {"Ana López", "CAJ-014", "Cajero", "Activo", ""},
+            {"Marco Ramirez", "ADM-002", "Administrador", "Activo", ""},
+            {"Julia Pérez", "CAJ-009", "Cajero", "Inactivo", ""}
         };
 
         DefaultTableModel model = new DefaultTableModel(data, columns) {
@@ -361,242 +393,108 @@ public class dashboardAdmin extends JFrame {
         };
 
         JTable table = new JTable(model);
-        table.setRowHeight(32);
-        table.setTableHeader(null);
+        table.setRowHeight(55);
         table.setShowGrid(true);
         table.setGridColor(COLOR_TABLE_GRID);
         table.setIntercellSpacing(new Dimension(1, 1));
-        table.setFont(new Font("SansSerif", Font.BOLD, 15));
+        table.setFont(new Font("SansSerif", Font.PLAIN, 16));
+
+        // Header de la Tabla
+        JTableHeader header = table.getTableHeader();
+        header.setPreferredSize(new Dimension(0, 45));
+        header.setDefaultRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                JLabel lbl = new JLabel(value.toString(), SwingConstants.CENTER);
+                lbl.setOpaque(true);
+                lbl.setBackground(COLOR_TABLE_HEADER);
+                lbl.setForeground(Color.WHITE);
+                lbl.setFont(new Font("SansSerif", Font.BOLD, 17));
+                return lbl;
+            }
+        });
 
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(JLabel.CENTER);
 
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 3; i++) {
             table.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
         }
 
+        // Columna Estado
+        table.getColumnModel().getColumn(3).setCellRenderer((t, val, isS, hasF, row, col) -> {
+            String estado = (String) val;
+            JLabel lbl = new JLabel(estado, SwingConstants.CENTER);
+            lbl.setFont(new Font("SansSerif", Font.BOLD, 16));
+            if ("Activo".equalsIgnoreCase(estado)) {
+                lbl.setForeground(COLOR_TEXT_GREEN);
+            } else {
+                lbl.setForeground(COLOR_TEXT_RED);
+            }
+            return lbl;
+        });
+
+        // Columna Acciones
         table.getColumnModel().getColumn(4).setCellRenderer((t, val, isS, hasF, row, col) -> {
-            JPanel container = new JPanel(new GridBagLayout());
-            container.setBackground(Color.WHITE);
+            JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 12));
+            actionsPanel.setBackground(Color.WHITE);
 
-            RoundedPanel pill = new RoundedPanel(18, COLOR_PREPARANDO);
-            pill.setPreferredSize(new Dimension(185, 24));
-            pill.setLayout(new GridBagLayout());
+            JLabel btnEdit = new JLabel("📝");
+            btnEdit.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 20));
+            btnEdit.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-            JLabel lbl = new JLabel("Preparando");
-            lbl.setForeground(Color.WHITE);
-            lbl.setFont(new Font("SansSerif", Font.BOLD, 13));
-            pill.add(lbl);
+            JLabel btnLock = new JLabel("🔒");
+            btnLock.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 20));
+            btnLock.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-            container.add(pill);
-            return container;
+            actionsPanel.add(btnEdit);
+            actionsPanel.add(btnLock);
+            return actionsPanel;
         });
 
         JScrollPane scroll = new JScrollPane(table);
-        scroll.setBorder(BorderFactory.createCompoundBorder(
-                new EmptyBorder(2, 15, 6, 15),
-                BorderFactory.createLineBorder(COLOR_TABLE_GRID, 1)
-        ));
+        scroll.setBorder(BorderFactory.createLineBorder(COLOR_TABLE_GRID, 1));
         scroll.getViewport().setBackground(Color.WHITE);
-        panel.add(scroll, BorderLayout.CENTER);
 
-        return panel;
+        card.add(scroll, BorderLayout.CENTER);
+        return card;
     }
 
-    private JPanel createRendimientoCard() {
-        RoundedPanel panel = createBaseCard("Rendimiento", "Ventas por mesero");
-        panel.add(new BarChartPanel(), BorderLayout.CENTER);
-        return panel;
+    private JPanel createSummaryCardsRow() {
+        JPanel row = new JPanel(new GridLayout(1, 4, 15, 0));
+        row.setOpaque(false);
+
+        row.add(createMetricCard("Administradores", "2", COLOR_CARD_ADMIN, Color.WHITE));
+        row.add(createMetricCard("Cajeros", "15", COLOR_CARD_CAJEROS, Color.WHITE));
+        row.add(createMetricCard("Cajeros Activos", "11", COLOR_CARD_ACTIVOS, Color.WHITE));
+        row.add(createMetricCard("Cajeros Inactivos", "4", COLOR_CARD_INACTIVOS, Color.WHITE));
+
+        return row;
     }
 
-    private JPanel createTotalVentasCard() {
-        RoundedPanel panel = new RoundedPanel(20, COLOR_RED);
-        panel.setLayout(new GridBagLayout());
+    private JPanel createMetricCard(String titleText, String valueText, Color bg, Color textColor) {
+        RoundedPanel card = new RoundedPanel(20, bg);
+        card.setLayout(new GridBagLayout());
+
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0; gbc.gridy = 0;
-        gbc.insets = new Insets(0, 0, 15, 0);
+        gbc.insets = new Insets(0, 0, 8, 0);
 
-        JLabel title = new JLabel("Total de ventas hoy", SwingConstants.CENTER);
-        title.setForeground(Color.WHITE);
-        title.setFont(new Font("SansSerif", Font.BOLD, 24));
-        panel.add(title, gbc);
-
-        gbc.gridy = 1; gbc.insets = new Insets(0, 0, 0, 0);
-        JLabel val = new JLabel("Q5,005.67", SwingConstants.CENTER);
-        val.setForeground(Color.WHITE);
-        val.setFont(new Font("SansSerif", Font.BOLD, 52));
-        panel.add(val, gbc);
-
-        return panel;
-    }
-
-    private JPanel createPedidosAbiertosCard() {
-        RoundedPanel panel = new RoundedPanel(20, COLOR_YELLOW);
-        panel.setLayout(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridx = 0; gbc.gridy = 0;
-        gbc.insets = new Insets(0, 0, 15, 0);
-
-        JLabel title = new JLabel("Pedidos abiertos", SwingConstants.CENTER);
-        title.setForeground(Color.BLACK);
-        title.setFont(new Font("SansSerif", Font.BOLD, 24));
-        panel.add(title, gbc);
+        JLabel title = new JLabel(titleText, SwingConstants.CENTER);
+        title.setForeground(textColor);
+        title.setFont(new Font("SansSerif", Font.BOLD, 22));
+        card.add(title, gbc);
 
         gbc.gridy = 1; gbc.insets = new Insets(0, 0, 0, 0);
-        JLabel val = new JLabel("49", SwingConstants.CENTER);
-        val.setForeground(Color.BLACK);
-        val.setFont(new Font("SansSerif", Font.BOLD, 64));
-        panel.add(val, gbc);
+        JLabel val = new JLabel(valueText, SwingConstants.CENTER);
+        val.setForeground(textColor);
+        val.setFont(new Font("SansSerif", Font.BOLD, 48));
+        card.add(val, gbc);
 
-        return panel;
+        return card;
     }
 
-    private RoundedPanel createBaseCard(String titleText, String subtitleText) {
-        RoundedPanel panel = new RoundedPanel(20, COLOR_CARD_BG);
-        panel.setLayout(new BorderLayout());
-
-        JPanel headerPanel = new JPanel();
-        headerPanel.setOpaque(false);
-        headerPanel.setLayout(new BoxLayout(headerPanel, BoxLayout.Y_AXIS));
-        headerPanel.setBorder(new EmptyBorder(10, 16, 2, 16));
-
-        JLabel title = new JLabel(titleText);
-        title.setFont(new Font("SansSerif", Font.BOLD, 16));
-        title.setForeground(Color.BLACK);
-        headerPanel.add(title);
-
-        if (subtitleText != null && !subtitleText.isEmpty()) {
-            JLabel subtitle = new JLabel(subtitleText);
-            subtitle.setFont(new Font("SansSerif", Font.PLAIN, 13));
-            subtitle.setForeground(new Color(60, 60, 60));
-            headerPanel.add(subtitle);
-        }
-
-        panel.add(headerPanel, BorderLayout.NORTH);
-        return panel;
-    }
-
-    // --- GRÁFICAS DIBUJADAS A MEDIDA ---
-
-    private static class AreaChartPanel extends JPanel {
-        public AreaChartPanel() { 
-            setOpaque(false);
-            setBorder(new EmptyBorder(5, 12, 8, 12));
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            Graphics2D g2 = (Graphics2D) g;
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-            int w = getWidth(), h = getHeight();
-            int leftMargin = 28, bottomMargin = 18;
-            int chartW = w - leftMargin - 10, chartH = h - bottomMargin - 10;
-
-            // Cuadrícula y etiquetas Y
-            g2.setFont(new Font("SansSerif", Font.BOLD, 9));
-            String[] yLabels = {"200", "150", "100", "50", "0"};
-            for (int i = 0; i < 5; i++) {
-                int y = 10 + i * (chartH / 4);
-                g2.setColor(new Color(240, 240, 240));
-                g2.drawLine(leftMargin, y, w - 10, y);
-                g2.setColor(Color.BLACK);
-                g2.drawString(yLabels[i], 2, y + 3);
-            }
-
-            // Días X
-            String[] days = {"Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom"};
-            int stepX = chartW / (days.length - 1);
-            for (int i = 0; i < days.length; i++) {
-                int x = leftMargin + i * stepX;
-                g2.drawString(days[i], x - 6, h - 2);
-            }
-
-            // Puntos de datos y área rellenada con degradado
-            double[] values = {0.25, 0.74, 0.83, 0.28, 0.54, 0.48, 0.94};
-            Path2D path = new Path2D.Double();
-
-            int startX = leftMargin;
-            int startY = 10 + (int)((1.0 - values[0]) * chartH);
-            path.moveTo(startX, startY);
-
-            for (int i = 1; i < values.length; i++) {
-                int x = leftMargin + i * stepX;
-                int y = 10 + (int)((1.0 - values[i]) * chartH);
-                path.lineTo(x, y);
-            }
-
-            path.lineTo(leftMargin + (values.length - 1) * stepX, 10 + chartH);
-            path.lineTo(startX, 10 + chartH);
-            path.closePath();
-
-            // Aplicar degradado verde dinámico
-            GradientPaint gradient = new GradientPaint(
-                0, 10, COLOR_GREEN,
-                0, 10 + chartH, new Color(106, 161, 46, 100)
-            );
-            g2.setPaint(gradient);
-            g2.fill(path);
-
-            // Dibujar marcadores de punto de datos
-            g2.setColor(COLOR_GREEN.darker());
-            for (int i = 0; i < values.length; i++) {
-                int x = leftMargin + i * stepX;
-                int y = 10 + (int)((1.0 - values[i]) * chartH);
-                g2.fillOval(x - 3, y - 3, 6, 6);
-            }
-        }
-    }
-
-    private static class BarChartPanel extends JPanel {
-        public BarChartPanel() { 
-            setOpaque(false);
-            setBorder(new EmptyBorder(5, 12, 8, 12));
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            Graphics2D g2 = (Graphics2D) g;
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-            int w = getWidth(), h = getHeight();
-            int leftMargin = 28, bottomMargin = 18;
-            int chartW = w - leftMargin - 10, chartH = h - bottomMargin - 10;
-
-            g2.setFont(new Font("SansSerif", Font.BOLD, 9));
-            g2.setColor(Color.BLACK);
-            String[] yLabels = {"100", "80", "60", "40", "20", "0"};
-            for (int i = 0; i < yLabels.length; i++) {
-                int y = 10 + i * (chartH / 5);
-                g2.drawString(yLabels[i], 2, y + 3);
-            }
-
-            String[] names = {"Ana", "Luis", "Carlos"};
-            double[] values = {0.79, 0.45, 0.84};
-
-            int numBars = names.length;
-            int gap = 16;
-            int barWidth = (chartW - (numBars + 1) * gap) / numBars;
-
-            for (int i = 0; i < numBars; i++) {
-                int x = leftMargin + gap + i * (barWidth + gap);
-                int barH = (int)(values[i] * chartH);
-                int y = 10 + (chartH - barH);
-
-                g2.setColor(COLOR_GREEN);
-                g2.fillRoundRect(x, y, barWidth, barH, 10, 10);
-
-                g2.setColor(Color.BLACK);
-                FontMetrics fm = g2.getFontMetrics();
-                int textW = fm.stringWidth(names[i]);
-                g2.drawString(names[i], x + (barWidth - textW) / 2, h - 2);
-            }
-        }
-    }
-
-    // --- CLASE DE ICONOS VECTORIALES PARA LA BARRA LATERAL ---
+    // --- CLASE DE ICONOS VECTORIALES PARA LA BARRA LATERAL (idéntica a dashboardAdmin) ---
     private static class SidebarVectorIcon implements Icon {
         public enum IconType { EMPLOYEES, MENU, ORDERS, REPORTS, CASH, SETTINGS, SECURITY }
 
@@ -621,7 +519,7 @@ public class dashboardAdmin extends JFrame {
             g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
             g2.translate(x, y);
             g2.setColor(Color.WHITE);
-            
+
             float scale = size / 32.0f;
             g2.scale(scale, scale);
 
@@ -699,6 +597,7 @@ public class dashboardAdmin extends JFrame {
         }
     }
 
+    // --- COMPONENTE DE PANEL REDONDEADO (con fondo mutable, igual que dashboardAdmin) ---
     private static class RoundedPanel extends JPanel {
         private final int cornerRadius;
         private Color backgroundColor;
@@ -729,7 +628,7 @@ public class dashboardAdmin extends JFrame {
         } catch (Exception ignored) {}
 
         SwingUtilities.invokeLater(() -> {
-            dashboardAdmin app = new dashboardAdmin();
+            gestionEmpleados app = new gestionEmpleados();
             app.setVisible(true);
         });
     }
