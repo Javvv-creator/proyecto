@@ -2,21 +2,31 @@ package gui;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
+import javax.swing.table.TableRowSorter;
 import java.awt.*;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Path2D;
 import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
+import java.util.regex.Pattern;
+import main.Crud.crud;
+import java.util.List;
 
 public class gestionEmpleados extends JFrame {
 
-    // Paleta de colores exacta extraída del diseño (idéntica a dashboardAdmin)
+    // Paleta de colores exacta
     private static final Color COLOR_BG = new Color(231, 221, 202);
     private static final Color COLOR_SIDEBAR = new Color(139, 94, 52);
     private static final Color COLOR_HEADER = new Color(139, 94, 52);
@@ -36,10 +46,23 @@ public class gestionEmpleados extends JFrame {
     private static final Color COLOR_CARD_ACTIVOS = new Color(106, 161, 46);
     private static final Color COLOR_CARD_INACTIVOS = new Color(211, 53, 58);
 
-    private int selectedMenuIndex = 0; // "Gestión de empleados" seleccionado por defecto en esta vista
+    private int selectedMenuIndex = 0;
     private JPanel[] menuButtons;
     private JLabel lblClock;
     private JLabel lblDate;
+
+    // Componentes para la funcionalidad dinámica
+    private DefaultTableModel model;
+    private TableRowSorter<DefaultTableModel> rowSorter;
+    private JTextField txtSearch;
+    private JComboBox<String> cbRoles;
+    private static final String PLACEHOLDER_TEXT = "Buscar por nombre o código";
+
+    // Labels de las tarjetas de métricas
+    private JLabel lblValAdmin;
+    private JLabel lblValCajeros;
+    private JLabel lblValActivos;
+    private JLabel lblValInactivos;
 
     public gestionEmpleados() {
         setTitle("GIT & EAT! - Gestión de Empleados");
@@ -51,7 +74,7 @@ public class gestionEmpleados extends JFrame {
         mainContainer.setBackground(COLOR_BG);
         mainContainer.setBorder(new EmptyBorder(15, 15, 15, 15));
 
-        // 1. BARRA LATERAL (idéntica a dashboardAdmin)
+        // 1. BARRA LATERAL
         mainContainer.add(createSidebarPanel(), BorderLayout.WEST);
 
         // 2. PANEL CENTRAL (HEADER + CONTENIDO)
@@ -65,18 +88,15 @@ public class gestionEmpleados extends JFrame {
         add(mainContainer);
 
         startLiveClock();
+        cargarEmpleadosDesdeBD(); // Carga usuarios reales de la BD (ya calcula los totales)
     }
 
-    // ==========================================
-    // --- BARRA LATERAL (REPLICA EXACTA DE DASHBOARDADMIN) ---
-    // ==========================================
     private JPanel createSidebarPanel() {
         RoundedPanel sidebar = new RoundedPanel(25, COLOR_SIDEBAR);
         sidebar.setLayout(new BorderLayout(0, 15));
         sidebar.setPreferredSize(new Dimension(320, 0));
         sidebar.setBorder(new EmptyBorder(15, 15, 20, 15));
 
-        // Tarjeta contenedora blanca para el logo (clic = volver al Dashboard)
         RoundedPanel logoCard = new RoundedPanel(20, Color.WHITE);
         logoCard.setPreferredSize(new Dimension(290, 140));
         logoCard.setLayout(new GridBagLayout());
@@ -86,15 +106,14 @@ public class gestionEmpleados extends JFrame {
         logoCard.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                dashboardAdmin app = new dashboardAdmin();
-                app.setVisible(true);
+                // Si tienes dashboardAdmin descomenta estas líneas:
+                // dashboardAdmin app = new dashboardAdmin();
+                // app.setVisible(true);
                 dispose();
             }
         });
         sidebar.add(logoCard, BorderLayout.NORTH);
 
-        // Menú de navegación con íconos vectoriales HD estilizados (igual que
-        // dashboardAdmin)
         JPanel menuPanel = new JPanel(new GridLayout(7, 1, 0, 8));
         menuPanel.setOpaque(false);
 
@@ -123,7 +142,6 @@ public class gestionEmpleados extends JFrame {
             btnPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 15, 8));
 
             JLabel iconLbl = createSidebarIconLabel(iconType, iconPath);
-
             JLabel textLbl = new JLabel(textHtml);
             textLbl.setFont(new Font("SansSerif", Font.BOLD, 17));
             textLbl.setForeground(Color.WHITE);
@@ -152,16 +170,11 @@ public class gestionEmpleados extends JFrame {
                 @Override
                 public void mouseClicked(MouseEvent e) {
                     if (index == 0) {
-                        // Ya estamos en la ventana de Gestión de Empleados
                         selectedMenuIndex = index;
                         updateSidebarSelection();
                         return;
                     }
-                    // Las demás ventanas todavía no existen
-                    JOptionPane.showMessageDialog(
-                            gestionEmpleados.this,
-                            "aun no  JAJAJAJAJA.",
-                            "........",
+                    JOptionPane.showMessageDialog(gestionEmpleados.this, "Sección en desarrollo.", "Información",
                             JOptionPane.INFORMATION_MESSAGE);
                 }
             });
@@ -193,11 +206,7 @@ public class gestionEmpleados extends JFrame {
     private void updateSidebarSelection() {
         for (int i = 0; i < menuButtons.length; i++) {
             RoundedPanel btn = (RoundedPanel) menuButtons[i];
-            if (i == selectedMenuIndex) {
-                btn.setBackgroundColor(COLOR_SIDEBAR_ACTIVE);
-            } else {
-                btn.setBackgroundColor(COLOR_SIDEBAR);
-            }
+            btn.setBackgroundColor(i == selectedMenuIndex ? COLOR_SIDEBAR_ACTIVE : COLOR_SIDEBAR);
             btn.repaint();
         }
     }
@@ -229,7 +238,6 @@ public class gestionEmpleados extends JFrame {
         return lblLogo;
     }
 
-    // vista
     private JPanel createHeaderPanel() {
         RoundedPanel header = new RoundedPanel(20, COLOR_HEADER);
         header.setLayout(new BorderLayout());
@@ -241,7 +249,6 @@ public class gestionEmpleados extends JFrame {
         title.setForeground(Color.WHITE);
         header.add(title, BorderLayout.WEST);
 
-        // Panel Derecho: Hora en vivo + Controles
         JPanel rightHeader = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 10));
         rightHeader.setOpaque(false);
 
@@ -260,7 +267,6 @@ public class gestionEmpleados extends JFrame {
         timePanel.add(lblDate);
         rightHeader.add(timePanel);
 
-        // Botón de actualización rápida
         JButton btnRefresh = new JButton("🔄");
         btnRefresh.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 20));
         btnRefresh.setFocusPainted(false);
@@ -272,7 +278,6 @@ public class gestionEmpleados extends JFrame {
         rightHeader.add(btnRefresh);
 
         header.add(rightHeader, BorderLayout.EAST);
-
         return header;
     }
 
@@ -327,7 +332,7 @@ public class gestionEmpleados extends JFrame {
         gbc.insets = new Insets(0, 0, 0, 15);
         gbc.weighty = 1.0;
 
-        // 1. Campo Búsqueda (Verde)
+        // 1. Campo Búsqueda (Verde) con Placeholder Real
         RoundedPanel searchPill = new RoundedPanel(20, COLOR_SEARCH);
         searchPill.setLayout(new BorderLayout(10, 0));
         searchPill.setBorder(new EmptyBorder(8, 15, 8, 15));
@@ -336,12 +341,49 @@ public class gestionEmpleados extends JFrame {
         searchIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 18));
         searchIcon.setForeground(Color.WHITE);
 
-        JTextField txtSearch = new JTextField("Buscar por nombre o código");
+        txtSearch = new JTextField(PLACEHOLDER_TEXT);
         txtSearch.setOpaque(false);
         txtSearch.setBorder(null);
-        txtSearch.setForeground(Color.WHITE);
+        txtSearch.setForeground(new Color(230, 230, 230)); // Tono traslúcido para placeholder
         txtSearch.setFont(new Font("SansSerif", Font.BOLD, 18));
         txtSearch.setCaretColor(Color.WHITE);
+
+        // Lógica de Placeholder mediante FocusListener
+        txtSearch.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (txtSearch.getText().equals(PLACEHOLDER_TEXT)) {
+                    txtSearch.setText("");
+                    txtSearch.setForeground(Color.WHITE);
+                }
+            }
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (txtSearch.getText().trim().isEmpty()) {
+                    txtSearch.setText(PLACEHOLDER_TEXT);
+                    txtSearch.setForeground(new Color(230, 230, 230));
+                }
+            }
+        });
+
+        // Escuchar cambios de texto en tiempo real
+        txtSearch.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                applyFilters();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                applyFilters();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                applyFilters();
+            }
+        });
 
         searchPill.add(searchIcon, BorderLayout.WEST);
         searchPill.add(txtSearch, BorderLayout.CENTER);
@@ -355,13 +397,14 @@ public class gestionEmpleados extends JFrame {
         comboPill.setLayout(new BorderLayout());
         comboPill.setBorder(new EmptyBorder(5, 15, 5, 15));
 
-        JComboBox<String> cbRoles = new JComboBox<>(new String[] { "Todos los roles", "Administrador", "Cajero" });
+        cbRoles = new JComboBox<>(new String[] { "Todos los roles", "Administrador", "Cajero" });
         cbRoles.setOpaque(false);
         cbRoles.setBackground(COLOR_COMBO);
         cbRoles.setForeground(Color.WHITE);
         cbRoles.setFont(new Font("SansSerif", Font.BOLD, 18));
         cbRoles.setBorder(BorderFactory.createEmptyBorder());
         cbRoles.setFocusable(false);
+        cbRoles.addActionListener(e -> applyFilters());
 
         comboPill.add(cbRoles, BorderLayout.CENTER);
 
@@ -379,35 +422,20 @@ public class gestionEmpleados extends JFrame {
         lblNuevo.setFont(new Font("SansSerif", Font.BOLD, 18));
         btnPill.add(lblNuevo);
 
-        // =======================================================
-        // CÓDIGO PARA ABRIR LA VENTANA EMERGENTE
-        // =======================================================
         btnPill.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                // 1. Instanciamos el diálogo modal pasándole el Frame actual
                 nuevoEmpleadoDialog modal = new nuevoEmpleadoDialog(gestionEmpleados.this);
-
-                // 2. Lo hacemos visible (bloqueará la ventana principal hasta que se cierre)
                 modal.setVisible(true);
 
-                // 3. Al cerrarse, verificamos si el usuario presionó "Guardar empleado"
                 if (modal.isGuardado()) {
-                    String nombre = modal.getNombre();
-                    String rol = modal.getRol();
-                    String contrasena = modal.getContrasena();
-                    String turno = modal.getTurno();
-                    boolean activo = modal.isActivo();
-
-                    // Aquí puedes agregar la lógica para guardar en BD o agregar a la tabla
-                    System.out.println("Empleado guardado:");
-                    System.out.println("Nombre: " + nombre);
-                    System.out.println("Rol: " + rol);
-                    System.out.println("Turno: " + turno);
-                    System.out.println("Estado: " + (activo ? "Activo" : "Inactivo"));
+                    // El diálogo ya insertó el usuario en la BD.
+                    // Solo refrescamos la tabla con los datos reales.
+                    cargarEmpleadosDesdeBD();
                 }
             }
         });
+
         gbc.gridx = 2;
         gbc.weightx = 0.25;
         gbc.insets = new Insets(0, 0, 0, 0);
@@ -422,13 +450,8 @@ public class gestionEmpleados extends JFrame {
         card.setBorder(new EmptyBorder(12, 12, 12, 12));
 
         String[] columns = { "Empleado", "Código", "Rol", "Estado", "Acciones" };
-        Object[][] data = {
-                { "Ana López", "CAJ-014", "Cajero", "Activo", "" },
-                { "Marco Ramirez", "ADM-002", "Administrador", "Activo", "" },
-                { "Julia Pérez", "CAJ-009", "Cajero", "Inactivo", "" }
-        };
 
-        DefaultTableModel model = new DefaultTableModel(data, columns) {
+        model = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -441,6 +464,10 @@ public class gestionEmpleados extends JFrame {
         table.setGridColor(COLOR_TABLE_GRID);
         table.setIntercellSpacing(new Dimension(1, 1));
         table.setFont(new Font("SansSerif", Font.PLAIN, 16));
+
+        // Inicializar el Sorter para búsquedas y filtros
+        rowSorter = new TableRowSorter<>(model);
+        table.setRowSorter(rowSorter);
 
         // Header de la Tabla
         JTableHeader header = table.getTableHeader();
@@ -485,11 +512,9 @@ public class gestionEmpleados extends JFrame {
 
             JLabel btnEdit = new JLabel("📝");
             btnEdit.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 20));
-            btnEdit.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
             JLabel btnLock = new JLabel("🔒");
             btnLock.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 20));
-            btnLock.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
             actionsPanel.add(btnEdit);
             actionsPanel.add(btnLock);
@@ -504,19 +529,51 @@ public class gestionEmpleados extends JFrame {
         return card;
     }
 
+    // Método para aplicar los filtros combinados de búsqueda y rol
+    private void applyFilters() {
+        String searchText = txtSearch.getText().trim();
+        String selectedRole = (String) cbRoles.getSelectedItem();
+
+        List<RowFilter<DefaultTableModel, Object>> filters = new ArrayList<>();
+
+        // Filtro por texto si no es el placeholder ni está vacío
+        if (!searchText.isEmpty() && !searchText.equals(PLACEHOLDER_TEXT)) {
+            // Busca coincidencia en columna 0 (Nombre) o columna 1 (Código) sin importar
+            // mayúsculas/minúsculas
+            filters.add(RowFilter.regexFilter("(?i)" + Pattern.quote(searchText), 0, 1));
+        }
+
+        // Filtro por Rol (columna 2)
+        if (selectedRole != null && !selectedRole.equals("Todos los roles")) {
+            filters.add(RowFilter.regexFilter("^" + Pattern.quote(selectedRole) + "$", 2));
+        }
+
+        // Aplicar los filtros
+        if (filters.isEmpty()) {
+            rowSorter.setRowFilter(null);
+        } else {
+            rowSorter.setRowFilter(RowFilter.andFilter(filters));
+        }
+    }
+
     private JPanel createSummaryCardsRow() {
         JPanel row = new JPanel(new GridLayout(1, 4, 15, 0));
         row.setOpaque(false);
 
-        row.add(createMetricCard("Administradores", "2", COLOR_CARD_ADMIN, Color.WHITE));
-        row.add(createMetricCard("Cajeros", "15", COLOR_CARD_CAJEROS, Color.WHITE));
-        row.add(createMetricCard("Cajeros Activos", "11", COLOR_CARD_ACTIVOS, Color.WHITE));
-        row.add(createMetricCard("Cajeros Inactivos", "4", COLOR_CARD_INACTIVOS, Color.WHITE));
+        lblValAdmin = new JLabel("0", SwingConstants.CENTER);
+        lblValCajeros = new JLabel("0", SwingConstants.CENTER);
+        lblValActivos = new JLabel("0", SwingConstants.CENTER);
+        lblValInactivos = new JLabel("0", SwingConstants.CENTER);
+
+        row.add(createMetricCard("Administradores", lblValAdmin, COLOR_CARD_ADMIN, Color.WHITE));
+        row.add(createMetricCard("Cajeros", lblValCajeros, COLOR_CARD_CAJEROS, Color.WHITE));
+        row.add(createMetricCard("Cajeros Activos", lblValActivos, COLOR_CARD_ACTIVOS, Color.WHITE));
+        row.add(createMetricCard("Cajeros Inactivos", lblValInactivos, COLOR_CARD_INACTIVOS, Color.WHITE));
 
         return row;
     }
 
-    private JPanel createMetricCard(String titleText, String valueText, Color bg, Color textColor) {
+    private JPanel createMetricCard(String titleText, JLabel valLabel, Color bg, Color textColor) {
         RoundedPanel card = new RoundedPanel(20, bg);
         card.setLayout(new GridBagLayout());
 
@@ -532,16 +589,53 @@ public class gestionEmpleados extends JFrame {
 
         gbc.gridy = 1;
         gbc.insets = new Insets(0, 0, 0, 0);
-        JLabel val = new JLabel(valueText, SwingConstants.CENTER);
-        val.setForeground(textColor);
-        val.setFont(new Font("SansSerif", Font.BOLD, 48));
-        card.add(val, gbc);
+        valLabel.setForeground(textColor);
+        valLabel.setFont(new Font("SansSerif", Font.BOLD, 48));
+        card.add(valLabel, gbc);
 
         return card;
     }
 
-    // --- CLASE DE ICONOS VECTORIALES PARA LA BARRA LATERAL (idéntica a
-    // dashboardAdmin) ---
+    // Recalcula los totales inferiores escaneando las filas de la tabla
+    private void updateSummaryMetrics() {
+        int admins = 0;
+        int cajeros = 0;
+        int cajerosActivos = 0;
+        int cajerosInactivos = 0;
+
+        for (int i = 0; i < model.getRowCount(); i++) {
+            String rol = (String) model.getValueAt(i, 2);
+            String estado = (String) model.getValueAt(i, 3);
+
+            if ("Administrador".equalsIgnoreCase(rol)) {
+                admins++;
+            } else if ("Cajero".equalsIgnoreCase(rol)) {
+                cajeros++;
+                if ("Activo".equalsIgnoreCase(estado)) {
+                    cajerosActivos++;
+                } else {
+                    cajerosInactivos++;
+                }
+            }
+        }
+
+        lblValAdmin.setText(String.valueOf(admins));
+        lblValCajeros.setText(String.valueOf(cajeros));
+        lblValActivos.setText(String.valueOf(cajerosActivos));
+        lblValInactivos.setText(String.valueOf(cajerosInactivos));
+    }
+
+    // Carga la tabla directamente desde la base de datos
+    private void cargarEmpleadosDesdeBD() {
+        List<Object[]> filas = crud.listarUsuariosTabla();
+        model.setRowCount(0); // limpia cualquier dato previo (incluye datos de ejemplo)
+        for (Object[] fila : filas) {
+            model.addRow(fila);
+        }
+        updateSummaryMetrics();
+    }
+
+    // --- CLASE DE ICONOS VECTORIALES PARA LA BARRA LATERAL ---
     private static class SidebarVectorIcon implements Icon {
         public enum IconType {
             EMPLOYEES, MENU, ORDERS, REPORTS, CASH, SETTINGS, SECURITY
@@ -577,21 +671,19 @@ public class gestionEmpleados extends JFrame {
             g2.scale(scale, scale);
 
             switch (type) {
-                case EMPLOYEES: // Empleados (Icono de usuarios/avatars)
+                case EMPLOYEES:
                     g2.fillOval(10, 3, 12, 12);
                     g2.fillArc(4, 16, 24, 18, 0, 180);
                     g2.setColor(new Color(255, 255, 255, 180));
                     g2.fillOval(20, 6, 8, 8);
                     g2.fillArc(17, 15, 14, 12, 0, 180);
                     break;
-
-                case MENU: // Productos / Menú (Icono de Hamburguesa estilizada)
+                case MENU:
                     g2.fillArc(3, 5, 26, 14, 0, 180);
                     g2.fillRoundRect(2, 14, 28, 4, 2, 2);
                     g2.fillRoundRect(4, 20, 24, 6, 3, 3);
                     break;
-
-                case ORDERS: // Pedidos (Icono de Portapapeles / Lista)
+                case ORDERS:
                     g2.setStroke(new BasicStroke(2.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                     g2.drawRoundRect(5, 5, 22, 24, 4, 4);
                     g2.fillRoundRect(11, 3, 10, 4, 2, 2);
@@ -599,14 +691,12 @@ public class gestionEmpleados extends JFrame {
                     g2.drawLine(9, 17, 23, 17);
                     g2.drawLine(9, 22, 18, 22);
                     break;
-
-                case REPORTS: // Reportes (Gráfico de Barras con Tendencia)
+                case REPORTS:
                     g2.fillRoundRect(4, 18, 6, 10, 2, 2);
                     g2.fillRoundRect(13, 12, 6, 16, 2, 2);
                     g2.fillRoundRect(22, 6, 6, 22, 2, 2);
                     break;
-
-                case CASH: // Caja (Icono de Billete / Moneda con símbolo de Quetzal 'Q')
+                case CASH:
                     g2.setStroke(new BasicStroke(2.0f));
                     g2.drawRoundRect(3, 7, 26, 18, 4, 4);
                     g2.drawOval(11, 11, 10, 10);
@@ -614,8 +704,7 @@ public class gestionEmpleados extends JFrame {
                     FontMetrics fm = g2.getFontMetrics();
                     g2.drawString("Q", 16 - fm.stringWidth("Q") / 2, 19);
                     break;
-
-                case SETTINGS: // Configuración (Engranaje)
+                case SETTINGS:
                     g2.setStroke(new BasicStroke(2.5f));
                     g2.drawOval(10, 10, 12, 12);
                     for (int i = 0; i < 8; i++) {
@@ -627,8 +716,7 @@ public class gestionEmpleados extends JFrame {
                         g2.drawLine(x1, y1, x2, y2);
                     }
                     break;
-
-                case SECURITY: // Seguridad (Escudo con Checkmark)
+                case SECURITY:
                     Path2D shield = new Path2D.Double();
                     shield.moveTo(16, 3);
                     shield.curveTo(24, 3, 27, 5, 27, 13);
@@ -650,8 +738,7 @@ public class gestionEmpleados extends JFrame {
         }
     }
 
-    // --- COMPONENTE DE PANEL REDONDEADO (con fondo mutable, igual que
-    // dashboardAdmin) ---
+    // --- COMPONENTE DE PANEL REDONDEADO ---
     private static class RoundedPanel extends JPanel {
         private final int cornerRadius;
         private Color backgroundColor;
