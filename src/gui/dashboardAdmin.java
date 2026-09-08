@@ -1,9 +1,5 @@
 package gui;
 
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -11,11 +7,17 @@ import java.awt.geom.Path2D;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
+import main.Crud.crud;
 
 /**
- * Dashboard Administrador - GIT & EAT!
- * Aplicación Java Swing con diseño moderno, interactividad, reloj en vivo e íconos HD.
+ * Dashboard Administrador - GIT & EAT! Aplicación Java Swing con diseño
+ * moderno, interactividad, reloj en vivo e íconos HD.
  */
 public class dashboardAdmin extends JFrame {
 
@@ -190,7 +192,7 @@ public class dashboardAdmin extends JFrame {
         if (logoUrl == null) {
             logoUrl = getClass().getResource("/images/logo.png");
         }
-        
+
         if (logoUrl != null) {
             ImageIcon icon = new ImageIcon(logoUrl);
             Image img = icon.getImage();
@@ -205,8 +207,8 @@ public class dashboardAdmin extends JFrame {
                 lblLogo.setIcon(icon);
             }
         } else {
-            lblLogo.setText("<html><center><font size='7' color='#6EA32E'><b>&lt; 🍴 &gt;</b></font><br>" +
-                    "<font size='5'><b color='#6EA32E'>GIT & </b><b color='#D13941'>EAT!</b></font></center></html>");
+            lblLogo.setText("<html><center><font size='7' color='#6EA32E'><b>&lt; 🍴 &gt;</b></font><br>"
+                    + "<font size='5'><b color='#6EA32E'>GIT & </b><b color='#D13941'>EAT!</b></font></center></html>");
         }
         return lblLogo;
     }
@@ -279,15 +281,21 @@ public class dashboardAdmin extends JFrame {
 
         // Fila 1: Empleados de hoy + Ventas Semanales
         gbc.gridy = 0;
-        gbc.gridx = 0; gbc.weightx = 0.55; gbc.weighty = 0.30;
+        gbc.gridx = 0;
+        gbc.weightx = 0.55;
+        gbc.weighty = 0.30;
         body.add(createEmpleadosCard(), gbc);
 
-        gbc.gridx = 1; gbc.weightx = 0.45;
+        gbc.gridx = 1;
+        gbc.weightx = 0.45;
         body.add(createVentasSemanalesCard(), gbc);
 
         // Fila 2: Pedidos Recientes
-        gbc.gridy = 1; gbc.gridx = 0;
-        gbc.gridwidth = 2; gbc.weightx = 1.0; gbc.weighty = 0.14;
+        gbc.gridy = 1;
+        gbc.gridx = 0;
+        gbc.gridwidth = 2;
+        gbc.weightx = 1.0;
+        gbc.weighty = 0.14;
         body.add(createPedidosRecientesCard(), gbc);
 
         // Fila 3: Tarjetas Inferiores
@@ -297,28 +305,72 @@ public class dashboardAdmin extends JFrame {
         bottomRow.add(createTotalVentasCard());
         bottomRow.add(createPedidosAbiertosCard());
 
-        gbc.gridy = 2; gbc.gridx = 0;
-        gbc.gridwidth = 2; gbc.weighty = 0.56;
+        gbc.gridy = 2;
+        gbc.gridx = 0;
+        gbc.gridwidth = 2;
+        gbc.weighty = 0.56;
         body.add(bottomRow, gbc);
 
         return body;
     }
 
     // --- CARDS ESPECÍFICAS ---
-
     private JPanel createEmpleadosCard() {
         RoundedPanel panel = createBaseCard("Empleados de hoy", null);
 
-        JPanel listPanel = new JPanel(new GridLayout(3, 1, 0, 8));
+        JPanel listPanel = new JPanel();
+        listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
         listPanel.setOpaque(false);
         listPanel.setBorder(new EmptyBorder(6, 15, 10, 15));
 
-        listPanel.add(createEmployeePill("Karla Patal - Cajera", "Mañana", COLOR_GREEN));
-        listPanel.add(createEmployeePill("Javier Top - Cajero", "Tarde", COLOR_YELLOW));
-        listPanel.add(createEmployeePill("Luis Muñoz - Cajero", "Noche", COLOR_RED));
+        List<Object[]> empleados = crud.listarEmpleadosPorTurno();
 
-        panel.add(listPanel, BorderLayout.CENTER);
+        if (empleados.isEmpty()) {
+            JLabel lblVacio = new JLabel("No hay empleados registrados.");
+            lblVacio.setFont(new Font("SansSerif", Font.PLAIN, 13));
+            lblVacio.setForeground(Color.GRAY);
+            listPanel.add(lblVacio);
+        } else {
+            for (int i = 0; i < empleados.size(); i++) {
+                Object[] empleado = empleados.get(i);
+                String nombreCompleto = (String) empleado[0];
+                String rol = (String) empleado[1];
+                String turno = (String) empleado[2];
+
+                String etiqueta = nombreCompleto + " - " + rol;
+                listPanel.add(createEmployeePill(etiqueta, turno, colorPorTurno(turno)));
+
+                if (i < empleados.size() - 1) {
+                    listPanel.add(Box.createVerticalStrut(8));
+                }
+            }
+        }
+
+        JScrollPane scroll = new JScrollPane(listPanel);
+        scroll.setBorder(null);
+        scroll.setOpaque(false);
+        scroll.getViewport().setOpaque(false);
+        scroll.getVerticalScrollBar().setUnitIncrement(16);
+
+        panel.add(scroll, BorderLayout.CENTER);
         return panel;
+    }
+
+// Asigna un color según el turno del empleado (Mañana/Tarde/Noche)
+    private Color colorPorTurno(String turno) {
+        if (turno == null) {
+            return COLOR_SIDEBAR;
+        }
+        switch (turno.trim().toLowerCase()) {
+            case "mañana":
+                return COLOR_GREEN;
+            case "tarde":
+                return COLOR_YELLOW;
+            case "noche":
+                return COLOR_RED;
+            default:
+                return COLOR_SIDEBAR;
+        }
     }
 
     private JPanel createEmployeePill(String name, String shift, Color bg) {
@@ -357,7 +409,9 @@ public class dashboardAdmin extends JFrame {
 
         DefaultTableModel model = new DefaultTableModel(data, columns) {
             @Override
-            public boolean isCellEditable(int row, int column) { return false; }
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
         };
 
         JTable table = new JTable(model);
@@ -413,7 +467,8 @@ public class dashboardAdmin extends JFrame {
         RoundedPanel panel = new RoundedPanel(20, COLOR_RED);
         panel.setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridx = 0; gbc.gridy = 0;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
         gbc.insets = new Insets(0, 0, 15, 0);
 
         JLabel title = new JLabel("Total de ventas hoy", SwingConstants.CENTER);
@@ -421,7 +476,8 @@ public class dashboardAdmin extends JFrame {
         title.setFont(new Font("SansSerif", Font.BOLD, 24));
         panel.add(title, gbc);
 
-        gbc.gridy = 1; gbc.insets = new Insets(0, 0, 0, 0);
+        gbc.gridy = 1;
+        gbc.insets = new Insets(0, 0, 0, 0);
         JLabel val = new JLabel("Q5,005.67", SwingConstants.CENTER);
         val.setForeground(Color.WHITE);
         val.setFont(new Font("SansSerif", Font.BOLD, 52));
@@ -434,7 +490,8 @@ public class dashboardAdmin extends JFrame {
         RoundedPanel panel = new RoundedPanel(20, COLOR_YELLOW);
         panel.setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridx = 0; gbc.gridy = 0;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
         gbc.insets = new Insets(0, 0, 15, 0);
 
         JLabel title = new JLabel("Pedidos abiertos", SwingConstants.CENTER);
@@ -442,7 +499,8 @@ public class dashboardAdmin extends JFrame {
         title.setFont(new Font("SansSerif", Font.BOLD, 24));
         panel.add(title, gbc);
 
-        gbc.gridy = 1; gbc.insets = new Insets(0, 0, 0, 0);
+        gbc.gridy = 1;
+        gbc.insets = new Insets(0, 0, 0, 0);
         JLabel val = new JLabel("49", SwingConstants.CENTER);
         val.setForeground(Color.BLACK);
         val.setFont(new Font("SansSerif", Font.BOLD, 64));
@@ -477,9 +535,9 @@ public class dashboardAdmin extends JFrame {
     }
 
     // --- GRÁFICAS DIBUJADAS A MEDIDA ---
-
     private static class AreaChartPanel extends JPanel {
-        public AreaChartPanel() { 
+
+        public AreaChartPanel() {
             setOpaque(false);
             setBorder(new EmptyBorder(5, 12, 8, 12));
         }
@@ -518,12 +576,12 @@ public class dashboardAdmin extends JFrame {
             Path2D path = new Path2D.Double();
 
             int startX = leftMargin;
-            int startY = 10 + (int)((1.0 - values[0]) * chartH);
+            int startY = 10 + (int) ((1.0 - values[0]) * chartH);
             path.moveTo(startX, startY);
 
             for (int i = 1; i < values.length; i++) {
                 int x = leftMargin + i * stepX;
-                int y = 10 + (int)((1.0 - values[i]) * chartH);
+                int y = 10 + (int) ((1.0 - values[i]) * chartH);
                 path.lineTo(x, y);
             }
 
@@ -533,8 +591,8 @@ public class dashboardAdmin extends JFrame {
 
             // Aplicar degradado verde dinámico
             GradientPaint gradient = new GradientPaint(
-                0, 10, COLOR_GREEN,
-                0, 10 + chartH, new Color(106, 161, 46, 100)
+                    0, 10, COLOR_GREEN,
+                    0, 10 + chartH, new Color(106, 161, 46, 100)
             );
             g2.setPaint(gradient);
             g2.fill(path);
@@ -543,14 +601,15 @@ public class dashboardAdmin extends JFrame {
             g2.setColor(COLOR_GREEN.darker());
             for (int i = 0; i < values.length; i++) {
                 int x = leftMargin + i * stepX;
-                int y = 10 + (int)((1.0 - values[i]) * chartH);
+                int y = 10 + (int) ((1.0 - values[i]) * chartH);
                 g2.fillOval(x - 3, y - 3, 6, 6);
             }
         }
     }
 
     private static class BarChartPanel extends JPanel {
-        public BarChartPanel() { 
+
+        public BarChartPanel() {
             setOpaque(false);
             setBorder(new EmptyBorder(5, 12, 8, 12));
         }
@@ -582,7 +641,7 @@ public class dashboardAdmin extends JFrame {
 
             for (int i = 0; i < numBars; i++) {
                 int x = leftMargin + gap + i * (barWidth + gap);
-                int barH = (int)(values[i] * chartH);
+                int barH = (int) (values[i] * chartH);
                 int y = 10 + (chartH - barH);
 
                 g2.setColor(COLOR_GREEN);
@@ -598,7 +657,10 @@ public class dashboardAdmin extends JFrame {
 
     // --- CLASE DE ICONOS VECTORIALES PARA LA BARRA LATERAL ---
     private static class SidebarVectorIcon implements Icon {
-        public enum IconType { EMPLOYEES, MENU, ORDERS, REPORTS, CASH, SETTINGS, SECURITY }
+
+        public enum IconType {
+            EMPLOYEES, MENU, ORDERS, REPORTS, CASH, SETTINGS, SECURITY
+        }
 
         private final IconType type;
         private final int size;
@@ -609,10 +671,14 @@ public class dashboardAdmin extends JFrame {
         }
 
         @Override
-        public int getIconWidth() { return size; }
+        public int getIconWidth() {
+            return size;
+        }
 
         @Override
-        public int getIconHeight() { return size; }
+        public int getIconHeight() {
+            return size;
+        }
 
         @Override
         public void paintIcon(Component c, Graphics g, int x, int y) {
@@ -621,7 +687,7 @@ public class dashboardAdmin extends JFrame {
             g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
             g2.translate(x, y);
             g2.setColor(Color.WHITE);
-            
+
             float scale = size / 32.0f;
             g2.scale(scale, scale);
 
@@ -700,6 +766,7 @@ public class dashboardAdmin extends JFrame {
     }
 
     private static class RoundedPanel extends JPanel {
+
         private final int cornerRadius;
         private Color backgroundColor;
 
@@ -726,7 +793,8 @@ public class dashboardAdmin extends JFrame {
     public static void main(String[] args) {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
 
         SwingUtilities.invokeLater(() -> {
             dashboardAdmin app = new dashboardAdmin();

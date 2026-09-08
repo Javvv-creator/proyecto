@@ -1,6 +1,5 @@
 package main.Crud;
 
-import main.Conexion.Conexion;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -9,6 +8,7 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
+import main.Conexion.Conexion;
 
 public class crud {
 
@@ -18,13 +18,11 @@ public class crud {
     // ==========================================
     // 1. CRUD CATEGORIA (CREAR, VER, EDITAR Y ELIMINAR)
     // ==========================================
-
     // CREAR CATEGORIA
     public static boolean crearCategoria(String nombre, String descripcion, int estado) {
         String sql = "INSERT INTO categoria (nombre, descripcion, estado) VALUES (?, ?, ?)";
 
-        try (Connection conn = conexionDB.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = conexionDB.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, nombre);
             stmt.setString(2, descripcion);
@@ -42,9 +40,7 @@ public class crud {
     public static void verCategorias() {
         String sql = "SELECT id_categoria, nombre, descripcion, estado FROM categoria";
 
-        try (Connection conn = conexionDB.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql);
-                ResultSet rs = stmt.executeQuery()) {
+        try (Connection conn = conexionDB.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
 
             System.out.println("\n--- LISTA DE CATEGORÍAS ---");
 
@@ -75,8 +71,7 @@ public class crud {
                 + "estado = ? "
                 + "WHERE id_categoria = ?";
 
-        try (Connection conn = conexionDB.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = conexionDB.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, nombre);
             stmt.setString(2, descripcion);
@@ -95,8 +90,7 @@ public class crud {
     public static boolean eliminarCategoria(int id) {
         String sql = "DELETE FROM categoria WHERE id_categoria = ?";
 
-        try (Connection conn = conexionDB.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = conexionDB.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, id);
 
@@ -111,7 +105,6 @@ public class crud {
     // ==========================================
     // 2. CRUD PRODUCTO (CREAR, VER, EDITAR Y ELIMINAR)
     // ==========================================
-
     // CREAR PRODUCTO
     public static boolean crearProducto(
             String nombre,
@@ -125,8 +118,7 @@ public class crud {
                 + "(nombre, precio_base, es_combo, estado, id_categoria, id_turno) "
                 + "VALUES (?, ?, ?, ?, ?, ?)";
 
-        try (Connection conn = conexionDB.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = conexionDB.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, nombre);
             stmt.setBigDecimal(2, precioBase);
@@ -155,15 +147,13 @@ public class crud {
 
     // VER PRODUCTOS
     public static void verProductos() {
-        String sql = "SELECT p.id_producto, p.nombre, p.precio_base, p.es_combo, p.estado, " +
-                "c.nombre AS categoria, t.nombre AS turno " +
-                "FROM producto p " +
-                "LEFT JOIN categoria c ON p.id_categoria = c.id_categoria " +
-                "LEFT JOIN turno_menu t ON p.id_turno = t.id_turno";
+        String sql = "SELECT p.id_producto, p.nombre, p.precio_base, p.es_combo, p.estado, "
+                + "c.nombre AS categoria, t.nombre AS turno "
+                + "FROM producto p "
+                + "LEFT JOIN categoria c ON p.id_categoria = c.id_categoria "
+                + "LEFT JOIN turno_menu t ON p.id_turno = t.id_turno";
 
-        try (Connection conn = conexionDB.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql);
-                ResultSet rs = stmt.executeQuery()) {
+        try (Connection conn = conexionDB.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
 
             System.out.println("\n--- LISTA DE PRODUCTOS ---");
 
@@ -203,8 +193,7 @@ public class crud {
                 + "id_turno = ? "
                 + "WHERE id_producto = ?";
 
-        try (Connection conn = conexionDB.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = conexionDB.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, nombre);
             stmt.setBigDecimal(2, precioBase);
@@ -237,8 +226,7 @@ public class crud {
     public static boolean eliminarProducto(int id) {
         String sql = "DELETE FROM producto WHERE id_producto = ?";
 
-        try (Connection conn = conexionDB.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = conexionDB.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, id);
 
@@ -253,7 +241,6 @@ public class crud {
     // ==========================================
     // 3. CRUD USUARIO (CREAR, VER, EDITAR Y ELIMINAR)
     // ==========================================
-
     // Crear Usuario
     public static boolean crearUsuario(
             String nombre,
@@ -268,8 +255,7 @@ public class crud {
                 + "(nombre, apellido, codigo_empleado, contrasena, rol, estado, turno) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
-        try (Connection conn = conexionDB.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = conexionDB.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, nombre);
             stmt.setString(2, apellido);
@@ -291,9 +277,7 @@ public class crud {
     public static void verUsuarios() {
         String sql = "SELECT id_usuario, nombre, apellido, codigo_empleado, rol, estado FROM usuario";
 
-        try (Connection conn = conexionDB.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql);
-                ResultSet rs = stmt.executeQuery()) {
+        try (Connection conn = conexionDB.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
 
             System.out.println("\n--- LISTA DE USUARIOS ---");
 
@@ -330,8 +314,7 @@ public class crud {
                 + "estado = ? "
                 + "WHERE id_usuario = ?";
 
-        try (Connection conn = conexionDB.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = conexionDB.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, nombre);
             stmt.setString(2, apellido);
@@ -352,8 +335,7 @@ public class crud {
     public static boolean eliminarUsuario(int id) {
         String sql = "DELETE FROM usuario WHERE id_usuario = ?";
 
-        try (Connection conn = conexionDB.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = conexionDB.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, id);
 
@@ -370,9 +352,7 @@ public class crud {
         List<Object[]> filas = new ArrayList<>();
         String sql = "SELECT nombre, apellido, codigo_empleado, rol, estado FROM usuario ORDER BY id_usuario";
 
-        try (Connection conn = conexionDB.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql);
-                ResultSet rs = stmt.executeQuery()) {
+        try (Connection conn = conexionDB.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
                 String nombreCompleto = rs.getString("nombre") + " " + rs.getString("apellido");
@@ -380,11 +360,31 @@ public class crud {
                 String rolFormateado = "ADMINISTRADOR".equalsIgnoreCase(rs.getString("rol")) ? "Administrador"
                         : "Cajero";
                 String estado = rs.getInt("estado") == 1 ? "Activo" : "Inactivo";
-                filas.add(new Object[] { nombreCompleto, codigo, rolFormateado, estado, "" });
+                filas.add(new Object[]{nombreCompleto, codigo, rolFormateado, estado, ""});
             }
 
         } catch (SQLException e) {
             System.err.println("Error al listar usuarios: " + e.getMessage());
+        }
+        return filas;
+    }
+
+    // LISTAR EMPLEADOS ACTIVOS AGRUPADOS/ORDENADOS POR TURNO (Dashboard)
+    public static List<Object[]> listarEmpleadosPorTurno() {
+        List<Object[]> filas = new ArrayList<>();
+        String sql = "SELECT nombre, apellido, rol, turno FROM usuario WHERE estado = 1 AND rol = 'Cajero' ORDER BY turno, nombre";
+
+        try (Connection conn = conexionDB.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                String nombreCompleto = rs.getString("nombre") + " " + rs.getString("apellido");
+                String rolFormateado = "ADMINISTRADOR".equalsIgnoreCase(rs.getString("rol")) ? "Administrador" : "Cajero";
+                String turno = rs.getString("turno");
+                filas.add(new Object[]{nombreCompleto, rolFormateado, turno});
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error al listar empleados por turno: " + e.getMessage());
         }
         return filas;
     }

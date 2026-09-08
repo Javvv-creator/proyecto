@@ -1,16 +1,9 @@
 package gui;
 
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.JTableHeader;
-import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Path2D;
@@ -21,8 +14,15 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
+import javax.swing.table.TableRowSorter;
 import main.Crud.crud;
-import java.util.List;
 
 public class gestionEmpleados extends JFrame {
 
@@ -87,6 +87,17 @@ public class gestionEmpleados extends JFrame {
         mainContainer.add(contentPanel, BorderLayout.CENTER);
         add(mainContainer);
 
+// Al presionar ESC, regresa al Dashboard del Administrador
+        getRootPane().registerKeyboardAction(
+                e -> {
+                    dashboardAdmin app = new dashboardAdmin();
+                    app.setVisible(true);
+                    dispose();
+                },
+                KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
+                JComponent.WHEN_IN_FOCUSED_WINDOW
+        );
+
         startLiveClock();
         cargarEmpleadosDesdeBD(); // Carga usuarios reales de la BD (ya calcula los totales)
     }
@@ -118,16 +129,16 @@ public class gestionEmpleados extends JFrame {
         menuPanel.setOpaque(false);
 
         Object[][] items = {
-                { SidebarVectorIcon.IconType.EMPLOYEES, "gui/images/employees.png",
-                        "<html>Gestión de<br>empleados (cajeros)</html>" },
-                { SidebarVectorIcon.IconType.MENU, "gui/images/menu.png",
-                        "<html>Gestión de menú /<br>productos</html>" },
-                { SidebarVectorIcon.IconType.ORDERS, "gui/images/orders.png", "Gestión de pedidos" },
-                { SidebarVectorIcon.IconType.REPORTS, "gui/images/reports.png", "Reportes y estadísticas" },
-                { SidebarVectorIcon.IconType.CASH, "gui/images/cash.png", "Gestión de caja" },
-                { SidebarVectorIcon.IconType.SETTINGS, "gui/images/settings.png",
-                        "<html>Configuración<br>general</html>" },
-                { SidebarVectorIcon.IconType.SECURITY, "gui/images/security.png", "Seguridad y auditoría" }
+            {SidebarVectorIcon.IconType.EMPLOYEES, "gui/images/employees.png",
+                "<html>Gestión de<br>empleados (cajeros)</html>"},
+            {SidebarVectorIcon.IconType.MENU, "gui/images/menu.png",
+                "<html>Gestión de menú /<br>productos</html>"},
+            {SidebarVectorIcon.IconType.ORDERS, "gui/images/orders.png", "Gestión de pedidos"},
+            {SidebarVectorIcon.IconType.REPORTS, "gui/images/reports.png", "Reportes y estadísticas"},
+            {SidebarVectorIcon.IconType.CASH, "gui/images/cash.png", "Gestión de caja"},
+            {SidebarVectorIcon.IconType.SETTINGS, "gui/images/settings.png",
+                "<html>Configuración<br>general</html>"},
+            {SidebarVectorIcon.IconType.SECURITY, "gui/images/security.png", "Seguridad y auditoría"}
         };
 
         menuButtons = new JPanel[items.length];
@@ -232,8 +243,8 @@ public class gestionEmpleados extends JFrame {
                 lblLogo.setIcon(icon);
             }
         } else {
-            lblLogo.setText("<html><center><font size='7' color='#6EA32E'><b>&lt; 🍴 &gt;</b></font><br>" +
-                    "<font size='5'><b color='#6EA32E'>GIT & </b><b color='#D13941'>EAT!</b></font></center></html>");
+            lblLogo.setText("<html><center><font size='7' color='#6EA32E'><b>&lt; 🍴 &gt;</b></font><br>"
+                    + "<font size='5'><b color='#6EA32E'>GIT & </b><b color='#D13941'>EAT!</b></font></center></html>");
         }
         return lblLogo;
     }
@@ -397,10 +408,10 @@ public class gestionEmpleados extends JFrame {
         comboPill.setLayout(new BorderLayout());
         comboPill.setBorder(new EmptyBorder(5, 15, 5, 15));
 
-        cbRoles = new JComboBox<>(new String[] { "Todos los roles", "Administrador", "Cajero" });
+        cbRoles = new JComboBox<>(new String[]{"Todos los roles", "Administrador", "Cajero"});
         cbRoles.setOpaque(false);
         cbRoles.setBackground(COLOR_COMBO);
-        cbRoles.setForeground(Color.WHITE);
+        cbRoles.setForeground(Color.BLACK);
         cbRoles.setFont(new Font("SansSerif", Font.BOLD, 18));
         cbRoles.setBorder(BorderFactory.createEmptyBorder());
         cbRoles.setFocusable(false);
@@ -449,7 +460,7 @@ public class gestionEmpleados extends JFrame {
         card.setLayout(new BorderLayout());
         card.setBorder(new EmptyBorder(12, 12, 12, 12));
 
-        String[] columns = { "Empleado", "Código", "Rol", "Estado", "Acciones" };
+        String[] columns = {"Empleado", "Código", "Rol", "Estado", "Acciones"};
 
         model = new DefaultTableModel(columns, 0) {
             @Override
@@ -637,6 +648,7 @@ public class gestionEmpleados extends JFrame {
 
     // --- CLASE DE ICONOS VECTORIALES PARA LA BARRA LATERAL ---
     private static class SidebarVectorIcon implements Icon {
+
         public enum IconType {
             EMPLOYEES, MENU, ORDERS, REPORTS, CASH, SETTINGS, SECURITY
         }
@@ -740,6 +752,7 @@ public class gestionEmpleados extends JFrame {
 
     // --- COMPONENTE DE PANEL REDONDEADO ---
     private static class RoundedPanel extends JPanel {
+
         private final int cornerRadius;
         private Color backgroundColor;
 

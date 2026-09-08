@@ -1,15 +1,14 @@
 package gui;
 
-import main.Conexion.Conexion;
-
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import javax.swing.plaf.basic.BasicComboBoxUI;
 import java.awt.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.plaf.basic.BasicComboBoxUI;
+import main.Conexion.Conexion;
 
 public class nuevoEmpleadoDialog extends JDialog {
 
@@ -84,7 +83,7 @@ public class nuevoEmpleadoDialog extends JDialog {
 
         // 5. Campo: Turno (ComboBox)
         JLabel lblTurno = createFieldLabel("Turno");
-        cbTurno = new RoundedComboBox<>(new String[]{"Seleccionar turno...", "Mañana", "Tarde"}, FIELD_RADIUS);
+        cbTurno = new RoundedComboBox<>(new String[]{"Seleccionar turno...", "Mañana", "Tarde","Noche"}, FIELD_RADIUS);
         styleComboBox(cbTurno);
 
         // 6. Checkbox: Empleado activo
