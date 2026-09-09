@@ -503,7 +503,7 @@ public class gestionEmpleados extends JFrame {
             table.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
         }
 
-        // Columna Estado
+                // Columna Estado
         table.getColumnModel().getColumn(3).setCellRenderer((t, val, isS, hasF, row, col) -> {
             String estado = (String) val;
             JLabel lbl = new JLabel(estado, SwingConstants.CENTER);
@@ -516,20 +516,80 @@ public class gestionEmpleados extends JFrame {
             return lbl;
         });
 
-        // Columna Acciones
+        // Columna Acciones - Botón interactivo de opciones
         table.getColumnModel().getColumn(4).setCellRenderer((t, val, isS, hasF, row, col) -> {
-            JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 12));
+            JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 8));
             actionsPanel.setBackground(Color.WHITE);
 
-            JLabel btnEdit = new JLabel("📝");
-            btnEdit.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 20));
+            // Botón redondeado de opciones "⚙ Opciones ▾"
+            RoundedPanel btnPill = new RoundedPanel(12, new Color(248, 244, 237));
+            btnPill.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 4));
+            btnPill.setPreferredSize(new Dimension(130, 36));
 
-            JLabel btnLock = new JLabel("🔒");
-            btnLock.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 20));
+            JLabel lblAccion = new JLabel("⚙ Opciones ▾");
+            lblAccion.setFont(new Font("SansSerif", Font.BOLD, 14));
+            lblAccion.setForeground(COLOR_TABLE_HEADER);
 
-            actionsPanel.add(btnEdit);
-            actionsPanel.add(btnLock);
+            btnPill.add(lblAccion);
+            actionsPanel.add(btnPill);
             return actionsPanel;
+        });
+
+        // Escuchador de clic en la tabla para desplieque del diálogo emergente accionesEmpleadoDialog
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int col = table.getColumnModel().getColumnIndexAtX(e.getX());
+                int row = e.getY() / table.getRowHeight();
+
+                // Verificar si se hizo clic en una fila válida y en la columna Acciones (índice 4)
+                if (row >= 0 && row < table.getRowCount() && col == 4) {
+                    int modelRow = table.convertRowIndexToModel(row);
+                    String nombreEmpleado = (String) model.getValueAt(modelRow, 0);
+                    String codigoEmpleado = (String) model.getValueAt(modelRow, 1);
+
+                    // Desplegar el cuadro emergente modal
+                    ajustesEmpleadoDialog dialog = new ajustesEmpleadoDialog(gestionEmpleados.this);
+                    dialog.setVisible(true);
+
+                    // Manejar la acción seleccionada por el usuario en el popup
+                    ajustesEmpleadoDialog.AccionSeleccionada accion = dialog.getAccionEfectuada();
+                    switch (accion) {
+                        case EDITAR_DATOS:
+                            JOptionPane.showMessageDialog(gestionEmpleados.this,
+                                    "Editar datos de " + nombreEmpleado + " (" + codigoEmpleado + ")",
+                                    "Editar Empleado", JOptionPane.INFORMATION_MESSAGE);
+                            break;
+
+                        case RESTABLECER_CONTRASENA:
+                            JOptionPane.showMessageDialog(gestionEmpleados.this,
+                                    "Restablecer contraseña del código: " + codigoEmpleado,
+                                    "Restablecer Contraseña", JOptionPane.WARNING_MESSAGE);
+                            break;
+
+                        case VER_HISTORIAL:
+                            JOptionPane.showMessageDialog(gestionEmpleados.this,
+                                    "Historial de órdenes atendidas por " + nombreEmpleado,
+                                    "Historial de Órdenes", JOptionPane.INFORMATION_MESSAGE);
+                            break;
+
+                        case DESACTIVAR_EMPLEADO:
+                            int respuesta = JOptionPane.showConfirmDialog(gestionEmpleados.this,
+                                    "¿Estás seguro de desactivar a " + nombreEmpleado + "?",
+                                    "Desactivar Empleado", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+
+                            if (respuesta == JOptionPane.YES_OPTION) {
+                                model.setValueAt("Inactivo", modelRow, 3);
+                                updateSummaryMetrics();
+                            }
+                            break;
+
+                        case NINGUNA:
+                        default:
+                            break;
+                    }
+                }
+            }
         });
 
         JScrollPane scroll = new JScrollPane(table);
