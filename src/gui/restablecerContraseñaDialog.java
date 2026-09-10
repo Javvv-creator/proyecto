@@ -7,13 +7,12 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.Path2D;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import main.Crud.crud;
 
 /**
  * Diálogo Emergente para Restablecer Contraseña
- * 
- * Permite solicitar:
- * - Contraseña actual
- * - Nueva contraseña
+ *
+ * Permite solicitar: - Contraseña actual - Nueva contraseña
  */
 public class restablecerContraseñaDialog extends JDialog {
 
@@ -39,23 +38,27 @@ public class restablecerContraseñaDialog extends JDialog {
     private JLabel lblMensajeError;
 
     // Estado del resultado
+    // Estado del resultado
     private boolean confirmado = false;
     private String contrasenaActual = "";
     private String nuevaContrasena = "";
+    private final int idUsuario;
 
-    public restablecerContraseñaDialog(Frame parent) {
+    public restablecerContraseñaDialog(Frame parent, int idUsuario) {
         super(parent, "Restablecer Contraseña", true);
+        this.idUsuario = idUsuario;
         setUndecorated(true);
         setSize(380, 420);
+        // ... el resto del constructor sigue exactamente igual ...
 
         // Centrado matemático exacto sobre la ventana principal o pantalla
         centrarDialogo(parent);
 
         // Cierre automático con la tecla ESC
         getRootPane().registerKeyboardAction(
-            e -> dispose(),
-            KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
-            JComponent.WHEN_IN_FOCUSED_WINDOW
+                e -> dispose(),
+                KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
+                JComponent.WHEN_IN_FOCUSED_WINDOW
         );
 
         // Fondo transparente para visualizar las esquinas redondeadas del cuadro
@@ -167,14 +170,43 @@ public class restablecerContraseñaDialog extends JDialog {
             return;
         }
 
+        if (idUsuario <= 0) {
+            lblMensajeError.setText("No se pudo identificar al usuario.");
+            return;
+        }
+
+        // Validar la contraseña actual contra la base de datos
+        String contrasenaGuardada = crud.obtenerContrasena(idUsuario);
+
+        if (contrasenaGuardada == null) {
+            lblMensajeError.setText("No se encontró el usuario en la base de datos.");
+            return;
+        }
+
+        if (!contrasenaGuardada.equals(actual)) {
+            lblMensajeError.setText("La contraseña actual es incorrecta.");
+            txtContrasenaActual.requestFocus();
+            return;
+        }
+
+        boolean actualizado = crud.actualizarContrasena(idUsuario, nueva);
+
+        if (!actualizado) {
+            lblMensajeError.setText("No se pudo actualizar la contraseña. Intente de nuevo.");
+            return;
+        }
+
         this.contrasenaActual = actual;
         this.nuevaContrasena = nueva;
         this.confirmado = true;
         dispose();
+        ajustesEmpleadoDialog ventana = new ajustesEmpleadoDialog(null);
+        ventana.dispose();
     }
 
     /**
-     * Genera un grupo etiquetado con input de contraseña estilizado y botón para alternar visibilidad.
+     * Genera un grupo etiquetado con input de contraseña estilizado y botón
+     * para alternar visibilidad.
      */
     private JPanel createPasswordFieldGroup(String labelText, boolean requestFocusOnFocus) {
         JPanel group = new JPanel();
@@ -269,7 +301,8 @@ public class restablecerContraseñaDialog extends JDialog {
                 int y = parentLocation.y + (parent.getHeight() - getHeight()) / 2;
                 setLocation(x, y);
                 return;
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
         setLocationRelativeTo(null);
     }
@@ -287,10 +320,14 @@ public class restablecerContraseñaDialog extends JDialog {
     }
 
     /**
-     * Componente gráfico para dibujar íconos vectoriales en Java 2D con antialiasing.
+     * Componente gráfico para dibujar íconos vectoriales en Java 2D con
+     * antialiasing.
      */
     private static class ActionIcon extends JComponent {
-        public enum Type { LOCK }
+
+        public enum Type {
+            LOCK
+        }
 
         private final Type type;
         private final Color color;
@@ -331,9 +368,11 @@ public class restablecerContraseñaDialog extends JDialog {
     }
 
     /**
-     * Botón con ícono vectorial de Ojo en Java 2D para alternar mostrar/ocultar contraseña.
+     * Botón con ícono vectorial de Ojo en Java 2D para alternar mostrar/ocultar
+     * contraseña.
      */
     private static class ToggleButtonEye extends JComponent {
+
         private boolean selected = false;
 
         public ToggleButtonEye() {
@@ -385,6 +424,7 @@ public class restablecerContraseñaDialog extends JDialog {
      * Panel contenedor con esquinas redondeadas y borde continuo tenue.
      */
     private static class RoundedPanel extends JPanel {
+
         private final int cornerRadius;
         private final Color backgroundColor;
 
@@ -417,10 +457,11 @@ public class restablecerContraseñaDialog extends JDialog {
     public static void main(String[] args) {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
 
         SwingUtilities.invokeLater(() -> {
-            restablecerContraseñaDialog dialog = new restablecerContraseñaDialog(null);
+            restablecerContraseñaDialog dialog = new restablecerContraseñaDialog(null, 1);
             dialog.setVisible(true);
 
             if (dialog.isConfirmado()) {

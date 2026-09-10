@@ -350,7 +350,7 @@ public class crud {
     // LISTAR USUARIOS PARA LA TABLA (GUI)
     public static List<Object[]> listarUsuariosTabla() {
         List<Object[]> filas = new ArrayList<>();
-        String sql = "SELECT nombre, apellido, codigo_empleado, rol, estado FROM usuario ORDER BY id_usuario";
+        String sql = "SELECT id_usuario, nombre, apellido, codigo_empleado, rol, estado FROM usuario ORDER BY id_usuario";
 
         try (Connection conn = conexionDB.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
 
@@ -360,7 +360,11 @@ public class crud {
                 String rolFormateado = "ADMINISTRADOR".equalsIgnoreCase(rs.getString("rol")) ? "Administrador"
                         : "Cajero";
                 String estado = rs.getInt("estado") == 1 ? "Activo" : "Inactivo";
-                filas.add(new Object[]{nombreCompleto, codigo, rolFormateado, estado, ""});
+                int idUsuario = rs.getInt("id_usuario");
+
+                // El 6to elemento (idUsuario) NO se muestra como columna visible,
+                // pero queda guardado en la fila del modelo para poder identificarla después.
+                filas.add(new Object[]{nombreCompleto, codigo, rolFormateado, estado, "", idUsuario});
             }
 
         } catch (SQLException e) {
@@ -387,5 +391,42 @@ public class crud {
             System.err.println("Error al listar empleados por turno: " + e.getMessage());
         }
         return filas;
+    }
+
+    // OBTENER LA CONTRASEÑA ACTUAL DE UN USUARIO (para validar el cambio)
+    public static String obtenerContrasena(int idUsuario) {
+        String sql = "SELECT contrasena FROM usuario WHERE id_usuario = ?";
+
+        try (Connection conn = conexionDB.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idUsuario);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("contrasena");
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error al obtener contraseña: " + e.getMessage());
+        }
+        return null;
+    }
+
+// ACTUALIZAR LA CONTRASEÑA DE UN USUARIO
+    public static boolean actualizarContrasena(int idUsuario, String nuevaContrasena) {
+        String sql = "UPDATE usuario SET contrasena = ? WHERE id_usuario = ?";
+
+        try (Connection conn = conexionDB.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, nuevaContrasena);
+            stmt.setInt(2, idUsuario);
+
+            return stmt.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            System.err.println("Error al actualizar contraseña: " + e.getMessage());
+            return false;
+        }
     }
 }

@@ -543,21 +543,42 @@ public class gestionEmpleados extends JFrame {
         // Escuchador de clic en la tabla para desplieque del diálogo emergente
         // accionesEmpleadoDialog
         table.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                int col = table.getColumnModel().getColumnIndexAtX(e.getX());
-                int row = e.getY() / table.getRowHeight();
+    @Override
+    public void mouseClicked(MouseEvent e) {
+        int viewRow = table.rowAtPoint(e.getPoint());
+        int viewCol = table.columnAtPoint(e.getPoint());
 
-                // Verificar si se hizo clic en una fila válida y en la columna Acciones (índice
-                // 4)
-                if (row >= 0 && row < table.getRowCount() && col == 4) {
-                    int modelRow = table.convertRowIndexToModel(row);
-                    String nombreEmpleado = (String) model.getValueAt(modelRow, 0);
-                    String codigoEmpleado = (String) model.getValueAt(modelRow, 1);
+        if (viewRow < 0 || viewCol != 4) {
+            return; // Clic fuera de una fila válida o fuera de la columna Acciones
+        }
 
-                    // Desplegar el cuadro emergente modal
-                    ajustesEmpleadoDialog dialog = new ajustesEmpleadoDialog(gestionEmpleados.this);
-                    dialog.setVisible(true);
+        // CLAVE: convertir la fila visible (ordenada/filtrada) a la fila real del modelo
+        int modelRow = table.convertRowIndexToModel(viewRow);
+        Integer idUsuario = (Integer) model.getValueAt(modelRow, 5);
+
+        if (idUsuario == null) {
+            return;
+        }
+
+        // Determinar si el clic fue en el ícono de editar (izquierda) o candado (derecha)
+        Rectangle cellRect = table.getCellRect(viewRow, viewCol, false);
+        int clickXRelativo = e.getX() - cellRect.x;
+        boolean esBotonEditar = clickXRelativo < cellRect.width / 2;
+
+        if (esBotonEditar) {
+            JOptionPane.showMessageDialog(gestionEmpleados.this,
+                    "Edición de empleado en desarrollo.", "Información",
+                    JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            restablecerContraseñaDialog dialog = new restablecerContraseñaDialog(gestionEmpleados.this, idUsuario);
+            dialog.setVisible(true);
+
+            if (dialog.isConfirmado()) {
+                JOptionPane.showMessageDialog(gestionEmpleados.this,
+                        "Contraseña actualizada correctamente.", "Éxito",
+                        JOptionPane.INFORMATION_MESSAGE);
+            }
+        }
 
                     // Manejar la acción seleccionada por el usuario en el popup
                     ajustesEmpleadoDialog.AccionSeleccionada accion = dialog.getAccionEfectuada();

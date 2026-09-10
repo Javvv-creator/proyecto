@@ -76,7 +76,7 @@ public class ajustesEmpleadoDialog extends JDialog {
             COLOR_TEXT_BROWN,
             () -> {
                 // Abre el diálogo de restablecer contraseña directamente
-                restablecerContraseñaDialog dialog = new restablecerContraseñaDialog(parent);
+                restablecerContraseñaDialog dialog = new restablecerContraseñaDialog(null, 1);
                 dialog.setVisible(true);
 
                 // Si el usuario guardó los cambios con éxito
