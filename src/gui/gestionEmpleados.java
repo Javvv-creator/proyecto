@@ -187,6 +187,7 @@ public class gestionEmpleados extends JFrame {
                     } else if (index == 1) {
                         gestionProductos app = new gestionProductos();
                         app.setVisible(true);
+                        dispose();
                         return;
                     }
                     JOptionPane.showMessageDialog(gestionEmpleados.this, "Sección en desarrollo.", "Información",
@@ -300,7 +301,7 @@ public class gestionEmpleados extends JFrame {
         Timer timer = new Timer(1000, e -> {
             Date now = new Date();
             SimpleDateFormat sdfTime = new SimpleDateFormat("hh:mm:ss a");
-            SimpleDateFormat sdfDate = new SimpleDateFormat("EEEE, d 'de' MMMM", new Locale("es", "ES"));
+            SimpleDateFormat sdfDate = new SimpleDateFormat("EEEE, d 'de' MMMM", Locale.of("es", "ES"));
             lblClock.setText(sdfTime.format(now));
             lblDate.setText(sdfDate.format(now));
         });

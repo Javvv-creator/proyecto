@@ -74,7 +74,18 @@ public class ajustesEmpleadoDialog extends JDialog {
             ActionIcon.Type.LOCK,
             "Restablecer contraseña",
             COLOR_TEXT_BROWN,
-            () -> seleccionarAccion(AccionSeleccionada.RESTABLECER_CONTRASENA)
+            () -> {
+                // Abre el diálogo de restablecer contraseña directamente
+                restablecerContraseñaDialog dialog = new restablecerContraseñaDialog(parent);
+                dialog.setVisible(true);
+
+                // Si el usuario guardó los cambios con éxito
+                if (dialog.isConfirmado()) {
+                    String nueva = dialog.getNuevaContrasena();
+                    // Aquí invocas tu servicio/controlador para actualizar la contraseña
+                    System.out.println("Nueva contraseña recibida: " + nueva);
+                }
+            }
         );
 
         // 3. Botón: Ver historial de órdenes
@@ -195,12 +206,10 @@ public class ajustesEmpleadoDialog extends JDialog {
 
         private final Type type;
         private final Color color;
-        private final int iconSize;
 
         public ActionIcon(Type type, Color color, int size) {
             this.type = type;
             this.color = color;
-            this.iconSize = size;
             setPreferredSize(new Dimension(size, size));
             setOpaque(false);
         }

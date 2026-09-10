@@ -140,6 +140,13 @@ public class dashboardAdmin extends JFrame {
                         dispose();
                         return;
                     }
+                    else if (index == 1){
+                        // ventana de gestion de productos
+                        gestionProductos app = new gestionProductos();
+                        app.setVisible(true);
+                        dispose();
+                        return;
+                    }
                     // Las demás ventanas todavía no existen
                     JOptionPane.showMessageDialog(
                             dashboardAdmin.this,
@@ -174,6 +181,8 @@ public class dashboardAdmin extends JFrame {
         return lbl;
     }
 
+    // dejenlo aqui
+    /* 
     private void updateSidebarSelection() {
         for (int i = 0; i < menuButtons.length; i++) {
             RoundedPanel btn = (RoundedPanel) menuButtons[i];
@@ -185,6 +194,7 @@ public class dashboardAdmin extends JFrame {
             btn.repaint();
         }
     }
+        */
 
     private JLabel createLogoLabel() {
         JLabel lblLogo = new JLabel();
@@ -264,7 +274,7 @@ public class dashboardAdmin extends JFrame {
         Timer timer = new Timer(1000, e -> {
             Date now = new Date();
             SimpleDateFormat sdfTime = new SimpleDateFormat("hh:mm:ss a");
-            SimpleDateFormat sdfDate = new SimpleDateFormat("EEEE, d 'de' MMMM", new Locale("es", "ES"));
+            SimpleDateFormat sdfDate = new SimpleDateFormat("EEEE, d 'de' MMMM", Locale.of("es", "ES"));
             lblClock.setText(sdfTime.format(now));
             lblDate.setText(sdfDate.format(now));
         });
