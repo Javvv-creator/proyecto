@@ -117,28 +117,90 @@ public class pantallaCajero extends JFrame {
     }
 
     private void buildCatalog() {
-        List<MenuItem> hamburguesas = new ArrayList<>();
-        hamburguesas.add(new MenuItem("Big Mac", 35.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Big Mac Doble", 55.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Cuarto de libra", 30.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Tasty", 30.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Bacon", 35.00, "Hamburguesas", "🍔"));
+    // ----- Hamburguesas (todo junto aquí) -----
+    List<MenuItem> hamburguesas = new ArrayList<>();
 
-        List<MenuItem> bebidas = new ArrayList<>();
+    // Mensajito de Desayunos
+    hamburguesas.add(new MenuItem("🍳 Desayunos", 0.00, "Hamburguesas", "📌"));
+    // Desayunos
+    hamburguesas.add(new MenuItem("McMuffin Cheddar McMelt", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("McMuffin Tocino Doble Huevo", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("McMuffin Salchicha y doble huevo", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("Egg McMuffin Doble Huevo", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("McMuffin de Salchicha y Huevo", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("McMuffin de Salchicha", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("McMuffin Chapín Con Salchicha", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("Egg McMuffin", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("McMuffin Super Chapín Con Salchicha", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("Egg McMuffin Doble", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("McMuffin de Tocino y Huevo", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("McMuffin Super Chapín Con Jamón", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("McMuffin de Salchicha Doble y Huevo", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("McMuffin Tocino Doble y Huevo", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("McMuffin Huevo y Frijol", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("McMuffin Huevo y Queso", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("McMuffin Chapín Con Jamón", 0.00, "Hamburguesas", "🍔"));
 
-        List<MenuItem> postres = new ArrayList<>();
+    // Mensajito de Hamburguesas
+    hamburguesas.add(new MenuItem("🍔 Hamburguesas", 0.00, "Hamburguesas", "📌"));
+    // Hamburguesas
+    hamburguesas.add(new MenuItem("Bacon Cheddar McMelt", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("McCrispy Bacon Cheddar", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("Git Mac Doble", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("Cuarto de Libra con Queso", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("Cuarto de Libra Doble con Queso", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("Cuarto de Libra Deluxe con Queso", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("Cuarto de Libra Deluxe Doble con Queso", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("Cuarto de Libra Bacon con Queso", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("Cuarto de Libra Bacon Doble con Queso", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("Big Tasty", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("Big Tasty Doble", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("Big Tasty Bacon", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("Big Tasty Bacon Doble", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("Triple Bacon", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("Quesoburguesa", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("Quesoburguesa Doble", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("Quesoburguesa Triple", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("Hamburguesa", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("Hamburguesa Jr.", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("GitNífica de Res", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("GitNífica de Res Doble", 0.00, "Hamburguesas", "🍔"));
 
-        List<MenuItem> combos = new ArrayList<>();
+    // Mensajito de Pollo
+    hamburguesas.add(new MenuItem("🐔 Pollo", 0.00, "Hamburguesas", "📌"));
+    // Pollo
+    hamburguesas.add(new MenuItem("McCrispy Chicken Bacon Ranch", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("McCrispy Chicken Deluxe", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("Big Tasty de Pollo", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("Sándwich McPollo Doble", 0.00, "Hamburguesas", "🍔"));
 
-        catalog.put("Hamburguesas", hamburguesas);
-        catalog.put("Bebidas", bebidas);
-        catalog.put("Postres", postres);
-        catalog.put("Combos", combos);
+    // Mensajito de Gourmet
+    hamburguesas.add(new MenuItem("🥩 Creaciones Gourmet", 0.00, "Hamburguesas", "📌"));
+    // Gourmet
+    hamburguesas.add(new MenuItem("Smoke Tocino Gourmet de Res", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("Smoke Tocino Gourmet doble", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("Clásica Gourmet Res", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("Clásica Gourmet Res doble", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("Pico Guacamol Gourmet Res", 0.00, "Hamburguesas", "🍔"));
+    hamburguesas.add(new MenuItem("Pico Guacamol Gourmet doble", 0.00, "Hamburguesas", "🍔"));
 
-        List<MenuItem> todos = new ArrayList<>();
-        for (List<MenuItem> l : catalog.values()) todos.addAll(l);
-        catalog.put("Todos", todos);
-    }
+    // ----- Otras categorías vacías -----
+    List<MenuItem> bebidas = new ArrayList<>();
+    List<MenuItem> postres = new ArrayList<>();
+    List<MenuItem> combos = new ArrayList<>();
+
+    // ----- Guardar en catálogo -----
+    catalog.put("Hamburguesas", hamburguesas);
+    catalog.put("Bebidas", bebidas);
+    catalog.put("Postres", postres);
+    catalog.put("Combos", combos);
+
+    // ----- Todos -----
+    List<MenuItem> todos = new ArrayList<>();
+    for (List<MenuItem> l : catalog.values()) todos.addAll(l);
+    catalog.put("Todos", todos);
+}
+
 
     private JPanel buildTabsBar() {
         JPanel bar = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
