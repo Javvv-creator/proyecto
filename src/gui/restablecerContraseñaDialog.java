@@ -48,7 +48,7 @@ public class restablecerContraseñaDialog extends JDialog {
         super(parent, "Restablecer Contraseña", true);
         this.idUsuario = idUsuario;
         setUndecorated(true);
-        setSize(380, 420);
+        setSize(380, 325);
         // ... el resto del constructor sigue exactamente igual ...
 
         // Centrado matemático exacto sobre la ventana principal o pantalla
