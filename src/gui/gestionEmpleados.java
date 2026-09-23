@@ -143,7 +143,6 @@ public class gestionEmpleados extends JFrame {
             {SidebarVectorIcon.IconType.ORDERS, "gui/images/orders.png", "Gestión de pedidos"},
             {SidebarVectorIcon.IconType.REPORTS, "gui/images/reports.png", "Reportes y estadísticas"},
             {SidebarVectorIcon.IconType.CASH, "gui/images/cash.png", "Gestión de caja"},
-            {SidebarVectorIcon.IconType.SETTINGS, "gui/images/settings.png", "<html>Configuración<br>general</html>"},
             {SidebarVectorIcon.IconType.SECURITY, "gui/images/security.png", "Seguridad y auditoría"}
         };
 
@@ -200,7 +199,7 @@ public class gestionEmpleados extends JFrame {
                         dispose();
                         return;
                     }
-                    if (index == 6) {
+                    if (index == 5) {
                         seguridadAuditoria app = new seguridadAuditoria();
                         app.setVisible(true);
                         dispose();
@@ -324,32 +323,6 @@ public class gestionEmpleados extends JFrame {
         JPanel rightHeader = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 10));
         rightHeader.setOpaque(false);
 
-        JPanel timePanel = new JPanel(new GridLayout(2, 1));
-        timePanel.setOpaque(false);
-
-        lblClock = new JLabel("--:--:--", SwingConstants.RIGHT);
-        lblClock.setFont(new Font("SansSerif", Font.BOLD, 22));
-        lblClock.setForeground(Color.WHITE);
-
-        lblDate = new JLabel("Cargando fecha...", SwingConstants.RIGHT);
-        lblDate.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        lblDate.setForeground(new Color(230, 230, 230));
-
-        timePanel.add(lblClock);
-        timePanel.add(lblDate);
-        rightHeader.add(timePanel);
-
-        JButton btnRefresh = new JButton("🔄");
-        btnRefresh.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 20));
-        btnRefresh.setFocusPainted(false);
-        btnRefresh.setContentAreaFilled(false);
-        btnRefresh.setForeground(Color.WHITE);
-        btnRefresh.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnRefresh.setToolTipText("Actualizar datos");
-        btnRefresh.addActionListener(e -> repaint());
-        rightHeader.add(btnRefresh);
-
-        header.add(rightHeader, BorderLayout.EAST);
         return header;
     }
 
@@ -834,18 +807,6 @@ public class gestionEmpleados extends JFrame {
                     FontMetrics fm = g2.getFontMetrics();
                     g2.drawString("Q", 16 - fm.stringWidth("Q") / 2, 19);
                     break;
-                case SETTINGS:
-                    g2.setStroke(new BasicStroke(2.5f));
-                    g2.drawOval(10, 10, 12, 12);
-                    for (int i = 0; i < 8; i++) {
-                        double angle = Math.toRadians(i * 45);
-                        int x1 = (int) (16 + 8 * Math.cos(angle));
-                        int y1 = (int) (16 + 8 * Math.sin(angle));
-                        int x2 = (int) (16 + 13 * Math.cos(angle));
-                        int y2 = (int) (16 + 13 * Math.sin(angle));
-                        g2.drawLine(x1, y1, x2, y2);
-                    }
-                    break;
                 case SECURITY:
                     Path2D shield = new Path2D.Double();
                     shield.moveTo(16, 3);
@@ -856,6 +817,7 @@ public class gestionEmpleados extends JFrame {
                     shield.closePath();
                     g2.setStroke(new BasicStroke(2.2f));
                     g2.draw(shield);
+
 
                     Path2D check = new Path2D.Double();
                     check.moveTo(11, 15);

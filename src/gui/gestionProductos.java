@@ -131,7 +131,6 @@ public class gestionProductos extends JFrame {
             {SidebarVectorIcon.IconType.ORDERS, "gui/images/orders.png", "Gestión de pedidos"},
             {SidebarVectorIcon.IconType.REPORTS, "gui/images/reports.png", "Reportes y estadísticas"},
             {SidebarVectorIcon.IconType.CASH, "gui/images/cash.png", "Gestión de caja"},
-            {SidebarVectorIcon.IconType.SETTINGS, "gui/images/settings.png", "<html>Configuración<br>general</html>"},
             {SidebarVectorIcon.IconType.SECURITY, "gui/images/security.png", "Seguridad y auditoría"}
         };
 
@@ -188,7 +187,7 @@ public class gestionProductos extends JFrame {
                         dispose();
                         return;
                     }
-                    if (index == 6) {
+                    if (index == 5) {
                         seguridadAuditoria app = new seguridadAuditoria();
                         app.setVisible(true);
                         dispose();
@@ -298,56 +297,20 @@ public class gestionProductos extends JFrame {
         return lblLogo;
     }
 
-    private JPanel createHeaderPanel() {
+     private JPanel createHeaderPanel() {
         RoundedPanel header = new RoundedPanel(20, COLOR_HEADER);
         header.setLayout(new BorderLayout());
         header.setPreferredSize(new Dimension(0, 125));
         header.setBorder(new EmptyBorder(20, 35, 20, 35));
 
-        // Panel Izquierdo: Icono + Título
-        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
-        titlePanel.setOpaque(false);
-
-        JLabel iconHeader = createSidebarIconLabel(SidebarVectorIcon.IconType.MENU, "gui/images/menu.png");
-
         JLabel title = new JLabel("Gestión de menú / productos");
         title.setFont(new Font("SansSerif", Font.BOLD, 40));
         title.setForeground(Color.WHITE);
+        header.add(title, BorderLayout.WEST);
 
-        titlePanel.add(iconHeader);
-        titlePanel.add(title);
-        header.add(titlePanel, BorderLayout.WEST);
-
-        // Panel Derecho: Hora + Botón Refrescar
         JPanel rightHeader = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 10));
         rightHeader.setOpaque(false);
 
-        JPanel timePanel = new JPanel(new GridLayout(2, 1));
-        timePanel.setOpaque(false);
-
-        lblClock = new JLabel("--:--:--", SwingConstants.RIGHT);
-        lblClock.setFont(new Font("SansSerif", Font.BOLD, 22));
-        lblClock.setForeground(Color.WHITE);
-
-        lblDate = new JLabel("Cargando fecha...", SwingConstants.RIGHT);
-        lblDate.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        lblDate.setForeground(new Color(230, 230, 230));
-
-        timePanel.add(lblClock);
-        timePanel.add(lblDate);
-        rightHeader.add(timePanel);
-
-        JButton btnRefresh = new JButton("🔄");
-        btnRefresh.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 20));
-        btnRefresh.setFocusPainted(false);
-        btnRefresh.setContentAreaFilled(false);
-        btnRefresh.setForeground(Color.WHITE);
-        btnRefresh.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnRefresh.setToolTipText("Actualizar datos");
-        btnRefresh.addActionListener(e -> repaint());
-        rightHeader.add(btnRefresh);
-
-        header.add(rightHeader, BorderLayout.EAST);
         return header;
     }
 
@@ -770,18 +733,6 @@ public class gestionProductos extends JFrame {
                     FontMetrics fm = g2.getFontMetrics();
                     g2.drawString("Q", 16 - fm.stringWidth("Q") / 2, 19);
                     break;
-                case SETTINGS:
-                    g2.setStroke(new BasicStroke(2.5f));
-                    g2.drawOval(10, 10, 12, 12);
-                    for (int i = 0; i < 8; i++) {
-                        double angle = Math.toRadians(i * 45);
-                        int x1 = (int) (16 + 8 * Math.cos(angle));
-                        int y1 = (int) (16 + 8 * Math.sin(angle));
-                        int x2 = (int) (16 + 13 * Math.cos(angle));
-                        int y2 = (int) (16 + 13 * Math.sin(angle));
-                        g2.drawLine(x1, y1, x2, y2);
-                    }
-                    break;
                 case SECURITY:
                     Path2D shield = new Path2D.Double();
                     shield.moveTo(16, 3);
@@ -792,6 +743,7 @@ public class gestionProductos extends JFrame {
                     shield.closePath();
                     g2.setStroke(new BasicStroke(2.2f));
                     g2.draw(shield);
+
 
                     Path2D check = new Path2D.Double();
                     check.moveTo(11, 15);

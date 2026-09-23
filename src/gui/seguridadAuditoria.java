@@ -14,13 +14,12 @@ import java.net.URL;
 
 /**
  * Pantalla de Seguridad y auditoría - GIT & EAT!
- * Muestra el diseño completo (sidebar, header, filtros, tarjetas de alerta y tabla).
- * La lógica real (filtrado, carga de datos, cierre de sesión) queda marcada con TODO
- * para que otro compañero la implemente conectando la base de datos / backend.
+ * Interfaz ajustada: Tarjetas y filtros con tamaño fijo proporcional,
+ * y tabla anclada firmemente usando un JScrollPane.
  */
 public class seguridadAuditoria extends JFrame {
 
-    // Paleta de colores (idéntica al resto de la aplicación)
+    // Paleta de colores 
     private static final Color COLOR_BG = new Color(231, 221, 202);
     private static final Color COLOR_SIDEBAR = new Color(139, 94, 52);
     private static final Color COLOR_HEADER = new Color(139, 94, 52);
@@ -32,7 +31,7 @@ public class seguridadAuditoria extends JFrame {
     private static final Color COLOR_BTN_NUEVO = new Color(243, 205, 59);
     private static final Color COLOR_CERRAR_SESION = new Color(211, 53, 58);
 
-    // Colores de los campos con borde (Desde, Hasta, Usuarios, Tipo de acción)
+    // Colores de los campos con borde
     private static final Color COLOR_FIELD_BG = new Color(222, 210, 191);
     private static final Color COLOR_FIELD_BORDER = new Color(139, 94, 52);
 
@@ -41,7 +40,7 @@ public class seguridadAuditoria extends JFrame {
     private static final Color COLOR_CARD_DIFERENCIAS = new Color(243, 205, 59);
     private static final Color COLOR_CARD_CAMBIOS = new Color(106, 161, 46);
 
-    private int selectedMenuIndex = 6; // "Seguridad y auditoría" seleccionado por defecto en esta vista
+    private int selectedMenuIndex = 5; 
     private JPanel[] menuButtons;
 
     public seguridadAuditoria() {
@@ -54,10 +53,10 @@ public class seguridadAuditoria extends JFrame {
         mainContainer.setBackground(COLOR_BG);
         mainContainer.setBorder(new EmptyBorder(15, 15, 15, 15));
 
-        // 1. BARRA LATERAL (idéntica al resto de la aplicación + botón Cerrar Sesión)
+        // 1. BARRA LATERAL
         mainContainer.add(createSidebarPanel(), BorderLayout.WEST);
 
-        // 2. PANEL CENTRAL (HEADER + CONTENIDO)
+        // 2. PANEL CENTRAL
         JPanel contentPanel = new JPanel(new BorderLayout(15, 15));
         contentPanel.setOpaque(false);
 
@@ -68,37 +67,25 @@ public class seguridadAuditoria extends JFrame {
         add(mainContainer);
     }
 
-    // ==========================================
-    // --- BARRA LATERAL (idéntica al resto + botón Cerrar Sesión) ---
-    // ==========================================
     private JPanel createSidebarPanel() {
         RoundedPanel sidebar = new RoundedPanel(25, COLOR_SIDEBAR);
         sidebar.setLayout(new BorderLayout(0, 15));
         sidebar.setPreferredSize(new Dimension(320, 0));
         sidebar.setBorder(new EmptyBorder(15, 15, 20, 15));
 
-        // Tarjeta contenedora blanca para el logo (clic = volver al Dashboard)
         RoundedPanel logoCard = new RoundedPanel(20, Color.WHITE);
         logoCard.setPreferredSize(new Dimension(290, 140));
         logoCard.setLayout(new GridBagLayout());
         logoCard.add(createLogoLabel());
         logoCard.setCursor(new Cursor(Cursor.HAND_CURSOR));
         logoCard.setToolTipText("Volver al Dashboard");
-        logoCard.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                dashboardAdmin app = new dashboardAdmin();
-                app.setVisible(true);
-                dispose();
-            }
-        });
+        
         sidebar.add(logoCard, BorderLayout.NORTH);
 
-        // Panel central: menú de navegación + botón de Cerrar Sesión debajo
         JPanel centerWrapper = new JPanel(new BorderLayout(0, 15));
         centerWrapper.setOpaque(false);
 
-        JPanel menuPanel = new JPanel(new GridLayout(7, 1, 0, 8));
+        JPanel menuPanel = new JPanel(new GridLayout(6, 1, 0, 8));
         menuPanel.setOpaque(false);
 
         Object[][] items = {
@@ -107,7 +94,6 @@ public class seguridadAuditoria extends JFrame {
             {SidebarVectorIcon.IconType.ORDERS, "gui/images/orders.png", "Gestión de pedidos"},
             {SidebarVectorIcon.IconType.REPORTS, "gui/images/reports.png", "Reportes y estadísticas"},
             {SidebarVectorIcon.IconType.CASH, "gui/images/cash.png", "Gestión de caja"},
-            {SidebarVectorIcon.IconType.SETTINGS, "gui/images/settings.png", "<html>Configuración<br>general</html>"},
             {SidebarVectorIcon.IconType.SECURITY, "gui/images/security.png", "Seguridad y auditoría"}
         };
 
@@ -123,7 +109,6 @@ public class seguridadAuditoria extends JFrame {
             btnPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 15, 8));
 
             JLabel iconLbl = createSidebarIconLabel(iconType, iconPath);
-
             JLabel textLbl = new JLabel(textHtml);
             textLbl.setFont(new Font("SansSerif", Font.BOLD, 17));
             textLbl.setForeground(Color.WHITE);
@@ -148,15 +133,9 @@ public class seguridadAuditoria extends JFrame {
                         btnPanel.repaint();
                     }
                 }
-
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    if (index == 6) {
-                        // Ya estamos en la ventana de Seguridad y auditoría
-                        selectedMenuIndex = index;
-                        updateSidebarSelection();
-                        return;
-                    }
+                    
                     if (index == 0) {
                         gestionEmpleados app = new gestionEmpleados();
                         app.setVisible(true);
@@ -165,6 +144,12 @@ public class seguridadAuditoria extends JFrame {
                     }
                     if (index == 1) {
                         gestionProductos app = new gestionProductos();
+                        app.setVisible(true);
+                        dispose();
+                        return;
+                    }
+                    if (index == 6) {
+                        seguridadAuditoria app = new seguridadAuditoria();
                         app.setVisible(true);
                         dispose();
                         return;
@@ -185,7 +170,6 @@ public class seguridadAuditoria extends JFrame {
 
         centerWrapper.add(menuPanel, BorderLayout.NORTH);
 
-        // Botón "Cerrar Sesión" (rojo) al final de la barra lateral
         RoundedPanel btnCerrarSesion = new RoundedPanel(15, COLOR_CERRAR_SESION);
         btnCerrarSesion.setLayout(new GridBagLayout());
         btnCerrarSesion.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -195,18 +179,6 @@ public class seguridadAuditoria extends JFrame {
         lblCerrarSesion.setFont(new Font("SansSerif", Font.BOLD, 16));
         lblCerrarSesion.setForeground(Color.WHITE);
         btnCerrarSesion.add(lblCerrarSesion);
-
-        btnCerrarSesion.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                // implementar el cierre de sesión real:
-                //  - invalidar el token / sesión del usuario actual
-                //  - limpiar cualquier dato sensible que se tenga en memoria
-                //  - abrir la ventana de login y cerrar todas las ventanas abiertas
-                // Por ahora solo se deja este mensaje de referencia:
-                System.out.println("Cerrar sesión presionado (pendiente de implementar)");
-            }
-        });
 
         JPanel logoutWrapper = new JPanel(new BorderLayout());
         logoutWrapper.setOpaque(false);
@@ -221,9 +193,8 @@ public class seguridadAuditoria extends JFrame {
     private JLabel createSidebarIconLabel(SidebarVectorIcon.IconType iconType, String resourcePath) {
         JLabel lbl = new JLabel();
         URL imgUrl = getClass().getResource("/" + resourcePath);
-        if (imgUrl == null) {
-            imgUrl = getClass().getResource("/" + resourcePath.replace("gui/", ""));
-        }
+        if (imgUrl == null) imgUrl = getClass().getResource("/" + resourcePath.replace("gui/", ""));
+        
         if (imgUrl != null) {
             ImageIcon icon = new ImageIcon(imgUrl);
             Image img = icon.getImage();
@@ -234,24 +205,10 @@ public class seguridadAuditoria extends JFrame {
         return lbl;
     }
 
-    private void updateSidebarSelection() {
-        for (int i = 0; i < menuButtons.length; i++) {
-            RoundedPanel btn = (RoundedPanel) menuButtons[i];
-            if (i == selectedMenuIndex) {
-                btn.setBackgroundColor(COLOR_SIDEBAR_ACTIVE);
-            } else {
-                btn.setBackgroundColor(COLOR_SIDEBAR);
-            }
-            btn.repaint();
-        }
-    }
-
     private JLabel createLogoLabel() {
         JLabel lblLogo = new JLabel();
         URL logoUrl = getClass().getResource("/gui/images/logo.png");
-        if (logoUrl == null) {
-            logoUrl = getClass().getResource("/images/logo.png");
-        }
+        if (logoUrl == null) logoUrl = getClass().getResource("/images/logo.png");
 
         if (logoUrl != null) {
             ImageIcon icon = new ImageIcon(logoUrl);
@@ -260,9 +217,7 @@ public class seguridadAuditoria extends JFrame {
             int h = img.getHeight(null);
             if (w > 0 && h > 0) {
                 double scale = Math.min(270.0 / w, 120.0 / h);
-                int targetW = (int) (w * scale);
-                int targetH = (int) (h * scale);
-                lblLogo.setIcon(new ImageIcon(img.getScaledInstance(targetW, targetH, Image.SCALE_SMOOTH)));
+                lblLogo.setIcon(new ImageIcon(img.getScaledInstance((int) (w * scale), (int) (h * scale), Image.SCALE_SMOOTH)));
             } else {
                 lblLogo.setIcon(icon);
             }
@@ -273,49 +228,46 @@ public class seguridadAuditoria extends JFrame {
         return lblLogo;
     }
 
-    // ==========================================
-    // --- VISTA PRINCIPAL (SEGURIDAD Y AUDITORÍA) ---
-    // ==========================================
     private JPanel createHeaderPanel() {
         RoundedPanel header = new RoundedPanel(20, COLOR_HEADER);
-        header.setLayout(new FlowLayout(FlowLayout.LEFT, 25, 25));
-        header.setPreferredSize(new Dimension(0, 110));
+        header.setLayout(new BorderLayout());
+        header.setPreferredSize(new Dimension(0, 125));
+        header.setBorder(new EmptyBorder(20, 35, 20, 35));
 
-        JLabel iconHeader = new JLabel(new SidebarVectorIcon(SidebarVectorIcon.IconType.SECURITY, 42));
-
-        JLabel title = new JLabel("Seguridad y auditoría");
-        title.setFont(new Font("SansSerif", Font.BOLD, 38));
+        JLabel title = new JLabel("Seguridad y Auditoría");
+        title.setFont(new Font("SansSerif", Font.BOLD, 40));
         title.setForeground(Color.WHITE);
+        header.add(title, BorderLayout.WEST);
 
-        header.add(iconHeader);
-        header.add(title);
+        JPanel rightHeader = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 10));
+        rightHeader.setOpaque(false);
 
         return header;
     }
 
     private JPanel createMainBody() {
-        JPanel body = new JPanel(new GridBagLayout());
+        // Usamos un BorderLayout en vez de GridBagLayout para evitar estiramientos no deseados
+        JPanel body = new JPanel(new BorderLayout(0, 20));
         body.setOpaque(false);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.insets = new Insets(8, 6, 8, 6);
+        body.setBorder(new EmptyBorder(8, 6, 8, 6));
 
-        // Fila 1: Filtros (Desde / Hasta / Usuarios / Tipo de acción / Filtrar)
-        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 1.0; gbc.weighty = 0.20;
-        body.add(createFiltersPanel(), gbc);
+        // Contenedor superior para Filtros y Tarjetas (se ajusta a su contenido y no crece infinito)
+        JPanel topWrapper = new JPanel();
+        topWrapper.setLayout(new BoxLayout(topWrapper, BoxLayout.Y_AXIS));
+        topWrapper.setOpaque(false);
 
-        // Fila 2: Tarjetas de alerta (Cancelaciones / Diferencias de caja / Cambios de precio)
-        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 1.0; gbc.weighty = 0.22;
-        body.add(createAlertCardsRow(), gbc);
+        topWrapper.add(createFiltersPanel());
+        topWrapper.add(Box.createRigidArea(new Dimension(0, 20)));
+        topWrapper.add(createAlertCardsRow());
 
-        // Fila 3: Tabla de auditoría
-        gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 1.0; gbc.weighty = 0.58;
-        body.add(createTableCard(), gbc);
+        body.add(topWrapper, BorderLayout.NORTH);
+        
+        // El centro toma todo el espacio restante para la tabla anclada
+        body.add(createTableCard(), BorderLayout.CENTER);
 
         return body;
     }
 
-    // --- FILTROS ---
     private JPanel createFiltersPanel() {
         JPanel panel = new JPanel();
         panel.setOpaque(false);
@@ -324,19 +276,18 @@ public class seguridadAuditoria extends JFrame {
         // Fila 1: Desde / Hasta
         JPanel row1 = new JPanel(new GridBagLayout());
         row1.setOpaque(false);
+        row1.setMaximumSize(new Dimension(Integer.MAX_VALUE, 75)); // Fija la altura máxima para evitar estirarse
+        
         GridBagConstraints gbc1 = new GridBagConstraints();
         gbc1.fill = GridBagConstraints.HORIZONTAL;
         gbc1.insets = new Insets(0, 0, 0, 20);
         gbc1.weighty = 1.0;
 
         JLabel lblDesdeTxt = new JLabel("01/02/2026");
-        // TODO (compañero): reemplazar por un selector de fecha real (JDatePicker o similar)
-        //  y conectar su valor a la consulta de auditoría.
         JComponent campoDesde = createOutlinedField("📅", lblDesdeTxt, false);
         JPanel desdeGroup = createLabeledField("Desde:", campoDesde);
 
         JLabel lblHastaTxt = new JLabel("01/08/2026");
-        // TODO (compañero): reemplazar por un selector de fecha real y conectar su valor.
         JComponent campoHasta = createOutlinedField("📅", lblHastaTxt, false);
         JPanel hastaGroup = createLabeledField("Hasta:", campoHasta);
 
@@ -348,27 +299,25 @@ public class seguridadAuditoria extends JFrame {
         // Fila 2: Usuarios / Tipo de acción / Filtrar
         JPanel row2 = new JPanel(new GridBagLayout());
         row2.setOpaque(false);
+        row2.setMaximumSize(new Dimension(Integer.MAX_VALUE, 75)); // Fija la altura máxima
+
         GridBagConstraints gbc2 = new GridBagConstraints();
         gbc2.fill = GridBagConstraints.HORIZONTAL;
         gbc2.insets = new Insets(0, 0, 0, 20);
         gbc2.weighty = 1.0;
 
-        // TODO (compañero): cargar la lista real de usuarios desde la base de datos
         JComboBox<String> cbUsuarios = new FlatComboBox<>(new String[]{"Todos", "Administrador", "Cajero"});
         cbUsuarios.setFont(new Font("SansSerif", Font.BOLD, 15));
         cbUsuarios.setForeground(COLOR_TEXT_BROWN);
         JComponent campoUsuarios = createOutlinedField("👤", cbUsuarios, true);
         JPanel usuariosGroup = createLabeledField("Usuarios:", campoUsuarios);
 
-        // TODO (compañero): cargar la lista real de tipos de acción (login, cancelación,
-        //  cambio de precio, diferencia de caja, etc.) desde la base de datos
         JComboBox<String> cbTipoAccion = new FlatComboBox<>(new String[]{"Todas", "Cancelaciones", "Cambios de precio", "Diferencias de caja"});
         cbTipoAccion.setFont(new Font("SansSerif", Font.BOLD, 15));
         cbTipoAccion.setForeground(COLOR_TEXT_BROWN);
         JComponent campoTipoAccion = createOutlinedField("🎚️", cbTipoAccion, true);
         JPanel tipoAccionGroup = createLabeledField("Tipo de accion:", campoTipoAccion);
 
-        // Botón Filtrar
         RoundedPanel btnFiltrar = new RoundedPanel(18, COLOR_BTN_NUEVO);
         btnFiltrar.setLayout(new GridBagLayout());
         btnFiltrar.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -379,20 +328,6 @@ public class seguridadAuditoria extends JFrame {
         lblFiltrar.setForeground(Color.WHITE);
         btnFiltrar.add(lblFiltrar);
 
-        btnFiltrar.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                // TODO (compañero): implementar la lógica real de filtrado:
-                //  1. Leer los valores de lblDesdeTxt / lblHastaTxt / cbUsuarios / cbTipoAccion
-                //  2. Consultar el historial de auditoría con esos filtros
-                //  3. Volver a poblar el DefaultTableModel de la tabla con los resultados
-                //  4. Actualizar los números de las tarjetas (Cancelaciones, Diferencias de
-                //     caja, Cambios de precio) según los resultados filtrados
-                System.out.println("Filtrar presionado (pendiente de implementar)");
-            }
-        });
-
-        // Se envuelve el botón para alinear su altura con los demás campos (con label vacío arriba)
         JPanel filtrarGroup = new JPanel();
         filtrarGroup.setOpaque(false);
         filtrarGroup.setLayout(new BoxLayout(filtrarGroup, BoxLayout.Y_AXIS));
@@ -429,6 +364,7 @@ public class seguridadAuditoria extends JFrame {
         label.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         field.setAlignmentX(Component.LEFT_ALIGNMENT);
+        // Fuerza el campo a no superar la altura deseada
         field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 46));
         field.setPreferredSize(new Dimension(0, 46));
 
@@ -465,16 +401,17 @@ public class seguridadAuditoria extends JFrame {
         return wrapper;
     }
 
-    // --- TARJETAS DE ALERTA ---
     private JPanel createAlertCardsRow() {
         JPanel row = new JPanel(new GridLayout(1, 3, 15, 0));
         row.setOpaque(false);
+        
+        // Bloqueamos la altura para que no se vean excesivamente grandes
+        row.setPreferredSize(new Dimension(0, 110));
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 110));
 
-        // TODO (compañero): reemplazar estos valores fijos por los conteos reales
-        //  obtenidos de la consulta de auditoría (ver botón "Filtrar").
         row.add(createAlertCard("cancel", "2", "Cancelaciones", COLOR_CARD_CANCELACIONES));
-        row.add(createAlertCard("warning", "3", "<html>Diferencias de<br>caja</html>", COLOR_CARD_DIFERENCIAS));
-        row.add(createAlertCard("swap", "1", "<html>Cambios de<br>precio</html>", COLOR_CARD_CAMBIOS));
+        row.add(createAlertCard("warning", "3", "<html>Diferencias de caja</html>", COLOR_CARD_DIFERENCIAS));
+        row.add(createAlertCard("swap", "1", "<html>Cambios de precio</html>", COLOR_CARD_CAMBIOS));
 
         return row;
     }
@@ -509,17 +446,12 @@ public class seguridadAuditoria extends JFrame {
         return card;
     }
 
-    // --- TABLA DE AUDITORÍA ---
     private JPanel createTableCard() {
         RoundedPanel card = new RoundedPanel(20, Color.WHITE);
         card.setLayout(new BorderLayout());
-        card.setBorder(new EmptyBorder(0, 0, 0, 0));
+        card.setBorder(new EmptyBorder(10, 10, 10, 10)); // Padding interno para que no pegue a los bordes redondeados
 
         String[] columns = {"Fecha y hora:", "Usuario:", "Accion:", "Detalle:"};
-
-        // TODO (compañero): poblar este modelo con los registros reales de auditoría
-        //  (por ejemplo, resultado de una consulta SELECT al historial de acciones).
-        //  Por ahora se deja vacío para que el diseño se vea igual al mockup.
         Object[][] data = {};
 
         DefaultTableModel model = new DefaultTableModel(data, columns) {
@@ -527,13 +459,31 @@ public class seguridadAuditoria extends JFrame {
             public boolean isCellEditable(int row, int column) { return false; }
         };
 
-        JTable table = new JTable(model);
+        // Sobrescribimos el JTable para dibujar la marca de agua cuando está vacía
+        JTable table = new JTable(model) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                if (getRowCount() == 0) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 42));
+                    g2.setColor(new Color(0, 0, 0, 25));
+                    g2.drawString("🔍", 25, getHeight() - 25);
+                    g2.dispose();
+                }
+            }
+        };
+
         table.setRowHeight(45);
         table.setShowGrid(false);
         table.setFont(new Font("SansSerif", Font.PLAIN, 15));
+        table.setFillsViewportHeight(true);
+        table.setBackground(COLOR_BG.brighter());
 
         JTableHeader header = table.getTableHeader();
         header.setPreferredSize(new Dimension(0, 48));
+        header.setReorderingAllowed(false);
         header.setDefaultRenderer(new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
@@ -547,37 +497,17 @@ public class seguridadAuditoria extends JFrame {
             }
         });
 
-        // Panel vacío (cuerpo de la tabla) con marca de agua de lupa, igual al mockup
-        JPanel emptyBody = new WatermarkPanel();
-        emptyBody.setBackground(COLOR_BG.brighter());
-        emptyBody.setOpaque(true);
+        // El uso de JScrollPane fija la tabla y permite hacer scroll interno si hay muchos datos
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.getViewport().setBackground(COLOR_BG.brighter());
 
-        JPanel tableContainer = new JPanel(new BorderLayout());
-        tableContainer.add(header, BorderLayout.NORTH);
-        tableContainer.add(emptyBody, BorderLayout.CENTER);
-
-        card.add(tableContainer, BorderLayout.CENTER);
+        card.add(scrollPane, BorderLayout.CENTER);
         return card;
     }
 
-    // Panel decorativo que dibuja una lupa tenue de fondo cuando la tabla está vacía
-    private static class WatermarkPanel extends JPanel {
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 42));
-            g2.setColor(new Color(0, 0, 0, 25));
-            g2.drawString("🔍", 25, getHeight() - 25);
-            g2.dispose();
-        }
-    }
-
-    // --- CLASE DE ICONOS VECTORIALES PARA LA BARRA LATERAL (idéntica al resto) ---
     private static class SidebarVectorIcon implements Icon {
         public enum IconType { EMPLOYEES, MENU, ORDERS, REPORTS, CASH, SETTINGS, SECURITY }
-
         private final IconType type;
         private final int size;
 
@@ -585,13 +515,8 @@ public class seguridadAuditoria extends JFrame {
             this.type = type;
             this.size = size;
         }
-
-        @Override
-        public int getIconWidth() { return size; }
-
-        @Override
-        public int getIconHeight() { return size; }
-
+        @Override public int getIconWidth() { return size; }
+        @Override public int getIconHeight() { return size; }
         @Override
         public void paintIcon(Component c, Graphics g, int x, int y) {
             Graphics2D g2 = (Graphics2D) g.create();
@@ -599,7 +524,6 @@ public class seguridadAuditoria extends JFrame {
             g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
             g2.translate(x, y);
             g2.setColor(Color.WHITE);
-
             float scale = size / 32.0f;
             g2.scale(scale, scale);
 
@@ -611,13 +535,11 @@ public class seguridadAuditoria extends JFrame {
                     g2.fillOval(20, 6, 8, 8);
                     g2.fillArc(17, 15, 14, 12, 0, 180);
                     break;
-
                 case MENU:
                     g2.fillArc(3, 5, 26, 14, 0, 180);
                     g2.fillRoundRect(2, 14, 28, 4, 2, 2);
                     g2.fillRoundRect(4, 20, 24, 6, 3, 3);
                     break;
-
                 case ORDERS:
                     g2.setStroke(new BasicStroke(2.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                     g2.drawRoundRect(5, 5, 22, 24, 4, 4);
@@ -626,13 +548,11 @@ public class seguridadAuditoria extends JFrame {
                     g2.drawLine(9, 17, 23, 17);
                     g2.drawLine(9, 22, 18, 22);
                     break;
-
                 case REPORTS:
                     g2.fillRoundRect(4, 18, 6, 10, 2, 2);
                     g2.fillRoundRect(13, 12, 6, 16, 2, 2);
                     g2.fillRoundRect(22, 6, 6, 22, 2, 2);
                     break;
-
                 case CASH:
                     g2.setStroke(new BasicStroke(2.0f));
                     g2.drawRoundRect(3, 7, 26, 18, 4, 4);
@@ -641,20 +561,6 @@ public class seguridadAuditoria extends JFrame {
                     FontMetrics fm = g2.getFontMetrics();
                     g2.drawString("Q", 16 - fm.stringWidth("Q") / 2, 19);
                     break;
-
-                case SETTINGS:
-                    g2.setStroke(new BasicStroke(2.5f));
-                    g2.drawOval(10, 10, 12, 12);
-                    for (int i = 0; i < 8; i++) {
-                        double angle = Math.toRadians(i * 45);
-                        int x1 = (int) (16 + 8 * Math.cos(angle));
-                        int y1 = (int) (16 + 8 * Math.sin(angle));
-                        int x2 = (int) (16 + 13 * Math.cos(angle));
-                        int y2 = (int) (16 + 13 * Math.sin(angle));
-                        g2.drawLine(x1, y1, x2, y2);
-                    }
-                    break;
-
                 case SECURITY:
                     Path2D shield = new Path2D.Double();
                     shield.moveTo(16, 3);
@@ -672,27 +578,18 @@ public class seguridadAuditoria extends JFrame {
                     check.lineTo(21, 11);
                     g2.draw(check);
                     break;
+                default: break;
             }
             g2.dispose();
         }
     }
 
-    // --- Ícono decorativo para las tarjetas de alerta (círculo translúcido + símbolo) ---
     private static class AlertIcon implements Icon {
-        private final String type; // "cancel", "warning", "swap"
+        private final String type;
         private final int size;
-
-        AlertIcon(String type, int size) {
-            this.type = type;
-            this.size = size;
-        }
-
-        @Override
-        public int getIconWidth() { return size; }
-
-        @Override
-        public int getIconHeight() { return size; }
-
+        AlertIcon(String type, int size) { this.type = type; this.size = size; }
+        @Override public int getIconWidth() { return size; }
+        @Override public int getIconHeight() { return size; }
         @Override
         public void paintIcon(Component c, Graphics g, int x, int y) {
             Graphics2D g2 = (Graphics2D) g.create();
@@ -729,40 +626,30 @@ public class seguridadAuditoria extends JFrame {
                     g2.drawLine(pad + 8, midBottom - 6, pad, midBottom);
                     g2.drawLine(pad + 8, midBottom + 6, pad, midBottom);
                     break;
-                default:
-                    break;
             }
             g2.dispose();
         }
     }
 
-    // --- ComboBox plano (sin fondo ni flecha nativa) para usarse dentro de RoundedOutlinePanel ---
     private static class FlatComboBox<E> extends JComboBox<E> {
         FlatComboBox(E[] items) {
             super(items);
             setOpaque(false);
             setBorder(BorderFactory.createEmptyBorder());
             setFocusable(false);
-
             setUI(new BasicComboBoxUI() {
-                @Override
-                protected JButton createArrowButton() {
+                @Override protected JButton createArrowButton() {
                     JButton btn = new JButton();
                     btn.setPreferredSize(new Dimension(0, 0));
                     btn.setBorder(BorderFactory.createEmptyBorder());
                     btn.setContentAreaFilled(false);
                     return btn;
                 }
-
-                @Override
-                public void paintCurrentValueBackground(Graphics g, Rectangle bounds, boolean hasFocus) {
-                    // Sin fondo propio: el contenedor (RoundedOutlinePanel) ya pinta el borde y relleno
-                }
+                @Override public void paintCurrentValueBackground(Graphics g, Rectangle bounds, boolean hasFocus) {}
             });
         }
     }
 
-    // --- Panel con relleno y borde redondeado (para los campos con contorno del mockup) ---
     private static class RoundedOutlinePanel extends JPanel {
         private final int radius;
         private final Color fill;
@@ -791,7 +678,6 @@ public class seguridadAuditoria extends JFrame {
         }
     }
 
-    // --- COMPONENTE DE PANEL REDONDEADO (con fondo mutable) ---
     private static class RoundedPanel extends JPanel {
         private final int cornerRadius;
         private Color backgroundColor;
