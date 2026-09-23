@@ -40,7 +40,9 @@ public class crud {
     public static void verCategorias() {
         String sql = "SELECT id_categoria, nombre, descripcion, estado FROM categoria";
 
-        try (Connection conn = conexionDB.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+        try (Connection conn = conexionDB.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                ResultSet rs = stmt.executeQuery()) {
 
             System.out.println("\n--- LISTA DE CATEGORÍAS ---");
 
@@ -153,7 +155,9 @@ public class crud {
                 + "LEFT JOIN categoria c ON p.id_categoria = c.id_categoria "
                 + "LEFT JOIN turno_menu t ON p.id_turno = t.id_turno";
 
-        try (Connection conn = conexionDB.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+        try (Connection conn = conexionDB.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                ResultSet rs = stmt.executeQuery()) {
 
             System.out.println("\n--- LISTA DE PRODUCTOS ---");
 
@@ -277,7 +281,9 @@ public class crud {
     public static void verUsuarios() {
         String sql = "SELECT id_usuario, nombre, apellido, codigo_empleado, rol, estado FROM usuario";
 
-        try (Connection conn = conexionDB.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+        try (Connection conn = conexionDB.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                ResultSet rs = stmt.executeQuery()) {
 
             System.out.println("\n--- LISTA DE USUARIOS ---");
 
@@ -352,7 +358,9 @@ public class crud {
         List<Object[]> filas = new ArrayList<>();
         String sql = "SELECT id_usuario, nombre, apellido, codigo_empleado, rol, estado FROM usuario ORDER BY id_usuario";
 
-        try (Connection conn = conexionDB.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+        try (Connection conn = conexionDB.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
                 String nombreCompleto = rs.getString("nombre") + " " + rs.getString("apellido");
@@ -364,7 +372,7 @@ public class crud {
 
                 // El 6to elemento (idUsuario) NO se muestra como columna visible,
                 // pero queda guardado en la fila del modelo para poder identificarla después.
-                filas.add(new Object[]{nombreCompleto, codigo, rolFormateado, estado, "", idUsuario});
+                filas.add(new Object[] { nombreCompleto, codigo, rolFormateado, estado, "", idUsuario });
             }
 
         } catch (SQLException e) {
@@ -378,13 +386,16 @@ public class crud {
         List<Object[]> filas = new ArrayList<>();
         String sql = "SELECT nombre, apellido, rol, turno FROM usuario WHERE estado = 1 AND rol = 'Cajero' ORDER BY turno, nombre";
 
-        try (Connection conn = conexionDB.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+        try (Connection conn = conexionDB.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
                 String nombreCompleto = rs.getString("nombre") + " " + rs.getString("apellido");
-                String rolFormateado = "ADMINISTRADOR".equalsIgnoreCase(rs.getString("rol")) ? "Administrador" : "Cajero";
+                String rolFormateado = "ADMINISTRADOR".equalsIgnoreCase(rs.getString("rol")) ? "Administrador"
+                        : "Cajero";
                 String turno = rs.getString("turno");
-                filas.add(new Object[]{nombreCompleto, rolFormateado, turno});
+                filas.add(new Object[] { nombreCompleto, rolFormateado, turno });
             }
 
         } catch (SQLException e) {
@@ -413,7 +424,33 @@ public class crud {
         return null;
     }
 
-// ACTUALIZAR LA CONTRASEÑA DE UN USUARIO
+    // OBTENER UN USUARIO POR ID (para precargar el formulario de edición)
+    public static Object[] obtenerUsuario(int idUsuario) {
+        String sql = "SELECT nombre, apellido, codigo_empleado, rol, estado FROM usuario WHERE id_usuario = ?";
+
+        try (Connection conn = conexionDB.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idUsuario);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return new Object[] {
+                            rs.getString("nombre"),
+                            rs.getString("apellido"),
+                            rs.getString("codigo_empleado"),
+                            rs.getString("rol"),
+                            rs.getInt("estado")
+                    };
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error al obtener usuario: " + e.getMessage());
+        }
+        return null;
+    }
+
+    // ACTUALIZAR LA CONTRASEÑA DE UN USUARIO
     public static boolean actualizarContrasena(int idUsuario, String nuevaContrasena) {
         String sql = "UPDATE usuario SET contrasena = ? WHERE id_usuario = ?";
 

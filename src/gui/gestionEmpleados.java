@@ -465,7 +465,7 @@ public class gestionEmpleados extends JFrame {
         card.setLayout(new BorderLayout());
         card.setBorder(new EmptyBorder(12, 12, 12, 12));
 
-        String[] columns = { "Empleado", "Código", "Rol", "Estado", "Acciones" };
+        String[] columns = { "Empleado", "Código", "Rol", "Estado", "Acciones", "ID" };
 
         model = new DefaultTableModel(columns, 0) {
             @Override
@@ -540,83 +540,57 @@ public class gestionEmpleados extends JFrame {
             return actionsPanel;
         });
 
+        // Oculta la columna ID de la vista (sigue existiendo en el modelo)
+        table.removeColumn(table.getColumnModel().getColumn(5));
+
         // Escuchador de clic en la tabla para desplieque del diálogo emergente
         // accionesEmpleadoDialog
         table.addMouseListener(new MouseAdapter() {
-    @Override
-    public void mouseClicked(MouseEvent e) {
-        int viewRow = table.rowAtPoint(e.getPoint());
-        int viewCol = table.columnAtPoint(e.getPoint());
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int viewRow = table.rowAtPoint(e.getPoint());
+                int viewCol = table.columnAtPoint(e.getPoint());
 
-        if (viewRow < 0 || viewCol != 4) {
-            return; // Clic fuera de una fila válida o fuera de la columna Acciones
-        }
-
-        // CLAVE: convertir la fila visible (ordenada/filtrada) a la fila real del modelo
-        int modelRow = table.convertRowIndexToModel(viewRow);
-        Integer idUsuario = (Integer) model.getValueAt(modelRow, 5);
-
-        if (idUsuario == null) {
-            return;
-        }
-
-        // Determinar si el clic fue en el ícono de editar (izquierda) o candado (derecha)
-        Rectangle cellRect = table.getCellRect(viewRow, viewCol, false);
-        int clickXRelativo = e.getX() - cellRect.x;
-        boolean esBotonEditar = clickXRelativo < cellRect.width / 2;
-
-        if (esBotonEditar) {
-            JOptionPane.showMessageDialog(gestionEmpleados.this,
-                    "Edición de empleado en desarrollo.", "Información",
-                    JOptionPane.INFORMATION_MESSAGE);
-        } else {
-            restablecerContraseñaDialog dialog = new restablecerContraseñaDialog(gestionEmpleados.this, idUsuario);
-            dialog.setVisible(true);
-
-            if (dialog.isConfirmado()) {
-                JOptionPane.showMessageDialog(gestionEmpleados.this,
-                        "Contraseña actualizada correctamente.", "Éxito",
-                        JOptionPane.INFORMATION_MESSAGE);
-            }
-        }
-
-                    // Manejar la acción seleccionada por el usuario en el popup
-                    ajustesEmpleadoDialog.AccionSeleccionada accion = dialog.getAccionEfectuada();
-                    switch (accion) {
-                        case EDITAR_DATOS:
-                            JOptionPane.showMessageDialog(gestionEmpleados.this,
-                                    "Editar datos de " + nombreEmpleado + " (" + codigoEmpleado + ")",
-                                    "Editar Empleado", JOptionPane.INFORMATION_MESSAGE);
-                            break;
-
-                        case RESTABLECER_CONTRASENA:
-                            JOptionPane.showMessageDialog(gestionEmpleados.this,
-                                    "Restablecer contraseña del código: " + codigoEmpleado,
-                                    "Restablecer Contraseña", JOptionPane.WARNING_MESSAGE);
-                            break;
-
-                        case VER_HISTORIAL:
-                            JOptionPane.showMessageDialog(gestionEmpleados.this,
-                                    "Historial de órdenes atendidas por " + nombreEmpleado,
-                                    "Historial de Órdenes", JOptionPane.INFORMATION_MESSAGE);
-                            break;
-
-                        case DESACTIVAR_EMPLEADO:
-                            int respuesta = JOptionPane.showConfirmDialog(gestionEmpleados.this,
-                                    "¿Estás seguro de desactivar a " + nombreEmpleado + "?",
-                                    "Desactivar Empleado", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-
-                            if (respuesta == JOptionPane.YES_OPTION) {
-                                model.setValueAt("Inactivo", modelRow, 3);
-                                updateSummaryMetrics();
-                            }
-                            break;
-
-                        case NINGUNA:
-                        default:
-                            break;
-                    }
+                if (viewRow < 0 || viewCol != 4) {
+                    return; // clic fuera de la columna Acciones
                 }
+
+                // Convierte la fila visible (filtrada/ordenada) a la fila real del modelo
+                int modelRow = table.convertRowIndexToModel(viewRow);
+                Integer idUsuario = (Integer) model.getValueAt(modelRow, 5);
+                if (idUsuario == null) {
+                    return;
+                }
+
+                JPopupMenu menu = new JPopupMenu();
+
+                JMenuItem itemEditar = new JMenuItem("✏ Editar datos");
+                itemEditar.addActionListener(ev -> {
+                    editarEmpleadoDialog dialog = new editarEmpleadoDialog(gestionEmpleados.this, idUsuario);
+                    dialog.setVisible(true);
+                    if (dialog.isGuardado()) {
+                        cargarEmpleadosDesdeBD(); // refresca tabla y métricas
+                        JOptionPane.showMessageDialog(gestionEmpleados.this,
+                                "Empleado actualizado correctamente.", "Éxito",
+                                JOptionPane.INFORMATION_MESSAGE);
+                    }
+                });
+
+                JMenuItem itemPass = new JMenuItem("🔒 Restablecer contraseña");
+                itemPass.addActionListener(ev -> {
+                    restablecerContraseñaDialog dialog = new restablecerContraseñaDialog(gestionEmpleados.this,
+                            idUsuario);
+                    dialog.setVisible(true);
+                    if (dialog.isConfirmado()) {
+                        JOptionPane.showMessageDialog(gestionEmpleados.this,
+                                "Contraseña actualizada correctamente.", "Éxito",
+                                JOptionPane.INFORMATION_MESSAGE);
+                    }
+                });
+
+                menu.add(itemEditar);
+                menu.add(itemPass);
+                menu.show(table, e.getX(), e.getY());
             }
         });
 
