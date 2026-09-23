@@ -1,32 +1,29 @@
 package gui;
 
 import java.awt.*;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.geom.Arc2D;
 import java.awt.geom.Path2D;
 import java.net.URL;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 import java.util.Locale;
-import java.util.regex.Pattern;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
-import javax.swing.table.TableRowSorter;
-import main.Crud.crud;
 
-public class gestionEmpleados extends JFrame {
+/**
+ * Git & Eat! - Pantalla "Reportes y estadísticas".
+ * Misma estructura y estilo que gestionEmpleados / gestionProductos
+ * (sidebar, header con reloj, cuerpo con tarjetas redondeadas).
+ */
+public class pantallaEstadistica extends JFrame {
 
-    // Paleta de colores exacta
+    // Paleta de colores (idéntica a gestionEmpleados)
     private static final Color COLOR_BG = new Color(231, 221, 202);
     private static final Color COLOR_SIDEBAR = new Color(139, 94, 52);
     private static final Color COLOR_HEADER = new Color(139, 94, 52);
@@ -35,37 +32,45 @@ public class gestionEmpleados extends JFrame {
     private static final Color COLOR_BTN_NUEVO = new Color(243, 205, 59);
     private static final Color COLOR_TABLE_HEADER = new Color(92, 53, 22);
     private static final Color COLOR_TABLE_GRID = new Color(222, 210, 191);
-    private static final Color COLOR_TEXT_GREEN = new Color(106, 161, 46);
     private static final Color COLOR_TEXT_RED = new Color(211, 53, 58);
     private static final Color COLOR_SIDEBAR_HOVER = new Color(160, 110, 65);
     private static final Color COLOR_SIDEBAR_ACTIVE = new Color(110, 72, 38);
 
-    // Colores de las tarjetas de resumen inferiores
-    private static final Color COLOR_CARD_ADMIN = new Color(243, 205, 59);
-    private static final Color COLOR_CARD_CAJEROS = new Color(230, 115, 45);
-    private static final Color COLOR_CARD_ACTIVOS = new Color(106, 161, 46);
-    private static final Color COLOR_CARD_INACTIVOS = new Color(211, 53, 58);
+    // Colores propios de esta pantalla
+    private static final Color COLOR_FILTERS_BG = new Color(242, 227, 211);
+    private static final Color COLOR_TAB = new Color(227, 205, 176);
 
-    private int selectedMenuIndex = 0;
+    // Índice de "Reportes y estadísticas" en la barra lateral
+    private static final int INDICE_ACTUAL = 3;
+
+    // Pestañas de reporte y columnas que muestra cada una
+    private static final String[] TAB_TITLES = {
+            "Ventas por fecha", "Ventas por cajero", "Productos más vendidos", "Método de pago"
+    };
+    private static final String[][] TAB_COLUMNS = {
+            { "Fecha", "Transacciones", "Total vendido" },
+            { "Cajero", "Transacciones", "Total vendido" },
+            { "Producto", "Unidades vendidas", "Total vendido" },
+            { "Método de pago", "Transacciones", "Total pagado" }
+    };
+
+    private int selectedMenuIndex = INDICE_ACTUAL;
+    private int selectedTab = 3;
     private JPanel[] menuButtons;
     private JLabel lblClock;
     private JLabel lblDate;
 
-    // Componentes para la funcionalidad dinámica
+    // Componentes de la pantalla
+    private PillButton[] tabs;
+    private JComboBox<String> cmbCategoria;
+    private JComboBox<String> cmbCajero;
     private DefaultTableModel model;
-    private TableRowSorter<DefaultTableModel> rowSorter;
-    private JTextField txtSearch;
-    private JComboBox<String> cbRoles;
-    private static final String PLACEHOLDER_TEXT = "Buscar por nombre o código";
+    private BarChartPanel barChart;
+    private PieChartPanel turnoChart;
+    private PieChartPanel comboChart;
 
-    // Labels de las tarjetas de métricas
-    private JLabel lblValAdmin;
-    private JLabel lblValCajeros;
-    private JLabel lblValActivos;
-    private JLabel lblValInactivos;
-
-    public gestionEmpleados() {
-        setTitle("GIT & EAT! - Gestión de Empleados");
+    public pantallaEstadistica() {
+        setTitle("GIT & EAT! - Reportes y estadísticas");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setMinimumSize(new Dimension(1280, 720));
@@ -80,7 +85,6 @@ public class gestionEmpleados extends JFrame {
         // 2. PANEL CENTRAL (HEADER + CONTENIDO)
         JPanel contentPanel = new JPanel(new BorderLayout(15, 15));
         contentPanel.setOpaque(false);
-
         contentPanel.add(createHeaderPanel(), BorderLayout.NORTH);
         contentPanel.add(createMainBody(), BorderLayout.CENTER);
 
@@ -89,17 +93,51 @@ public class gestionEmpleados extends JFrame {
 
         // Al presionar ESC, regresa al Dashboard del Administrador
         getRootPane().registerKeyboardAction(
-                e -> {
-                    dashboardAdmin app = new dashboardAdmin();
-                    app.setVisible(true);
-                    dispose();
-                },
+                e -> irADashboard(),
                 KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
                 JComponent.WHEN_IN_FOCUSED_WINDOW);
 
+        selectTab(selectedTab);
         startLiveClock();
-        cargarEmpleadosDesdeBD(); // Carga usuarios reales de la BD (ya calcula los totales)
     }
+
+    /** Se mantiene por compatibilidad con código que ya la llamaba. */
+    public void mostrarPantallaCompleta() {
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
+        setVisible(true);
+    }
+
+    // =====================================================================
+    // NAVEGACIÓN
+    // =====================================================================
+
+    private void navegarA(int indice) {
+        switch (indice) {
+            case INDICE_ACTUAL:
+                return; // ya estamos en esta pantalla
+            case 0:
+                new gestionEmpleados().setVisible(true);
+                dispose();
+                return;
+            case 1:
+                new gestionProductos().setVisible(true);
+                dispose();
+                return;
+            default:
+                JOptionPane.showMessageDialog(this, "Sección en desarrollo.", "Información",
+                        JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
+    private void irADashboard() {
+        dashboardAdmin app = new dashboardAdmin();
+        app.setVisible(true);
+        dispose();
+    }
+
+    // =====================================================================
+    // BARRA LATERAL
+    // =====================================================================
 
     private JPanel createSidebarPanel() {
         RoundedPanel sidebar = new RoundedPanel(25, COLOR_SIDEBAR);
@@ -116,10 +154,7 @@ public class gestionEmpleados extends JFrame {
         logoCard.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                // Si tienes dashboardAdmin descomenta estas líneas:
-                // dashboardAdmin app = new dashboardAdmin();
-                // app.setVisible(true);
-                dispose();
+                irADashboard();
             }
         });
         sidebar.add(logoCard, BorderLayout.NORTH);
@@ -179,24 +214,7 @@ public class gestionEmpleados extends JFrame {
 
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    if (index == 0) {
-                        selectedMenuIndex = index;
-                        updateSidebarSelection();
-                        return;
-
-                    } else if (index == 1) {
-                        gestionProductos app = new gestionProductos();
-                        app.setVisible(true);
-                        dispose();
-                        return;
-                    }else if (index == 3){
-                        pantallaEstadistica app = new pantallaEstadistica();
-                        app.setVisible(true);
-                        dispose();
-                        return;
-                    }
-                    JOptionPane.showMessageDialog(gestionEmpleados.this, "Sección en desarrollo.", "Información",
-                            JOptionPane.INFORMATION_MESSAGE);
+                    navegarA(index);
                 }
             });
 
@@ -222,14 +240,6 @@ public class gestionEmpleados extends JFrame {
             lbl.setIcon(new SidebarVectorIcon(iconType, 28));
         }
         return lbl;
-    }
-
-    private void updateSidebarSelection() {
-        for (int i = 0; i < menuButtons.length; i++) {
-            RoundedPanel btn = (RoundedPanel) menuButtons[i];
-            btn.setBackgroundColor(i == selectedMenuIndex ? COLOR_SIDEBAR_ACTIVE : COLOR_SIDEBAR);
-            btn.repaint();
-        }
     }
 
     private JLabel createLogoLabel() {
@@ -259,16 +269,33 @@ public class gestionEmpleados extends JFrame {
         return lblLogo;
     }
 
+    // =====================================================================
+    // HEADER
+    // =====================================================================
+
     private JPanel createHeaderPanel() {
         RoundedPanel header = new RoundedPanel(20, COLOR_HEADER);
         header.setLayout(new BorderLayout());
         header.setPreferredSize(new Dimension(0, 125));
         header.setBorder(new EmptyBorder(20, 35, 20, 35));
 
-        JLabel title = new JLabel("Gestión de empleados");
+        // Título con icono de barras
+        JPanel titlePanel = new JPanel(new GridBagLayout());
+        titlePanel.setOpaque(false);
+        GridBagConstraints tgbc = new GridBagConstraints();
+        tgbc.gridy = 0;
+        tgbc.insets = new Insets(0, 0, 0, 18);
+
+        JLabel titleIcon = new JLabel(new SidebarVectorIcon(SidebarVectorIcon.IconType.REPORTS, 44));
+        titlePanel.add(titleIcon, tgbc);
+
+        JLabel title = new JLabel("Reportes y estadísticas");
         title.setFont(new Font("SansSerif", Font.BOLD, 40));
         title.setForeground(Color.WHITE);
-        header.add(title, BorderLayout.WEST);
+        tgbc.insets = new Insets(0, 0, 0, 0);
+        titlePanel.add(title, tgbc);
+
+        header.add(titlePanel, BorderLayout.WEST);
 
         JPanel rightHeader = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 10));
         rightHeader.setOpaque(false);
@@ -295,7 +322,7 @@ public class gestionEmpleados extends JFrame {
         btnRefresh.setForeground(Color.WHITE);
         btnRefresh.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnRefresh.setToolTipText("Actualizar datos");
-        btnRefresh.addActionListener(e -> repaint());
+        btnRefresh.addActionListener(e -> generarReporte());
         rightHeader.add(btnRefresh);
 
         header.add(rightHeader, BorderLayout.EAST);
@@ -310,8 +337,13 @@ public class gestionEmpleados extends JFrame {
             lblClock.setText(sdfTime.format(now));
             lblDate.setText(sdfDate.format(now));
         });
+        timer.setInitialDelay(0);
         timer.start();
     }
+
+    // =====================================================================
+    // CUERPO
+    // =====================================================================
 
     private JPanel createMainBody() {
         JPanel body = new JPanel(new GridBagLayout());
@@ -319,160 +351,150 @@ public class gestionEmpleados extends JFrame {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.BOTH;
         gbc.insets = new Insets(8, 6, 8, 6);
-
-        // Fila 1: Controles de búsqueda y filtros
         gbc.gridx = 0;
+        gbc.weightx = 1.0;
+
+        // Fila 1: gráficas
         gbc.gridy = 0;
-        gbc.weightx = 1.0;
-        gbc.weighty = 0.08;
-        body.add(createTopBar(), gbc);
+        gbc.weighty = 0.35;
+        body.add(createChartsRow(), gbc);
 
-        // Fila 2: Tabla de Empleados
-        gbc.gridx = 0;
+        // Fila 2: pestañas y filtros (altura fija)
         gbc.gridy = 1;
-        gbc.weightx = 1.0;
-        gbc.weighty = 0.62;
-        body.add(createTableCard(), gbc);
+        gbc.weighty = 0.0;
+        body.add(createFiltersPanel(), gbc);
 
-        // Fila 3: Tarjetas resumen inferiores
-        gbc.gridx = 0;
+        // Fila 3: tabla de resultados
         gbc.gridy = 2;
-        gbc.weightx = 1.0;
-        gbc.weighty = 0.30;
-        body.add(createSummaryCardsRow(), gbc);
+        gbc.weighty = 0.65;
+        body.add(createTableCard(), gbc);
 
         return body;
     }
 
-    private JPanel createTopBar() {
-        JPanel bar = new JPanel(new GridBagLayout());
-        bar.setOpaque(false);
+    private JPanel createChartsRow() {
+        JPanel row = new JPanel(new GridBagLayout());
+        row.setOpaque(false);
+        // Altura base: sin esto el layout la aplasta porque la tabla pide más espacio
+        row.setPreferredSize(new Dimension(0, 200));
+
+        barChart = new BarChartPanel("Ventas por hora del día");
+        turnoChart = new PieChartPanel("Turno: mañana / tarde",
+                COLOR_BTN_NUEVO, "Mañana", COLOR_SEARCH, "Tarde", 40);
+        comboChart = new PieChartPanel("Combos / individuales",
+                COLOR_COMBO, "Combos", COLOR_TEXT_RED, "Individuales", 39);
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.BOTH;
-        gbc.insets = new Insets(0, 0, 0, 15);
         gbc.weighty = 1.0;
 
-        // 1. Campo Búsqueda (Verde) con Placeholder Real
-        RoundedPanel searchPill = new RoundedPanel(20, COLOR_SEARCH);
-        searchPill.setLayout(new BorderLayout(10, 0));
-        searchPill.setBorder(new EmptyBorder(8, 15, 8, 15));
-
-        JLabel searchIcon = new JLabel("🔍");
-        searchIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 18));
-        searchIcon.setForeground(Color.WHITE);
-
-        txtSearch = new JTextField(PLACEHOLDER_TEXT);
-        txtSearch.setOpaque(false);
-        txtSearch.setBorder(null);
-        txtSearch.setForeground(new Color(230, 230, 230)); // Tono traslúcido para placeholder
-        txtSearch.setFont(new Font("SansSerif", Font.BOLD, 18));
-        txtSearch.setCaretColor(Color.WHITE);
-
-        // Lógica de Placeholder mediante FocusListener
-        txtSearch.addFocusListener(new FocusAdapter() {
-            @Override
-            public void focusGained(FocusEvent e) {
-                if (txtSearch.getText().equals(PLACEHOLDER_TEXT)) {
-                    txtSearch.setText("");
-                    txtSearch.setForeground(Color.WHITE);
-                }
-            }
-
-            @Override
-            public void focusLost(FocusEvent e) {
-                if (txtSearch.getText().trim().isEmpty()) {
-                    txtSearch.setText(PLACEHOLDER_TEXT);
-                    txtSearch.setForeground(new Color(230, 230, 230));
-                }
-            }
-        });
-
-        // Escuchar cambios de texto en tiempo real
-        txtSearch.getDocument().addDocumentListener(new DocumentListener() {
-            @Override
-            public void insertUpdate(DocumentEvent e) {
-                applyFilters();
-            }
-
-            @Override
-            public void removeUpdate(DocumentEvent e) {
-                applyFilters();
-            }
-
-            @Override
-            public void changedUpdate(DocumentEvent e) {
-                applyFilters();
-            }
-        });
-
-        searchPill.add(searchIcon, BorderLayout.WEST);
-        searchPill.add(txtSearch, BorderLayout.CENTER);
-
         gbc.gridx = 0;
-        gbc.weightx = 0.45;
-        bar.add(searchPill, gbc);
-
-        // 2. Filtro de Roles (Naranja)
-        RoundedPanel comboPill = new RoundedPanel(20, COLOR_COMBO);
-        comboPill.setLayout(new BorderLayout());
-        comboPill.setBorder(new EmptyBorder(5, 15, 5, 15));
-
-        cbRoles = new JComboBox<>(new String[] { "Todos los roles", "Administrador", "Cajero" });
-        cbRoles.setOpaque(false);
-        cbRoles.setBackground(COLOR_COMBO);
-        cbRoles.setForeground(Color.BLACK);
-        cbRoles.setFont(new Font("SansSerif", Font.BOLD, 18));
-        cbRoles.setBorder(BorderFactory.createEmptyBorder());
-        cbRoles.setFocusable(false);
-        cbRoles.addActionListener(e -> applyFilters());
-
-        comboPill.add(cbRoles, BorderLayout.CENTER);
+        gbc.weightx = 0.40;
+        gbc.insets = new Insets(0, 0, 0, 15);
+        row.add(barChart, gbc);
 
         gbc.gridx = 1;
         gbc.weightx = 0.30;
-        bar.add(comboPill, gbc);
-
-        // 3. Botón + Nuevo empleado (Amarillo)
-        RoundedPanel btnPill = new RoundedPanel(20, COLOR_BTN_NUEVO);
-        btnPill.setLayout(new GridBagLayout());
-        btnPill.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        JLabel lblNuevo = new JLabel("+ Nuevo empleado");
-        lblNuevo.setForeground(Color.WHITE);
-        lblNuevo.setFont(new Font("SansSerif", Font.BOLD, 18));
-        btnPill.add(lblNuevo);
-
-        btnPill.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                nuevoEmpleadoDialog modal = new nuevoEmpleadoDialog(gestionEmpleados.this);
-                modal.setVisible(true);
-
-                if (modal.isGuardado()) {
-                    // El diálogo ya insertó el usuario en la BD.
-                    // Solo refrescamos la tabla con los datos reales.
-                    cargarEmpleadosDesdeBD();
-                }
-            }
-        });
+        row.add(turnoChart, gbc);
 
         gbc.gridx = 2;
-        gbc.weightx = 0.25;
+        gbc.weightx = 0.30;
         gbc.insets = new Insets(0, 0, 0, 0);
-        bar.add(btnPill, gbc);
+        row.add(comboChart, gbc);
 
-        return bar;
+        return row;
+    }
+
+    private JPanel createFiltersPanel() {
+        RoundedPanel panel = new RoundedPanel(20, COLOR_FILTERS_BG);
+        panel.setLayout(new GridLayout(2, 1, 0, 10));
+        panel.setBorder(new EmptyBorder(12, 20, 12, 20));
+        panel.setPreferredSize(new Dimension(0, 135));
+
+        // Fila de pestañas
+        JPanel tabsRow = new JPanel(new GridLayout(1, TAB_TITLES.length, 12, 0));
+        tabsRow.setOpaque(false);
+        tabs = new PillButton[TAB_TITLES.length];
+        for (int i = 0; i < TAB_TITLES.length; i++) {
+            final int idx = i;
+            tabs[i] = new PillButton(TAB_TITLES[i], 15, COLOR_TAB, COLOR_TABLE_HEADER, 16);
+            tabs[i].onClick(() -> selectTab(idx));
+            tabsRow.add(tabs[i]);
+        }
+        panel.add(tabsRow);
+
+        // Fila de filtros + botón Generar
+        JPanel controls = new JPanel(new GridBagLayout());
+        controls.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.weighty = 1.0;
+
+        cmbCategoria = new JComboBox<>(new String[] { "Todas las categorías" });
+        cmbCajero = new JComboBox<>(new String[] { "Todos" });
+
+        gbc.gridx = 0;
+        gbc.weightx = 0;
+        gbc.insets = new Insets(0, 0, 0, 10);
+        controls.add(createFilterLabel("Categoría:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 0.35;
+        gbc.insets = new Insets(0, 0, 0, 30);
+        controls.add(wrapCombo(cmbCategoria), gbc);
+
+        gbc.gridx = 2;
+        gbc.weightx = 0;
+        gbc.insets = new Insets(0, 0, 0, 10);
+        controls.add(createFilterLabel("Cajero:"), gbc);
+
+        gbc.gridx = 3;
+        gbc.weightx = 0.35;
+        gbc.insets = new Insets(0, 0, 0, 30);
+        controls.add(wrapCombo(cmbCajero), gbc);
+
+        PillButton btnGenerar = new PillButton("Generar", 20, COLOR_BTN_NUEVO, Color.WHITE, 18);
+        btnGenerar.setPreferredSize(new Dimension(170, 0));
+        btnGenerar.onClick(this::generarReporte);
+        gbc.gridx = 4;
+        gbc.weightx = 0.15;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        controls.add(btnGenerar, gbc);
+
+        panel.add(controls);
+        return panel;
+    }
+
+    private JLabel createFilterLabel(String text) {
+        JLabel lbl = new JLabel(text);
+        lbl.setFont(new Font("SansSerif", Font.BOLD, 17));
+        lbl.setForeground(COLOR_TABLE_HEADER);
+        return lbl;
+    }
+
+    private JPanel wrapCombo(JComboBox<String> combo) {
+        RoundedPanel pill = new RoundedPanel(20, COLOR_COMBO);
+        pill.setLayout(new BorderLayout());
+        pill.setBorder(new EmptyBorder(5, 15, 5, 15));
+
+        combo.setOpaque(false);
+        combo.setBackground(COLOR_COMBO);
+        combo.setForeground(Color.BLACK);
+        combo.setFont(new Font("SansSerif", Font.BOLD, 16));
+        combo.setBorder(BorderFactory.createEmptyBorder());
+        combo.setFocusable(false);
+
+        pill.add(combo, BorderLayout.CENTER);
+        return pill;
     }
 
     private JPanel createTableCard() {
         RoundedPanel card = new RoundedPanel(20, Color.WHITE);
         card.setLayout(new BorderLayout());
         card.setBorder(new EmptyBorder(12, 12, 12, 12));
+        card.setPreferredSize(new Dimension(0, 150));
 
-        String[] columns = { "Empleado", "Código", "Rol", "Estado", "Acciones", "ID" };
-
-        model = new DefaultTableModel(columns, 0) {
+        model = new DefaultTableModel(TAB_COLUMNS[selectedTab], 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -480,24 +502,22 @@ public class gestionEmpleados extends JFrame {
         };
 
         JTable table = new JTable(model);
-        table.setRowHeight(55);
+        table.setRowHeight(50);
         table.setShowGrid(true);
         table.setGridColor(COLOR_TABLE_GRID);
         table.setIntercellSpacing(new Dimension(1, 1));
         table.setFont(new Font("SansSerif", Font.PLAIN, 16));
+        table.setFillsViewportHeight(true);
 
-        // Inicializar el Sorter para búsquedas y filtros
-        rowSorter = new TableRowSorter<>(model);
-        table.setRowSorter(rowSorter);
-
-        // Header de la Tabla
+        // Header de la tabla (mismo estilo que gestionEmpleados)
         JTableHeader header = table.getTableHeader();
         header.setPreferredSize(new Dimension(0, 45));
+        header.setReorderingAllowed(false);
         header.setDefaultRenderer(new DefaultTableCellRenderer() {
             @Override
-            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+            public Component getTableCellRendererComponent(JTable t, Object value, boolean isSelected,
                     boolean hasFocus, int row, int column) {
-                JLabel lbl = new JLabel(value.toString(), SwingConstants.CENTER);
+                JLabel lbl = new JLabel(String.valueOf(value), SwingConstants.CENTER);
                 lbl.setOpaque(true);
                 lbl.setBackground(COLOR_TABLE_HEADER);
                 lbl.setForeground(Color.WHITE);
@@ -506,98 +526,10 @@ public class gestionEmpleados extends JFrame {
             }
         });
 
+        // Renderer centrado para todas las columnas (sobrevive al cambio de pestaña)
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(JLabel.CENTER);
-
-        for (int i = 0; i < 3; i++) {
-            table.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
-        }
-
-        // Columna Estado
-        table.getColumnModel().getColumn(3).setCellRenderer((t, val, isS, hasF, row, col) -> {
-            String estado = (String) val;
-            JLabel lbl = new JLabel(estado, SwingConstants.CENTER);
-            lbl.setFont(new Font("SansSerif", Font.BOLD, 16));
-            if ("Activo".equalsIgnoreCase(estado)) {
-                lbl.setForeground(COLOR_TEXT_GREEN);
-            } else {
-                lbl.setForeground(COLOR_TEXT_RED);
-            }
-            return lbl;
-        });
-
-        // Columna Acciones - Botón interactivo de opciones
-        table.getColumnModel().getColumn(4).setCellRenderer((t, val, isS, hasF, row, col) -> {
-            JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 8));
-            actionsPanel.setBackground(Color.WHITE);
-
-            // Botón redondeado de opciones "⚙ Opciones ▾"
-            RoundedPanel btnPill = new RoundedPanel(12, new Color(248, 244, 237));
-            btnPill.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 4));
-            btnPill.setPreferredSize(new Dimension(130, 36));
-
-            JLabel lblAccion = new JLabel("⚙ Opciones ▾");
-            lblAccion.setFont(new Font("SansSerif", Font.BOLD, 14));
-            lblAccion.setForeground(COLOR_TABLE_HEADER);
-
-            btnPill.add(lblAccion);
-            actionsPanel.add(btnPill);
-            return actionsPanel;
-        });
-
-        // Oculta la columna ID de la vista (sigue existiendo en el modelo)
-        table.removeColumn(table.getColumnModel().getColumn(5));
-
-        // Escuchador de clic en la tabla para desplieque del diálogo emergente
-        // accionesEmpleadoDialog
-        table.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                int viewRow = table.rowAtPoint(e.getPoint());
-                int viewCol = table.columnAtPoint(e.getPoint());
-
-                if (viewRow < 0 || viewCol != 4) {
-                    return; // clic fuera de la columna Acciones
-                }
-
-                // Convierte la fila visible (filtrada/ordenada) a la fila real del modelo
-                int modelRow = table.convertRowIndexToModel(viewRow);
-                Integer idUsuario = (Integer) model.getValueAt(modelRow, 5);
-                if (idUsuario == null) {
-                    return;
-                }
-
-                JPopupMenu menu = new JPopupMenu();
-
-                JMenuItem itemEditar = new JMenuItem("✏ Editar datos");
-                itemEditar.addActionListener(ev -> {
-                    editarEmpleadoDialog dialog = new editarEmpleadoDialog(gestionEmpleados.this, idUsuario);
-                    dialog.setVisible(true);
-                    if (dialog.isGuardado()) {
-                        cargarEmpleadosDesdeBD(); // refresca tabla y métricas
-                        JOptionPane.showMessageDialog(gestionEmpleados.this,
-                                "Empleado actualizado correctamente.", "Éxito",
-                                JOptionPane.INFORMATION_MESSAGE);
-                    }
-                });
-
-                JMenuItem itemPass = new JMenuItem("🔒 Restablecer contraseña");
-                itemPass.addActionListener(ev -> {
-                    restablecerContraseñaDialog dialog = new restablecerContraseñaDialog(gestionEmpleados.this,
-                            idUsuario);
-                    dialog.setVisible(true);
-                    if (dialog.isConfirmado()) {
-                        JOptionPane.showMessageDialog(gestionEmpleados.this,
-                                "Contraseña actualizada correctamente.", "Éxito",
-                                JOptionPane.INFORMATION_MESSAGE);
-                    }
-                });
-
-                menu.add(itemEditar);
-                menu.add(itemPass);
-                menu.show(table, e.getX(), e.getY());
-            }
-        });
+        table.setDefaultRenderer(Object.class, centerRenderer);
 
         JScrollPane scroll = new JScrollPane(table);
         scroll.setBorder(BorderFactory.createLineBorder(COLOR_TABLE_GRID, 1));
@@ -607,110 +539,239 @@ public class gestionEmpleados extends JFrame {
         return card;
     }
 
-    // Método para aplicar los filtros combinados de búsqueda y rol
-    private void applyFilters() {
-        String searchText = txtSearch.getText().trim();
-        String selectedRole = (String) cbRoles.getSelectedItem();
+    // =====================================================================
+    // LÓGICA
+    // =====================================================================
 
-        List<RowFilter<DefaultTableModel, Object>> filters = new ArrayList<>();
-
-        // Filtro por texto si no es el placeholder ni está vacío
-        if (!searchText.isEmpty() && !searchText.equals(PLACEHOLDER_TEXT)) {
-            // Busca coincidencia en columna 0 (Nombre) o columna 1 (Código) sin importar
-            // mayúsculas/minúsculas
-            filters.add(RowFilter.regexFilter("(?i)" + Pattern.quote(searchText), 0, 1));
-        }
-
-        // Filtro por Rol (columna 2)
-        if (selectedRole != null && !selectedRole.equals("Todos los roles")) {
-            filters.add(RowFilter.regexFilter("^" + Pattern.quote(selectedRole) + "$", 2));
-        }
-
-        // Aplicar los filtros
-        if (filters.isEmpty()) {
-            rowSorter.setRowFilter(null);
-        } else {
-            rowSorter.setRowFilter(RowFilter.andFilter(filters));
-        }
-    }
-
-    private JPanel createSummaryCardsRow() {
-        JPanel row = new JPanel(new GridLayout(1, 4, 15, 0));
-        row.setOpaque(false);
-
-        lblValAdmin = new JLabel("0", SwingConstants.CENTER);
-        lblValCajeros = new JLabel("0", SwingConstants.CENTER);
-        lblValActivos = new JLabel("0", SwingConstants.CENTER);
-        lblValInactivos = new JLabel("0", SwingConstants.CENTER);
-
-        row.add(createMetricCard("Administradores", lblValAdmin, COLOR_CARD_ADMIN, Color.WHITE));
-        row.add(createMetricCard("Cajeros", lblValCajeros, COLOR_CARD_CAJEROS, Color.WHITE));
-        row.add(createMetricCard("Cajeros Activos", lblValActivos, COLOR_CARD_ACTIVOS, Color.WHITE));
-        row.add(createMetricCard("Cajeros Inactivos", lblValInactivos, COLOR_CARD_INACTIVOS, Color.WHITE));
-
-        return row;
-    }
-
-    private JPanel createMetricCard(String titleText, JLabel valLabel, Color bg, Color textColor) {
-        RoundedPanel card = new RoundedPanel(20, bg);
-        card.setLayout(new GridBagLayout());
-
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.insets = new Insets(0, 0, 8, 0);
-
-        JLabel title = new JLabel(titleText, SwingConstants.CENTER);
-        title.setForeground(textColor);
-        title.setFont(new Font("SansSerif", Font.BOLD, 22));
-        card.add(title, gbc);
-
-        gbc.gridy = 1;
-        gbc.insets = new Insets(0, 0, 0, 0);
-        valLabel.setForeground(textColor);
-        valLabel.setFont(new Font("SansSerif", Font.BOLD, 48));
-        card.add(valLabel, gbc);
-
-        return card;
-    }
-
-    // Recalcula los totales inferiores escaneando las filas de la tabla
-    private void updateSummaryMetrics() {
-        int admins = 0;
-        int cajeros = 0;
-        int cajerosActivos = 0;
-        int cajerosInactivos = 0;
-
-        for (int i = 0; i < model.getRowCount(); i++) {
-            String rol = (String) model.getValueAt(i, 2);
-            String estado = (String) model.getValueAt(i, 3);
-
-            if ("Administrador".equalsIgnoreCase(rol)) {
-                admins++;
-            } else if ("Cajero".equalsIgnoreCase(rol)) {
-                cajeros++;
-                if ("Activo".equalsIgnoreCase(estado)) {
-                    cajerosActivos++;
+    /** Resalta la pestaña elegida y ajusta las columnas de la tabla. */
+    private void selectTab(int index) {
+        selectedTab = index;
+        if (tabs != null) {
+            for (int i = 0; i < tabs.length; i++) {
+                if (i == index) {
+                    tabs[i].setColors(COLOR_TABLE_HEADER, Color.WHITE);
                 } else {
-                    cajerosInactivos++;
+                    tabs[i].setColors(COLOR_TAB, COLOR_TABLE_HEADER);
                 }
             }
         }
-
-        lblValAdmin.setText(String.valueOf(admins));
-        lblValCajeros.setText(String.valueOf(cajeros));
-        lblValActivos.setText(String.valueOf(cajerosActivos));
-        lblValInactivos.setText(String.valueOf(cajerosInactivos));
+        if (model != null) {
+            model.setColumnIdentifiers(TAB_COLUMNS[index]);
+            model.setRowCount(0);
+        }
     }
 
-    // Carga la tabla directamente desde la base de datos
-    private void cargarEmpleadosDesdeBD() {
-        List<Object[]> filas = crud.listarUsuariosTabla();
-        model.setRowCount(0); // limpia cualquier dato previo (incluye datos de ejemplo)
-        for (Object[] fila : filas) {
-            model.addRow(fila);
+    /**
+     * Genera el reporte según la pestaña y filtros elegidos.
+     * TODO: conectar con crud (consultas de ventas) y llenar la tabla y las gráficas:
+     * model.addRow(new Object[] { ... });
+     * barChart.setDatos(labels, valores, colores);
+     * turnoChart.setPorcentaje(pctMañana);
+     * comboChart.setPorcentaje(pctCombos);
+     */
+    private void generarReporte() {
+        model.setRowCount(0);
+    }
+
+    // =====================================================================
+    // COMPONENTES
+    // =====================================================================
+
+    private static void antialias(Graphics2D g2) {
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+    }
+
+    private static void drawTitle(Graphics2D g2, String text, int width) {
+        g2.setFont(new Font("SansSerif", Font.BOLD, 18));
+        g2.setColor(COLOR_TABLE_HEADER);
+        FontMetrics fm = g2.getFontMetrics();
+        g2.drawString(text, (width - fm.stringWidth(text)) / 2, 30);
+    }
+
+    /** Gráfica de barras "Ventas por hora del día". */
+    private static class BarChartPanel extends RoundedPanel {
+
+        private final String title;
+        private String[] labels = { "6am", "7am", "8am", "12pm", "1pm", "2pm", "5pm", "6pm", "7pm" };
+        private double[] values = { 610, 450, 480, 610, 450, 480, 610, 450, 480 }; // datos de ejemplo
+        private Color[] colors = {
+                COLOR_TEXT_RED, COLOR_TEXT_RED, COLOR_TEXT_RED,
+                COLOR_SEARCH, COLOR_SEARCH, COLOR_SEARCH,
+                COLOR_COMBO, COLOR_COMBO, COLOR_COMBO };
+
+        BarChartPanel(String title) {
+            super(20, Color.WHITE);
+            this.title = title;
         }
-        updateSummaryMetrics();
+
+        void setDatos(String[] labels, double[] values, Color[] colors) {
+            this.labels = labels;
+            this.values = values;
+            this.colors = colors;
+            repaint();
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            Graphics2D g2 = (Graphics2D) g.create();
+            antialias(g2);
+
+            int w = getWidth();
+            int h = getHeight();
+            drawTitle(g2, title, w);
+
+            int left = 75, right = 25, top = 50, bottom = 40;
+            int chartW = w - left - right;
+            int chartH = h - top - bottom;
+            if (chartW <= 0 || chartH <= 0 || labels.length == 0) {
+                g2.dispose();
+                return;
+            }
+            int baseY = top + chartH;
+
+            double max = 0;
+            for (double v : values) {
+                max = Math.max(max, v);
+            }
+            if (max <= 0) {
+                max = 1;
+            }
+
+            // Etiquetas del eje Y
+            g2.setColor(COLOR_TABLE_HEADER);
+            g2.setFont(new Font("SansSerif", Font.PLAIN, 12));
+            g2.drawString(String.format(Locale.US, "Q%,.0f", max), 12, top + 12);
+            g2.drawString("Q0", 12, baseY);
+
+            // Barras
+            int slot = chartW / labels.length;
+            int barW = Math.max(6, (int) (slot * 0.7));
+            g2.setFont(new Font("SansSerif", Font.PLAIN, 13));
+            FontMetrics fm = g2.getFontMetrics();
+            for (int i = 0; i < labels.length; i++) {
+                int barH = (int) (values[i] / max * (chartH - 10));
+                int x = left + i * slot + (slot - barW) / 2;
+                g2.setColor(colors[i % colors.length]);
+                g2.fillRect(x, baseY - barH, barW, barH);
+
+                g2.setColor(COLOR_TABLE_HEADER);
+                g2.drawString(labels[i], x + (barW - fm.stringWidth(labels[i])) / 2, baseY + 24);
+            }
+
+            // Línea base
+            g2.setColor(COLOR_BTN_NUEVO);
+            g2.fillRoundRect(left - 6, baseY, chartW + 12, 6, 6, 6);
+
+            g2.dispose();
+        }
+    }
+
+    /** Gráfica de pastel con dos porciones y leyenda. */
+    private static class PieChartPanel extends RoundedPanel {
+
+        private final String title;
+        private final Color color1, color2;
+        private final String name1, name2;
+        private double porcentaje;
+
+        PieChartPanel(String title, Color color1, String name1, Color color2, String name2, double porcentaje) {
+            super(20, Color.WHITE);
+            this.title = title;
+            this.color1 = color1;
+            this.name1 = name1;
+            this.color2 = color2;
+            this.name2 = name2;
+            this.porcentaje = porcentaje;
+        }
+
+        /** Porcentaje (0-100) de la primera porción. */
+        void setPorcentaje(double porcentaje) {
+            this.porcentaje = Math.max(0, Math.min(100, porcentaje));
+            repaint();
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            Graphics2D g2 = (Graphics2D) g.create();
+            antialias(g2);
+
+            int w = getWidth();
+            int h = getHeight();
+            drawTitle(g2, title, w);
+
+            int top = 50, margin = 20;
+            int availH = h - top - margin;
+            int d = Math.min(availH, (int) (w * 0.48));
+            if (d < 40) {
+                g2.dispose();
+                return;
+            }
+            int px = margin;
+            int py = top + (availH - d) / 2;
+
+            double ext = -360 * porcentaje / 100.0;
+            slice(g2, px, py, d, 90, ext, color1);
+            slice(g2, px, py, d, 90 + ext, -(360 + ext), color2);
+
+            int lx = px + d + 25;
+            legend(g2, color1, name1, String.format("%.0f%%", porcentaje), lx, py + (int) (d * 0.30));
+            legend(g2, color2, name2, String.format("%.0f%%", 100 - porcentaje), lx, py + (int) (d * 0.72));
+
+            g2.dispose();
+        }
+
+        private void slice(Graphics2D g2, int x, int y, int d, double start, double extent, Color c) {
+            Arc2D arc = new Arc2D.Double(x, y, d, d, start, extent, Arc2D.PIE);
+            g2.setColor(c);
+            g2.fill(arc);
+            g2.setColor(Color.WHITE);
+            g2.setStroke(new BasicStroke(2f));
+            g2.draw(arc);
+        }
+
+        private void legend(Graphics2D g2, Color color, String name, String pct, int x, int yCenter) {
+            g2.setColor(color);
+            g2.fillOval(x, yCenter - 9, 18, 18);
+            g2.setColor(COLOR_TABLE_HEADER);
+            g2.setFont(new Font("SansSerif", Font.BOLD, 15));
+            g2.drawString(name, x + 26, yCenter - 1);
+            g2.setFont(new Font("SansSerif", Font.PLAIN, 15));
+            g2.drawString(pct, x + 26, yCenter + 17);
+        }
+    }
+
+    /** Botón/pestaña redondeada con texto centrado. */
+    private static class PillButton extends RoundedPanel {
+
+        private final JLabel label;
+
+        PillButton(String text, int radius, Color bg, Color fg, int fontSize) {
+            super(radius, bg);
+            setLayout(new GridBagLayout());
+            label = new JLabel(text, SwingConstants.CENTER);
+            label.setForeground(fg);
+            label.setFont(new Font("SansSerif", Font.BOLD, fontSize));
+            add(label);
+            setCursor(new Cursor(Cursor.HAND_CURSOR));
+        }
+
+        void setColors(Color bg, Color fg) {
+            setBackgroundColor(bg);
+            label.setForeground(fg);
+            repaint();
+        }
+
+        void onClick(Runnable action) {
+            addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    action.run();
+                }
+            });
+        }
     }
 
     // --- CLASE DE ICONOS VECTORIALES PARA LA BARRA LATERAL ---
@@ -850,7 +911,7 @@ public class gestionEmpleados extends JFrame {
         }
 
         SwingUtilities.invokeLater(() -> {
-            gestionEmpleados app = new gestionEmpleados();
+            pantallaEstadistica app = new pantallaEstadistica();
             app.setVisible(true);
         });
     }
