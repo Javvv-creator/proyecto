@@ -36,6 +36,7 @@ public class gestionProductos extends JFrame {
     private static final Color COLOR_TEXT_RED = new Color(211, 53, 58);
     private static final Color COLOR_SIDEBAR_HOVER = new Color(160, 110, 65);
     private static final Color COLOR_SIDEBAR_ACTIVE = new Color(110, 72, 38);
+    private static final Color COLOR_CERRAR_SESION = new Color(211, 53, 58);
 
     // Colores de las tarjetas de resumen inferiores
     private static final Color COLOR_CARD_PRODUCTOS = new Color(243, 205, 59);
@@ -90,12 +91,17 @@ public class gestionProductos extends JFrame {
         cargarDatosEjemplo();
     }
 
+    
+    // ==========================================
+    // --- BARRA LATERAL (idéntica al resto + botón Cerrar Sesión) ---
+    // ==========================================
     private JPanel createSidebarPanel() {
         RoundedPanel sidebar = new RoundedPanel(25, COLOR_SIDEBAR);
         sidebar.setLayout(new BorderLayout(0, 15));
         sidebar.setPreferredSize(new Dimension(320, 0));
         sidebar.setBorder(new EmptyBorder(15, 15, 20, 15));
 
+        // Tarjeta contenedora blanca para el logo (clic = volver al Dashboard)
         RoundedPanel logoCard = new RoundedPanel(20, Color.WHITE);
         logoCard.setPreferredSize(new Dimension(290, 140));
         logoCard.setLayout(new GridBagLayout());
@@ -105,25 +111,28 @@ public class gestionProductos extends JFrame {
         logoCard.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
+                dashboardAdmin app = new dashboardAdmin();
+                app.setVisible(true);
                 dispose();
             }
         });
         sidebar.add(logoCard, BorderLayout.NORTH);
 
+        // Panel central: menú de navegación + botón de Cerrar Sesión debajo
+        JPanel centerWrapper = new JPanel(new BorderLayout(0, 15));
+        centerWrapper.setOpaque(false);
+
         JPanel menuPanel = new JPanel(new GridLayout(7, 1, 0, 8));
         menuPanel.setOpaque(false);
 
         Object[][] items = {
-                { SidebarVectorIcon.IconType.EMPLOYEES, "gui/images/employees.png",
-                        "<html>Gestión de<br>empleados (cajeros)</html>" },
-                { SidebarVectorIcon.IconType.MENU, "gui/images/menu.png",
-                        "<html>Gestión de menú /<br>productos</html>" },
-                { SidebarVectorIcon.IconType.ORDERS, "gui/images/orders.png", "Gestión de pedidos" },
-                { SidebarVectorIcon.IconType.REPORTS, "gui/images/reports.png", "Reportes y estadísticas" },
-                { SidebarVectorIcon.IconType.CASH, "gui/images/cash.png", "Gestión de caja" },
-                { SidebarVectorIcon.IconType.SETTINGS, "gui/images/settings.png",
-                        "<html>Configuración<br>general</html>" },
-                { SidebarVectorIcon.IconType.SECURITY, "gui/images/security.png", "Seguridad y auditoría" }
+            {SidebarVectorIcon.IconType.EMPLOYEES, "gui/images/employees.png", "<html>Gestión de<br>empleados (cajeros)</html>"},
+            {SidebarVectorIcon.IconType.MENU, "gui/images/menu.png", "<html>Gestión de menú /<br>productos</html>"},
+            {SidebarVectorIcon.IconType.ORDERS, "gui/images/orders.png", "Gestión de pedidos"},
+            {SidebarVectorIcon.IconType.REPORTS, "gui/images/reports.png", "Reportes y estadísticas"},
+            {SidebarVectorIcon.IconType.CASH, "gui/images/cash.png", "Gestión de caja"},
+            {SidebarVectorIcon.IconType.SETTINGS, "gui/images/settings.png", "<html>Configuración<br>general</html>"},
+            {SidebarVectorIcon.IconType.SECURITY, "gui/images/security.png", "Seguridad y auditoría"}
         };
 
         menuButtons = new JPanel[items.length];
@@ -138,6 +147,7 @@ public class gestionProductos extends JFrame {
             btnPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 15, 8));
 
             JLabel iconLbl = createSidebarIconLabel(iconType, iconPath);
+
             JLabel textLbl = new JLabel(textHtml);
             textLbl.setFont(new Font("SansSerif", Font.BOLD, 17));
             textLbl.setForeground(Color.WHITE);
@@ -164,19 +174,33 @@ public class gestionProductos extends JFrame {
                 }
 
                 @Override
-                public void mouseClicked(MouseEvent e) {
+                public void mouseClicked(MouseEvent e) {            
+                
                     if (index == 0) {
                         gestionEmpleados app = new gestionEmpleados();
                         app.setVisible(true);
                         dispose();
                         return;
-                    } else if (index == 1) {
-                        selectedMenuIndex = index;
-                        updateSidebarSelection();
+                    }
+                    if (index == 1) {
+                        gestionProductos app = new gestionProductos();
+                        app.setVisible(true);
+                        dispose();
                         return;
                     }
-                    JOptionPane.showMessageDialog(gestionProductos.this, "Sección en desarrollo.", "Información",
-                            JOptionPane.INFORMATION_MESSAGE);
+                    if (index == 6) {
+                        seguridadAuditoria app = new seguridadAuditoria();
+                        app.setVisible(true);
+                        dispose();
+                        return;
+                    }
+                    // Las demás ventanas todavía no existen
+                    JOptionPane.showMessageDialog(
+                            gestionProductos.this,
+                            "Esta sección todavía está en desarrollo.",
+                            "Próximamente",
+                            JOptionPane.INFORMATION_MESSAGE
+                    );
                 }
             });
 
@@ -184,7 +208,38 @@ public class gestionProductos extends JFrame {
             menuPanel.add(btnPanel);
         }
 
-        sidebar.add(menuPanel, BorderLayout.CENTER);
+        centerWrapper.add(menuPanel, BorderLayout.NORTH);
+
+        // Botón "Cerrar Sesión" (rojo) al final de la barra lateral
+        RoundedPanel btnCerrarSesion = new RoundedPanel(15, COLOR_CERRAR_SESION);
+        btnCerrarSesion.setLayout(new GridBagLayout());
+        btnCerrarSesion.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnCerrarSesion.setPreferredSize(new Dimension(0, 55));
+
+        JLabel lblCerrarSesion = new JLabel("Cerrar Sesión");
+        lblCerrarSesion.setFont(new Font("SansSerif", Font.BOLD, 16));
+        lblCerrarSesion.setForeground(Color.WHITE);
+        btnCerrarSesion.add(lblCerrarSesion);
+
+        btnCerrarSesion.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                // implementar el cierre de sesión real:
+                //  - invalidar el token / sesión del usuario actual
+                //  - limpiar cualquier dato sensible que se tenga en memoria
+                //  - abrir la ventana de login y cerrar todas las ventanas abiertas
+                // Por ahora solo se deja este mensaje de referencia:
+                System.out.println("Cerrar sesión presionado (pendiente de implementar)");
+            }
+        });
+
+        JPanel logoutWrapper = new JPanel(new BorderLayout());
+        logoutWrapper.setOpaque(false);
+        logoutWrapper.add(btnCerrarSesion, BorderLayout.SOUTH);
+
+        sidebar.add(centerWrapper, BorderLayout.CENTER);
+        sidebar.add(logoutWrapper, BorderLayout.SOUTH);
+
         return sidebar;
     }
 
@@ -207,7 +262,11 @@ public class gestionProductos extends JFrame {
     private void updateSidebarSelection() {
         for (int i = 0; i < menuButtons.length; i++) {
             RoundedPanel btn = (RoundedPanel) menuButtons[i];
-            btn.setBackgroundColor(i == selectedMenuIndex ? COLOR_SIDEBAR_ACTIVE : COLOR_SIDEBAR);
+            if (i == selectedMenuIndex) {
+                btn.setBackgroundColor(COLOR_SIDEBAR_ACTIVE);
+            } else {
+                btn.setBackgroundColor(COLOR_SIDEBAR);
+            }
             btn.repaint();
         }
     }
