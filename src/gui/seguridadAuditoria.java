@@ -148,7 +148,13 @@ public class seguridadAuditoria extends JFrame {
                         dispose();
                         return;
                     }
-                    if (index == 6) {
+                    else if (index == 4) {
+                        gestionCaja app = new gestionCaja();
+                        app.setVisible(true);
+                        dispose();
+                        return;
+                    }
+                    else if (index == 6) {
                         seguridadAuditoria app = new seguridadAuditoria();
                         app.setVisible(true);
                         dispose();
@@ -433,9 +439,9 @@ public class seguridadAuditoria extends JFrame {
         row.setPreferredSize(new Dimension(0, 110));
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 110));
 
-        row.add(createAlertCard("cancel", "2", "Cancelaciones", COLOR_CARD_CANCELACIONES));
-        row.add(createAlertCard("warning", "3", "<html>Diferencias de caja</html>", COLOR_CARD_DIFERENCIAS));
-        row.add(createAlertCard("swap", "1", "<html>Cambios de precio</html>", COLOR_CARD_CAMBIOS));
+        row.add(createAlertCard("cancel", "0", "Cancelaciones", COLOR_CARD_CANCELACIONES));
+        row.add(createAlertCard("warning", "0", "<html>Diferencias de caja</html>", COLOR_CARD_DIFERENCIAS));
+        row.add(createAlertCard("swap", "0", "<html>Cambios de precio</html>", COLOR_CARD_CAMBIOS));
 
         return row;
     }

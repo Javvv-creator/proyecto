@@ -204,6 +204,13 @@ public class gestionEmpleados extends JFrame {
                         dispose();
                         return;
                     }
+                    else if (index == 4) {
+                        gestionCaja app = new gestionCaja();
+                        app.setVisible(true);
+                        dispose();
+                        return;
+                    }
+                     else
                     if (index == 5) {
                         seguridadAuditoria app = new seguridadAuditoria();
                         app.setVisible(true);
