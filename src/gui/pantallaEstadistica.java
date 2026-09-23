@@ -35,6 +35,7 @@ public class pantallaEstadistica extends JFrame {
     private static final Color COLOR_TEXT_RED = new Color(211, 53, 58);
     private static final Color COLOR_SIDEBAR_HOVER = new Color(160, 110, 65);
     private static final Color COLOR_SIDEBAR_ACTIVE = new Color(110, 72, 38);
+    private static final Color COLOR_CERRAR_SESION = new Color(211, 53, 58);
 
     // Colores propios de esta pantalla
     private static final Color COLOR_FILTERS_BG = new Color(242, 227, 211);
@@ -59,6 +60,7 @@ public class pantallaEstadistica extends JFrame {
     private JPanel[] menuButtons;
     private JLabel lblClock;
     private JLabel lblDate;
+    private Timer clockTimer;
 
     // Componentes de la pantalla
     private PillButton[] tabs;
@@ -135,6 +137,33 @@ public class pantallaEstadistica extends JFrame {
         dispose();
     }
 
+    /** Pide confirmación, cierra todas las ventanas abiertas y vuelve al login. */
+    private void cerrarSesion() {
+        int opcion = JOptionPane.showConfirmDialog(this,
+                "¿Deseas cerrar sesión?", "Cerrar Sesión",
+                JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+        if (opcion != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        // 1. Detener el reloj de esta pantalla
+        if (clockTimer != null) {
+            clockTimer.stop();
+        }
+
+        // 2. Limpiar los datos de la sesión actual (usuario logueado, etc.)
+        // TODO: por ejemplo Sesion.cerrar(); si tienes una clase que guarde el usuario actual
+
+        // 3. Cerrar todas las ventanas abiertas de la aplicación
+        for (Window w : Window.getWindows()) {
+            w.dispose();
+        }
+
+        // 4. Abrir la ventana de login
+        // TODO: reemplaza "login" por el nombre real de tu clase de inicio de sesión
+        // new login().setVisible(true);
+    }
+
     // =====================================================================
     // BARRA LATERAL
     // =====================================================================
@@ -170,8 +199,6 @@ public class pantallaEstadistica extends JFrame {
                 { SidebarVectorIcon.IconType.ORDERS, "gui/images/orders.png", "Gestión de pedidos" },
                 { SidebarVectorIcon.IconType.REPORTS, "gui/images/reports.png", "Reportes y estadísticas" },
                 { SidebarVectorIcon.IconType.CASH, "gui/images/cash.png", "Gestión de caja" },
-                { SidebarVectorIcon.IconType.SETTINGS, "gui/images/settings.png",
-                        "<html>Configuración<br>general</html>" },
                 { SidebarVectorIcon.IconType.SECURITY, "gui/images/security.png", "Seguridad y auditoría" }
         };
 
@@ -185,6 +212,7 @@ public class pantallaEstadistica extends JFrame {
 
             RoundedPanel btnPanel = new RoundedPanel(15, i == selectedMenuIndex ? COLOR_SIDEBAR_ACTIVE : COLOR_SIDEBAR);
             btnPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 15, 8));
+            btnPanel.setPreferredSize(new Dimension(0, 60));
 
             JLabel iconLbl = createSidebarIconLabel(iconType, iconPath);
             JLabel textLbl = new JLabel(textHtml);
@@ -222,7 +250,48 @@ public class pantallaEstadistica extends JFrame {
             menuPanel.add(btnPanel);
         }
 
-        sidebar.add(menuPanel, BorderLayout.CENTER);
+        // El menú queda pegado arriba con su altura natural (no ocupa toda la barra)
+        JPanel menuWrapper = new JPanel(new BorderLayout());
+        menuWrapper.setOpaque(false);
+        menuWrapper.add(menuPanel, BorderLayout.NORTH);
+        sidebar.add(menuWrapper, BorderLayout.CENTER);
+
+        // Botón "Cerrar Sesión" (rojo) al final de la barra lateral
+        RoundedPanel btnCerrarSesion = new RoundedPanel(15, COLOR_CERRAR_SESION);
+        btnCerrarSesion.setLayout(new GridBagLayout());
+        btnCerrarSesion.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnCerrarSesion.setPreferredSize(new Dimension(0, 55));
+
+        JLabel lblCerrarSesion = new JLabel("Cerrar Sesión");
+        lblCerrarSesion.setFont(new Font("SansSerif", Font.BOLD, 16));
+        lblCerrarSesion.setForeground(Color.WHITE);
+        btnCerrarSesion.add(lblCerrarSesion);
+
+        btnCerrarSesion.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int confirmacion = JOptionPane.showConfirmDialog(
+                        SwingUtilities.getWindowAncestor(btnCerrarSesion),
+                        "¿Desea cerrar la sesión actual?",
+                        "Confirmar Cierre de Sesión",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.QUESTION_MESSAGE);
+
+                if (confirmacion == JOptionPane.YES_OPTION) {
+                    // Abrir la ventana de Login
+                    SwingUtilities.invokeLater(() -> {
+                        new pantallaLogin().setVisible(true);
+                    });
+
+                    // Cerrar todas las ventanas abiertas
+                    for (Window window : Window.getWindows()) {
+                        window.dispose();
+                    }
+                }
+            }
+        });
+        sidebar.add(btnCerrarSesion, BorderLayout.SOUTH);
+
         return sidebar;
     }
 
@@ -330,15 +399,15 @@ public class pantallaEstadistica extends JFrame {
     }
 
     private void startLiveClock() {
-        Timer timer = new Timer(1000, e -> {
+        clockTimer = new Timer(1000, e -> {
             Date now = new Date();
             SimpleDateFormat sdfTime = new SimpleDateFormat("hh:mm:ss a");
             SimpleDateFormat sdfDate = new SimpleDateFormat("EEEE, d 'de' MMMM", Locale.of("es", "ES"));
             lblClock.setText(sdfTime.format(now));
             lblDate.setText(sdfDate.format(now));
         });
-        timer.setInitialDelay(0);
-        timer.start();
+        clockTimer.setInitialDelay(0);
+        clockTimer.start();
     }
 
     // =====================================================================

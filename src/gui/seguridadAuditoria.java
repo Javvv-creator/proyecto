@@ -187,6 +187,30 @@ public class seguridadAuditoria extends JFrame {
         sidebar.add(centerWrapper, BorderLayout.CENTER);
         sidebar.add(logoutWrapper, BorderLayout.SOUTH);
 
+        btnCerrarSesion.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int confirmacion = JOptionPane.showConfirmDialog(
+                        SwingUtilities.getWindowAncestor(btnCerrarSesion),
+                        "¿Desea cerrar la sesión actual?",
+                        "Confirmar Cierre de Sesión",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.QUESTION_MESSAGE);
+
+                if (confirmacion == JOptionPane.YES_OPTION) {
+                    // Abrir la ventana de Login
+                    SwingUtilities.invokeLater(() -> {
+                        new pantallaLogin().setVisible(true);
+                    });
+
+                    // Cerrar todas las ventanas abiertas
+                    for (Window window : Window.getWindows()) {
+                        window.dispose();
+                    }
+                }
+            }
+        });
+
         return sidebar;
     }
 

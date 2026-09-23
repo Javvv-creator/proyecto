@@ -102,8 +102,6 @@ public class gestionEmpleados extends JFrame {
         cargarEmpleadosDesdeBD(); // Carga usuarios reales de la BD (ya calcula los totales)
     }
 
- 
-    
     // ==========================================
     // --- BARRA LATERAL (idéntica al resto + botón Cerrar Sesión) ---
     // ==========================================
@@ -138,12 +136,14 @@ public class gestionEmpleados extends JFrame {
         menuPanel.setOpaque(false);
 
         Object[][] items = {
-            {SidebarVectorIcon.IconType.EMPLOYEES, "gui/images/employees.png", "<html>Gestión de<br>empleados (cajeros)</html>"},
-            {SidebarVectorIcon.IconType.MENU, "gui/images/menu.png", "<html>Gestión de menú /<br>productos</html>"},
-            {SidebarVectorIcon.IconType.ORDERS, "gui/images/orders.png", "Gestión de pedidos"},
-            {SidebarVectorIcon.IconType.REPORTS, "gui/images/reports.png", "Reportes y estadísticas"},
-            {SidebarVectorIcon.IconType.CASH, "gui/images/cash.png", "Gestión de caja"},
-            {SidebarVectorIcon.IconType.SECURITY, "gui/images/security.png", "Seguridad y auditoría"}
+                { SidebarVectorIcon.IconType.EMPLOYEES, "gui/images/employees.png",
+                        "<html>Gestión de<br>empleados (cajeros)</html>" },
+                { SidebarVectorIcon.IconType.MENU, "gui/images/menu.png",
+                        "<html>Gestión de menú /<br>productos</html>" },
+                { SidebarVectorIcon.IconType.ORDERS, "gui/images/orders.png", "Gestión de pedidos" },
+                { SidebarVectorIcon.IconType.REPORTS, "gui/images/reports.png", "Reportes y estadísticas" },
+                { SidebarVectorIcon.IconType.CASH, "gui/images/cash.png", "Gestión de caja" },
+                { SidebarVectorIcon.IconType.SECURITY, "gui/images/security.png", "Seguridad y auditoría" }
         };
 
         menuButtons = new JPanel[items.length];
@@ -186,7 +186,7 @@ public class gestionEmpleados extends JFrame {
 
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    
+
                     if (index == 0) {
                         gestionEmpleados app = new gestionEmpleados();
                         app.setVisible(true);
@@ -198,7 +198,7 @@ public class gestionEmpleados extends JFrame {
                         app.setVisible(true);
                         dispose();
                         return;
-                    }else if (index == 3){
+                    } else if (index == 3) {
                         pantallaEstadistica app = new pantallaEstadistica();
                         app.setVisible(true);
                         dispose();
@@ -215,8 +215,7 @@ public class gestionEmpleados extends JFrame {
                             gestionEmpleados.this,
                             "Esta sección todavía está en desarrollo.",
                             "Próximamente",
-                            JOptionPane.INFORMATION_MESSAGE
-                    );
+                            JOptionPane.INFORMATION_MESSAGE);
                 }
             });
 
@@ -240,12 +239,24 @@ public class gestionEmpleados extends JFrame {
         btnCerrarSesion.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                // implementar el cierre de sesión real:
-                //  - invalidar el token / sesión del usuario actual
-                //  - limpiar cualquier dato sensible que se tenga en memoria
-                //  - abrir la ventana de login y cerrar todas las ventanas abiertas
-                // Por ahora solo se deja este mensaje de referencia:
-                System.out.println("Cerrar sesión presionado (pendiente de implementar)");
+                int confirmacion = JOptionPane.showConfirmDialog(
+                        SwingUtilities.getWindowAncestor(btnCerrarSesion),
+                        "¿Desea cerrar la sesión actual?",
+                        "Confirmar Cierre de Sesión",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.QUESTION_MESSAGE);
+
+                if (confirmacion == JOptionPane.YES_OPTION) {
+                    // Abrir la ventana de Login
+                    SwingUtilities.invokeLater(() -> {
+                        new pantallaLogin().setVisible(true);
+                    });
+
+                    // Cerrar todas las ventanas abiertas
+                    for (Window window : Window.getWindows()) {
+                        window.dispose();
+                    }
+                }
             }
         });
 
@@ -822,7 +833,6 @@ public class gestionEmpleados extends JFrame {
                     shield.closePath();
                     g2.setStroke(new BasicStroke(2.2f));
                     g2.draw(shield);
-
 
                     Path2D check = new Path2D.Double();
                     check.moveTo(11, 15);
