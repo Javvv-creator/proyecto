@@ -10,23 +10,24 @@ import java.util.List;
 
 /**
  * MenuPOS - Interfaz de punto de venta para restaurante de hamburguesas.
- * Replica el diseño: barra de categorías, grilla de productos y panel de orden actual.
+ * Replica el diseño: barra de categorías, grilla de productos y panel de orden
+ * actual.
  */
 public class pantallaCajero extends JFrame {
 
     // ---------- Paleta de colores ----------
-    static final Color BG_BEIGE        = new Color(0xE8, 0xD3, 0xAE);
-    static final Color BG_BEIGE_LIGHT  = new Color(0xEE, 0xDD, 0xC0);
-    static final Color CARD_BG         = new Color(0xF1, 0xE9, 0xDC);
-    static final Color CARD_IMG_BG     = new Color(0xF7, 0xF2, 0xE9);
-    static final Color TAB_INACTIVE    = new Color(0xF4, 0xEE, 0xE3);
-    static final Color TAB_ACTIVE      = new Color(0xE0, 0x1C, 0x4D);
-    static final Color BROWN_DARK      = new Color(0x4A, 0x2E, 0x1C);
-    static final Color BROWN_TEXT      = new Color(0x5A, 0x38, 0x22);
-    static final Color YELLOW_TEXT     = new Color(0xE7, 0xA6, 0x2E);
-    static final Color YELLOW_BRIGHT   = new Color(0xF2, 0xC9, 0x4C);
-    static final Color PANEL_DARK      = new Color(0x3B, 0x24, 0x16);
-    static final Color WHITE_TEXT      = new Color(0xF7, 0xF2, 0xE9);
+    static final Color BG_BEIGE = new Color(0xE8, 0xD3, 0xAE);
+    static final Color BG_BEIGE_LIGHT = new Color(0xEE, 0xDD, 0xC0);
+    static final Color CARD_BG = new Color(0xF1, 0xE9, 0xDC);
+    static final Color CARD_IMG_BG = new Color(0xF7, 0xF2, 0xE9);
+    static final Color TAB_INACTIVE = new Color(0xF4, 0xEE, 0xE3);
+    static final Color TAB_ACTIVE = new Color(0xE0, 0x1C, 0x4D);
+    static final Color BROWN_DARK = new Color(0x4A, 0x2E, 0x1C);
+    static final Color BROWN_TEXT = new Color(0x5A, 0x38, 0x22);
+    static final Color YELLOW_TEXT = new Color(0xE7, 0xA6, 0x2E);
+    static final Color YELLOW_BRIGHT = new Color(0xF2, 0xC9, 0x4C);
+    static final Color PANEL_DARK = new Color(0x3B, 0x24, 0x16);
+    static final Color WHITE_TEXT = new Color(0xF7, 0xF2, 0xE9);
 
     private final CardsGridPanel gridPanel;
     private final OrderPanel orderPanel;
@@ -34,17 +35,37 @@ public class pantallaCajero extends JFrame {
     private final Map<String, JButton> tabButtons = new LinkedHashMap<>();
 
     // ---------- Datos ----------
-   // ---------- Datos ----------
+    // ---------- Datos ----------
     static class MenuItem {
-        String name; double price; String category; String emoji; String imagePath;
+
+        String name;
+        double price;
+        String category;
+        String emoji;
+        String imagePath;
+
+        // Constructor original (usa el nombre para generar la ruta automáticamente)
         MenuItem(String name, double price, String category, String emoji) {
-            this.name = name; this.price = price; this.category = category; this.emoji = emoji;
-            // Ruta absoluta dentro del classpath de Java
+            this.name = name;
+            this.price = price;
+            this.category = category;
+            this.emoji = emoji;
+            // Genera la ruta a partir del nombre
             this.imagePath = "/gui/images/" + name.toLowerCase()
                     .replace(" ", "_")
-                    .replace("á","a").replace("é","e").replace("í","i")
-                    .replace("ó","o").replace("ú","u").replace("ñ","n")
+                    .replace("á", "a").replace("é", "e").replace("í", "i")
+                    .replace("ó", "o").replace("ú", "u").replace("ñ", "n")
                     + ".png";
+        }
+
+        // Nuevo constructor (acepta directamente el nombre del archivo de imagen)
+        MenuItem(String name, double price, String category, String emoji, String imageFile) {
+            this.name = name;
+            this.price = price;
+            this.category = category;
+            this.emoji = emoji;
+            // Usa directamente el archivo que le pases
+            this.imagePath = "/gui/images/" + imageFile;
         }
     }
 
@@ -117,90 +138,162 @@ public class pantallaCajero extends JFrame {
     }
 
     private void buildCatalog() {
-    // ----- Hamburguesas (todo junto aquí) -----
-    List<MenuItem> hamburguesas = new ArrayList<>();
+        // ----- Hamburguesas (todo junto aquí) -----
+        List<MenuItem> hamburguesas = new ArrayList<>();
 
-    // Mensajito de Desayunos
-    hamburguesas.add(new MenuItem("🍳 Desayunos", 0.00, "Hamburguesas", "📌"));
-    // Desayunos
-    hamburguesas.add(new MenuItem("McMuffin Cheddar McMelt", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("McMuffin Tocino Doble Huevo", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("McMuffin Salchicha y doble huevo", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("Egg McMuffin Doble Huevo", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("McMuffin de Salchicha y Huevo", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("McMuffin de Salchicha", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("McMuffin Chapín Con Salchicha", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("Egg McMuffin", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("McMuffin Super Chapín Con Salchicha", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("Egg McMuffin Doble", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("McMuffin de Tocino y Huevo", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("McMuffin Super Chapín Con Jamón", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("McMuffin de Salchicha Doble y Huevo", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("McMuffin Tocino Doble y Huevo", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("McMuffin Huevo y Frijol", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("McMuffin Huevo y Queso", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("McMuffin Chapín Con Jamón", 0.00, "Hamburguesas", "🍔"));
+// Mensajito de Desayunos
+        hamburguesas.add(new MenuItem("🍳 Desayunos", 0.00, "Hamburguesas", "📌"));
+// Desayunos
+        hamburguesas.add(new MenuItem("McMuffin Cheddar McMelt", 28.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("McMuffin Tocino Doble Huevo", 30.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("McMuffin Salchicha y doble huevo", 30.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("Egg McMuffin Doble Huevo", 32.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("McMuffin de Salchicha y Huevo", 28.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("McMuffin de Salchicha", 26.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("McMuffin Chapín Con Salchicha", 30.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("Egg McMuffin", 26.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("McMuffin Super Chapín Con Salchicha", 32.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("Egg McMuffin Doble", 30.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("McMuffin de Tocino y Huevo", 28.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("McMuffin Super Chapín Con Jamón", 32.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("McMuffin de Salchicha Doble y Huevo", 32.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("McMuffin Tocino Doble y Huevo", 32.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("McMuffin Huevo y Frijol", 25.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("McMuffin Huevo y Queso", 26.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("McMuffin Chapín Con Jamón", 28.00, "Hamburguesas", "🍔"));
 
-    // Mensajito de Hamburguesas
-    hamburguesas.add(new MenuItem("🍔 Hamburguesas", 0.00, "Hamburguesas", "📌"));
-    // Hamburguesas
-    hamburguesas.add(new MenuItem("Bacon Cheddar McMelt", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("McCrispy Bacon Cheddar", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("Git Mac Doble", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("Cuarto de Libra con Queso", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("Cuarto de Libra Doble con Queso", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("Cuarto de Libra Deluxe con Queso", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("Cuarto de Libra Deluxe Doble con Queso", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("Cuarto de Libra Bacon con Queso", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("Cuarto de Libra Bacon Doble con Queso", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("Big Tasty", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("Big Tasty Doble", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("Big Tasty Bacon", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("Big Tasty Bacon Doble", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("Triple Bacon", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("Quesoburguesa", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("Quesoburguesa Doble", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("Quesoburguesa Triple", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("Hamburguesa", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("Hamburguesa Jr.", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("GitNífica de Res", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("GitNífica de Res Doble", 0.00, "Hamburguesas", "🍔"));
+// Mensajito de Hamburguesas
+        hamburguesas.add(new MenuItem("🍔 Hamburguesas", 0.00, "Hamburguesas", "📌"));
+// Hamburguesas
+        hamburguesas.add(new MenuItem("Bacon Cheddar McMelt", 38.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("McCrispy Bacon Cheddar", 40.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("Git Mac Doble", 41.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("Cuarto de Libra con Queso", 39.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("Cuarto de Libra Doble con Queso", 44.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("Cuarto de Libra Deluxe con Queso", 42.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("Cuarto de Libra Deluxe Doble con Queso", 46.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("Cuarto de Libra Bacon con Queso", 42.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("Cuarto de Libra Bacon Doble con Queso", 46.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("Big Tasty", 48.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("Big Tasty Doble", 55.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("Big Tasty Bacon", 50.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("Big Tasty Bacon Doble", 58.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("Triple Bacon", 60.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("Quesoburguesa", 32.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("Quesoburguesa Doble", 44.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("Quesoburguesa Triple", 46.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("Hamburguesa", 20.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("Hamburguesa Jr.", 18.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("GitNífica de Res", 42.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("GitNífica de Res Doble", 48.00, "Hamburguesas", "🍔"));
 
-    // Mensajito de Pollo
-    hamburguesas.add(new MenuItem("🐔 Pollo", 0.00, "Hamburguesas", "📌"));
-    // Pollo
-    hamburguesas.add(new MenuItem("McCrispy Chicken Bacon Ranch", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("McCrispy Chicken Deluxe", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("Big Tasty de Pollo", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("Sándwich McPollo Doble", 0.00, "Hamburguesas", "🍔"));
+// Mensajito de Pollo
+        hamburguesas.add(new MenuItem("🐔 Pollo", 0.00, "Hamburguesas", "📌"));
+// Pollo
+        hamburguesas.add(new MenuItem("McCrispy Chicken Bacon Ranch", 42.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("McCrispy Chicken Deluxe", 40.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("Big Tasty de Pollo", 48.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("Sándwich McPollo Doble", 49.00, "Hamburguesas", "🍔"));
 
-    // Mensajito de Gourmet
-    hamburguesas.add(new MenuItem("🥩 Creaciones Gourmet", 0.00, "Hamburguesas", "📌"));
-    // Gourmet
-    hamburguesas.add(new MenuItem("Smoke Tocino Gourmet de Res", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("Smoke Tocino Gourmet doble", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("Clásica Gourmet Res", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("Clásica Gourmet Res doble", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("Pico Guacamol Gourmet Res", 0.00, "Hamburguesas", "🍔"));
-    hamburguesas.add(new MenuItem("Pico Guacamol Gourmet doble", 0.00, "Hamburguesas", "🍔"));
+// Mensajito de Gourmet
+        hamburguesas.add(new MenuItem("🥩 Creaciones Gourmet", 0.00, "Hamburguesas", "📌"));
+// Gourmet
+        hamburguesas.add(new MenuItem("Smoke Tocino Gourmet de Res", 50.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("Smoke Tocino Gourmet doble", 58.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("Clásica Gourmet Res", 48.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("Clásica Gourmet Res doble", 55.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("Pico Guacamol Gourmet Res", 50.00, "Hamburguesas", "🍔"));
+        hamburguesas.add(new MenuItem("Pico Guacamol Gourmet doble", 58.00, "Hamburguesas", "🍔"));
 
-    // ----- Otras categorías vacías -----
-    List<MenuItem> bebidas = new ArrayList<>();
-    List<MenuItem> postres = new ArrayList<>();
-    List<MenuItem> combos = new ArrayList<>();
+        // ----- Otras categorías vacías -----
+        // ----- Bebidas -----
+        List<MenuItem> bebidas = new ArrayList<>();
 
-    // ----- Guardar en catálogo -----
-    catalog.put("Hamburguesas", hamburguesas);
-    catalog.put("Bebidas", bebidas);
-    catalog.put("Postres", postres);
-    catalog.put("Combos", combos);
+        // Mensajito de Bebidas Frías
+        bebidas.add(new MenuItem("🥤 Bebidas Frías", 0.00, "Bebidas", "📌"));
+        bebidas.add(new MenuItem("Horchata", 15.00, "Bebidas", "🥤", "horchata.png"));
+        bebidas.add(new MenuItem("Iced Coffee Horchata", 22.00, "Bebidas", "🥤", "iced_coffee_horchata.png"));
+        bebidas.add(new MenuItem("GITFizz Pink", 20.00, "Bebidas", "🥤", "mc_fizzpink.png"));
+        bebidas.add(new MenuItem("GITFizz Manzana Verde", 20.00, "Bebidas", "🥤", "mc_fizz_manzana_verde.png"));
+        bebidas.add(new MenuItem("GITFizz Blue", 20.00, "Bebidas", "🥤", "mc_fizz_blue.png"));
+        bebidas.add(new MenuItem("Frappé Oreo", 32.00, "Bebidas", "🥤", "frappe_oreo.png"));
+        bebidas.add(new MenuItem("Frappé Original", 28.00, "Bebidas", "🥤", "frappe_original.png"));
+        bebidas.add(new MenuItem("Frappé Vainilla", 30.00, "Bebidas", "🥤", "frappe_vainilla.png"));
+        bebidas.add(new MenuItem("Frappé Chocolate", 30.00, "Bebidas", "🥤", "frappe_chocolate.png"));
+        bebidas.add(new MenuItem("Frappé Caramelo", 30.00, "Bebidas", "🥤", "frappe_caramelo.png"));
+        bebidas.add(new MenuItem("Frappé Vainilla Light", 28.00, "Bebidas", "🥤", "frappe_vainilla_light.png"));
+        bebidas.add(new MenuItem("Iced Coffee Original", 22.00, "Bebidas", "🥤", "iced_coffee_original.png"));
+        bebidas.add(new MenuItem("Iced Coffee Vainilla", 24.00, "Bebidas", "🥤", "iced_coffee_vainilla.png"));
+        bebidas.add(new MenuItem("Iced Coffee Vainilla Light", 24.00, "Bebidas", "🥤", "iced_coffee_vainilla_light.png"));
+        bebidas.add(new MenuItem("Iced Coffee Chocolate", 24.00, "Bebidas", "🥤", "iced_coffee_chocolate.png"));
+        bebidas.add(new MenuItem("Iced Coffee Caramelo", 24.00, "Bebidas", "🥤", "iced_coffee_caramelo.png"));
+        bebidas.add(new MenuItem("Té Chai Frappé Té Verde", 28.00, "Bebidas", "🥤", "te_chai_frappe_te_verde.png"));
+        bebidas.add(new MenuItem("Té Chai Frappé Original", 28.00, "Bebidas", "🥤", "te_chai_frappe_original.png"));
+        bebidas.add(new MenuItem("Té Chai Frappé Vainilla", 30.00, "Bebidas", "🥤", "te_chai_frappe_vainilla.png"));
+        bebidas.add(new MenuItem("Té Chai Frappé Vainilla Light", 28.00, "Bebidas", "🥤", "te_chai_frappe_vainilla_light.png"));
+        bebidas.add(new MenuItem("Smoothie de Berries", 35.00, "Bebidas", "🥤", "smoothie_de_berries.png"));
+        bebidas.add(new MenuItem("Smoothie de Mango", 35.00, "Bebidas", "🥤", "smoothie_de_mango.png"));
+        bebidas.add(new MenuItem("GITFizz A.M.", 22.00, "Bebidas", "🥤", "mc_fizz_am.png"));
 
-    // ----- Todos -----
-    List<MenuItem> todos = new ArrayList<>();
-    for (List<MenuItem> l : catalog.values()) todos.addAll(l);
-    catalog.put("Todos", todos);
-}
+        // Mensajito de Bebidas Calientes
+        bebidas.add(new MenuItem("☕ Bebidas Calientes", 0.00, "Bebidas", "📌"));
+        bebidas.add(new MenuItem("Té Chai Original", 18.00, "Bebidas", "☕", "te_chai_original.png"));
+        bebidas.add(new MenuItem("Té Chai Té Verde", 18.00, "Bebidas", "☕", "te_chai_te_verde.png"));
+        bebidas.add(new MenuItem("Té Chai Vainilla", 20.00, "Bebidas", "☕", "te_chai_vainilla.png"));
+        bebidas.add(new MenuItem("Té Chai Vainilla Light", 20.00, "Bebidas", "☕", "te_chai_vainilla_light.png"));
+        bebidas.add(new MenuItem("Cappuccino", 22.00, "Bebidas", "☕", "cappuccino.png"));
+        bebidas.add(new MenuItem("Latte", 22.00, "Bebidas", "☕", "latte.png"));
+        bebidas.add(new MenuItem("Café Guatemalteco", 18.00, "Bebidas", "☕", "cafe_guatemalteco.png"));
+        bebidas.add(new MenuItem("Té Guatemalteco Manzanilla Relax", 15.00, "Bebidas", "☕", "te_guatemalteco_manzanilla_relax.png"));
+        bebidas.add(new MenuItem("Té Guatemalteco Melocotón Mix", 15.00, "Bebidas", "☕", "te_guatemalteco_melocoton_mix.png"));
+        bebidas.add(new MenuItem("Té Guatemalteco Bora Bora", 15.00, "Bebidas", "☕", "te_guatemalteco_borabora.png"));
+        bebidas.add(new MenuItem("Té Guatemalteco Menta Fusión", 15.00, "Bebidas", "☕", "te_guatemalteco_menta_fusion.png"));
+        bebidas.add(new MenuItem("Chocolate caliente", 20.00, "Bebidas", "☕", "chocolate_caliente.png"));
 
+        // Mensajito de Café en Bolsa
+        bebidas.add(new MenuItem("🛍️ Café en Bolsa", 0.00, "Bebidas", "📌"));
+        bebidas.add(new MenuItem("Blend Molido", 45.00, "Bebidas", "☕", "blend_molido.png"));
+        bebidas.add(new MenuItem("Blend Grano", 45.00, "Bebidas", "☕", "blend_grano.png"));
+
+        // Mensajito de Sodas
+        bebidas.add(new MenuItem("🥤 Sodas", 0.00, "Bebidas", "📌"));
+        bebidas.add(new MenuItem("Sprite", 10.00, "Bebidas", "🥤", "sprite.png"));
+        bebidas.add(new MenuItem("Coca-Cola", 10.00, "Bebidas", "🥤", "coca_cola.png"));
+        bebidas.add(new MenuItem("Coca Cola Zero", 10.00, "Bebidas", "🥤", "coca_cola_zero.png"));
+        bebidas.add(new MenuItem("Fanta", 10.00, "Bebidas", "🥤", "fanta.png"));
+
+        // Mensajito de Naturales
+        bebidas.add(new MenuItem("🍹 Naturales", 0.00, "Bebidas", "📌"));
+        bebidas.add(new MenuItem("Jugo de Naranja", 12.00, "Bebidas", "🥤", "jugo_de_naranja.png"));
+        bebidas.add(new MenuItem("Té Lipton", 12.00, "Bebidas", "🥤", "te_lipton.png"));
+        bebidas.add(new MenuItem("Rosa de Jamaica", 12.00, "Bebidas", "🥤", "rosa_de_jamaica.png"));
+        bebidas.add(new MenuItem("Agua Pura", 8.00, "Bebidas", "🥤", "agua_pura.png"));
+        bebidas.add(new MenuItem("Jugo de Manzana", 12.00, "Bebidas", "🥤", "jugo_de_manzana.png"));
+
+        // Mensajito de Calientes
+        bebidas.add(new MenuItem("🔥 Calientes", 0.00, "Bebidas", "📌"));
+        bebidas.add(new MenuItem("Café", 15.00, "Bebidas", "☕", "cafe.png"));
+        bebidas.add(new MenuItem("Café Con Leche", 18.00, "Bebidas", "☕", "cafe_con_leche.png"));
+        bebidas.add(new MenuItem("Chocolate", 18.00, "Bebidas", "☕", "chocolate.png"));
+        bebidas.add(new MenuItem("Té Caliente", 15.00, "Bebidas", "☕", "te_caliente.png"));
+
+        List<MenuItem> postres = new ArrayList<>();
+        List<MenuItem> combos = new ArrayList<>();
+
+// ----- Guardar en catálogo -----
+        catalog.put("Hamburguesas", hamburguesas);
+        catalog.put("Bebidas", bebidas);
+        catalog.put("Postres", new ArrayList<>());
+        catalog.put("Combos", new ArrayList<>());
+
+// ----- Todos -----
+        List<MenuItem> todos = new ArrayList<>();
+        for (List<MenuItem> l : catalog.values()) {
+            todos.addAll(l);
+        }
+        catalog.put("Todos", todos);
+
+    }
 
     private JPanel buildTabsBar() {
         JPanel bar = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
@@ -226,6 +319,7 @@ public class pantallaCajero extends JFrame {
 
     // ---------- Panel de fondo con leve decoración ----------
     static class BackgroundPanel extends JPanel {
+
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
@@ -245,7 +339,9 @@ public class pantallaCajero extends JFrame {
 
     // ---------- Botón tipo "pill" para categorías ----------
     static class PillButton extends JButton {
+
         private boolean active = false;
+
         PillButton(String text) {
             super(text);
             setFont(new Font("SansSerif", Font.BOLD, 18));
@@ -257,11 +353,13 @@ public class pantallaCajero extends JFrame {
             setBorder(new EmptyBorder(16, 30, 16, 30));
             setCursor(new Cursor(Cursor.HAND_CURSOR));
         }
+
         void setActive(boolean active) {
             this.active = active;
             setForeground(active ? Color.WHITE : BROWN_TEXT);
             repaint();
         }
+
         @Override
         protected void paintComponent(Graphics g) {
             Graphics2D g2 = (Graphics2D) g.create();
@@ -275,10 +373,12 @@ public class pantallaCajero extends JFrame {
 
     // ---------- Grilla de productos ----------
     class CardsGridPanel extends JPanel {
+
         CardsGridPanel() {
             setOpaque(false);
             setLayout(new GridBagLayout());
         }
+
         void setItems(List<MenuItem> items) {
             removeAll();
             GridBagConstraints gc = new GridBagConstraints();
@@ -298,6 +398,7 @@ public class pantallaCajero extends JFrame {
     // ---------- Tarjeta de producto ----------
     // ---------- Tarjeta de producto ----------
     class ItemCard extends JPanel {
+
         ItemCard(MenuItem item) {
             setPreferredSize(new Dimension(230, 250));
             setOpaque(false);
@@ -309,7 +410,7 @@ public class pantallaCajero extends JFrame {
             content.setBorder(new EmptyBorder(18, 12, 18, 12));
 
             JLabel pictureLabel = new JLabel("", SwingConstants.CENTER);
-            
+
             // Cargar la imagen utilizando el recurso del proyecto (getResource)
             java.net.URL imgURL = getClass().getResource(item.imagePath);
             if (imgURL != null) {
@@ -355,16 +456,21 @@ public class pantallaCajero extends JFrame {
             add(content, BorderLayout.CENTER);
 
             addMouseListener(new MouseAdapter() {
-                @Override public void mouseClicked(MouseEvent e) {
+                @Override
+                public void mouseClicked(MouseEvent e) {
                     orderPanel.addItem(item);
                 }
-                @Override public void mouseEntered(MouseEvent e) {
+
+                @Override
+                public void mouseEntered(MouseEvent e) {
                     content.setBorder(BorderFactory.createCompoundBorder(
                             BorderFactory.createLineBorder(YELLOW_TEXT, 2, true),
                             new EmptyBorder(16, 10, 16, 10)));
                     repaint();
                 }
-                @Override public void mouseExited(MouseEvent e) {
+
+                @Override
+                public void mouseExited(MouseEvent e) {
                     content.setBorder(new EmptyBorder(18, 12, 18, 12));
                     repaint();
                 }
@@ -374,11 +480,16 @@ public class pantallaCajero extends JFrame {
 
     // ---------- Panel redondeado genérico ----------
     static class RoundedPanel extends JPanel {
-        private final Color bg; private final int radius;
+
+        private final Color bg;
+        private final int radius;
+
         RoundedPanel(Color bg, int radius) {
-            this.bg = bg; this.radius = radius;
+            this.bg = bg;
+            this.radius = radius;
             setOpaque(false);
         }
+
         @Override
         protected void paintComponent(Graphics g) {
             Graphics2D g2 = (Graphics2D) g.create();
@@ -392,6 +503,7 @@ public class pantallaCajero extends JFrame {
 
     // ---------- Panel derecho: orden actual ----------
     class OrderPanel extends JPanel {
+
         private final DefaultListModel<OrderLine> model = new DefaultListModel<>();
         private final JList<OrderLine> list = new JList<>(model);
         private final JLabel totalLabel = new JLabel("Q 0.00");
@@ -423,7 +535,9 @@ public class pantallaCajero extends JFrame {
             JLabel l3 = new JLabel("  -   Turno Tarde");
             l3.setForeground(WHITE_TEXT);
             l3.setFont(new Font("SansSerif", Font.PLAIN, 16));
-            cashierRow.add(l1); cashierRow.add(l2); cashierRow.add(l3);
+            cashierRow.add(l1);
+            cashierRow.add(l2);
+            cashierRow.add(l3);
 
             header.add(title);
             header.add(Box.createVerticalStrut(10));
@@ -516,17 +630,25 @@ public class pantallaCajero extends JFrame {
 
         void updateTotal() {
             double total = 0;
-            for (OrderLine l : lines) total += l.item.price * l.qty;
+            for (OrderLine l : lines) {
+                total += l.item.price * l.qty;
+            }
             totalLabel.setText(String.format("Q %.2f", total));
         }
     }
 
     static class OrderLine {
-        MenuItem item; int qty = 1;
-        OrderLine(MenuItem item) { this.item = item; }
+
+        MenuItem item;
+        int qty = 1;
+
+        OrderLine(MenuItem item) {
+            this.item = item;
+        }
     }
 
     static class OrderLineRenderer extends JPanel implements ListCellRenderer<OrderLine> {
+
         private final JLabel nameLbl = new JLabel();
         private final JLabel qtyLbl = new JLabel();
         private final JLabel priceLbl = new JLabel();
@@ -556,7 +678,7 @@ public class pantallaCajero extends JFrame {
 
         @Override
         public Component getListCellRendererComponent(JList<? extends OrderLine> list, OrderLine value,
-                                                      int index, boolean isSelected, boolean cellHasFocus) {
+                int index, boolean isSelected, boolean cellHasFocus) {
             nameLbl.setText(value.item.name);
             qtyLbl.setText("x" + value.qty);
             priceLbl.setText(String.format("Q %.2f", value.item.price * value.qty));
@@ -570,7 +692,8 @@ public class pantallaCajero extends JFrame {
         SwingUtilities.invokeLater(() -> {
             try {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
             pantallaCajero frame = new pantallaCajero();
             frame.setVisible(true);
         });
