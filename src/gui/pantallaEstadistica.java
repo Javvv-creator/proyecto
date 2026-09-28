@@ -7,8 +7,6 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.Arc2D;
 import java.awt.geom.Path2D;
 import java.net.URL;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Locale;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -58,9 +56,6 @@ public class pantallaEstadistica extends JFrame {
     private int selectedMenuIndex = INDICE_ACTUAL;
     private int selectedTab = 3;
     private JPanel[] menuButtons;
-    private JLabel lblClock;
-    private JLabel lblDate;
-    private Timer clockTimer;
 
     // Componentes de la pantalla
     private PillButton[] tabs;
@@ -100,7 +95,6 @@ public class pantallaEstadistica extends JFrame {
                 JComponent.WHEN_IN_FOCUSED_WINDOW);
 
         selectTab(selectedTab);
-        startLiveClock();
     }
 
     /** Se mantiene por compatibilidad con código que ya la llamaba. */
@@ -377,17 +371,6 @@ public class pantallaEstadistica extends JFrame {
         return header;
     }
 
-    private void startLiveClock() {
-        clockTimer = new Timer(1000, e -> {
-            Date now = new Date();
-            SimpleDateFormat sdfTime = new SimpleDateFormat("hh:mm:ss a");
-            SimpleDateFormat sdfDate = new SimpleDateFormat("EEEE, d 'de' MMMM", Locale.of("es", "ES"));
-            lblClock.setText(sdfTime.format(now));
-            lblDate.setText(sdfDate.format(now));
-        });
-        clockTimer.setInitialDelay(0);
-        clockTimer.start();
-    }
 
     // =====================================================================
     // CUERPO
