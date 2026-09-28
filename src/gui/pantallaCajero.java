@@ -35,7 +35,6 @@ public class pantallaCajero extends JFrame {
     private final Map<String, JButton> tabButtons = new LinkedHashMap<>();
 
     // ---------- Datos ----------
-    // ---------- Datos ----------
     static class MenuItem {
 
         String name;
@@ -126,7 +125,7 @@ public class pantallaCajero extends JFrame {
 
         // ----- Panel derecho (orden actual) -----
         orderPanel = new OrderPanel();
-        orderPanel.setPreferredSize(new Dimension(430, 100));
+        orderPanel.setPreferredSize(new Dimension(470, 100));
         root.add(orderPanel, BorderLayout.EAST);
 
         showCategory("Todos");
@@ -141,9 +140,9 @@ public class pantallaCajero extends JFrame {
         // ----- Hamburguesas (todo junto aquí) -----
         List<MenuItem> hamburguesas = new ArrayList<>();
 
-// Mensajito de Desayunos
+        // Mensajito de Desayunos
         hamburguesas.add(new MenuItem("🍳 Desayunos", 0.00, "Hamburguesas", "📌"));
-// Desayunos
+        // Desayunos
         hamburguesas.add(new MenuItem("McMuffin Cheddar McMelt", 28.00, "Hamburguesas", "🍔"));
         hamburguesas.add(new MenuItem("McMuffin Tocino Doble Huevo", 30.00, "Hamburguesas", "🍔"));
         hamburguesas.add(new MenuItem("McMuffin Salchicha y doble huevo", 30.00, "Hamburguesas", "🍔"));
@@ -162,9 +161,9 @@ public class pantallaCajero extends JFrame {
         hamburguesas.add(new MenuItem("McMuffin Huevo y Queso", 26.00, "Hamburguesas", "🍔"));
         hamburguesas.add(new MenuItem("McMuffin Chapín Con Jamón", 28.00, "Hamburguesas", "🍔"));
 
-// Mensajito de Hamburguesas
+        // Mensajito de Hamburguesas
         hamburguesas.add(new MenuItem("🍔 Hamburguesas", 0.00, "Hamburguesas", "📌"));
-// Hamburguesas
+        // Hamburguesas
         hamburguesas.add(new MenuItem("Bacon Cheddar McMelt", 38.00, "Hamburguesas", "🍔"));
         hamburguesas.add(new MenuItem("McCrispy Bacon Cheddar", 40.00, "Hamburguesas", "🍔"));
         hamburguesas.add(new MenuItem("Git Mac Doble", 41.00, "Hamburguesas", "🍔"));
@@ -187,17 +186,17 @@ public class pantallaCajero extends JFrame {
         hamburguesas.add(new MenuItem("GitNífica de Res", 42.00, "Hamburguesas", "🍔"));
         hamburguesas.add(new MenuItem("GitNífica de Res Doble", 48.00, "Hamburguesas", "🍔"));
 
-// Mensajito de Pollo
+        // Mensajito de Pollo
         hamburguesas.add(new MenuItem("🐔 Pollo", 0.00, "Hamburguesas", "📌"));
-// Pollo
+        // Pollo
         hamburguesas.add(new MenuItem("McCrispy Chicken Bacon Ranch", 42.00, "Hamburguesas", "🍔"));
         hamburguesas.add(new MenuItem("McCrispy Chicken Deluxe", 40.00, "Hamburguesas", "🍔"));
         hamburguesas.add(new MenuItem("Big Tasty de Pollo", 48.00, "Hamburguesas", "🍔"));
         hamburguesas.add(new MenuItem("Sándwich McPollo Doble", 49.00, "Hamburguesas", "🍔"));
 
-// Mensajito de Gourmet
+        // Mensajito de Gourmet
         hamburguesas.add(new MenuItem("🥩 Creaciones Gourmet", 0.00, "Hamburguesas", "📌"));
-// Gourmet
+        // Gourmet
         hamburguesas.add(new MenuItem("Smoke Tocino Gourmet de Res", 50.00, "Hamburguesas", "🍔"));
         hamburguesas.add(new MenuItem("Smoke Tocino Gourmet doble", 58.00, "Hamburguesas", "🍔"));
         hamburguesas.add(new MenuItem("Clásica Gourmet Res", 48.00, "Hamburguesas", "🍔"));
@@ -205,7 +204,6 @@ public class pantallaCajero extends JFrame {
         hamburguesas.add(new MenuItem("Pico Guacamol Gourmet Res", 50.00, "Hamburguesas", "🍔"));
         hamburguesas.add(new MenuItem("Pico Guacamol Gourmet doble", 58.00, "Hamburguesas", "🍔"));
 
-        // ----- Otras categorías vacías -----
         // ----- Bebidas -----
         List<MenuItem> bebidas = new ArrayList<>();
 
@@ -277,22 +275,18 @@ public class pantallaCajero extends JFrame {
         bebidas.add(new MenuItem("Chocolate", 18.00, "Bebidas", "☕", "chocolate.png"));
         bebidas.add(new MenuItem("Té Caliente", 15.00, "Bebidas", "☕", "te_caliente.png"));
 
-        List<MenuItem> postres = new ArrayList<>();
-        List<MenuItem> combos = new ArrayList<>();
-
-// ----- Guardar en catálogo -----
+        // ----- Guardar en catálogo -----
         catalog.put("Hamburguesas", hamburguesas);
         catalog.put("Bebidas", bebidas);
         catalog.put("Postres", new ArrayList<>());
         catalog.put("Combos", new ArrayList<>());
 
-// ----- Todos -----
+        // ----- Todos -----
         List<MenuItem> todos = new ArrayList<>();
         for (List<MenuItem> l : catalog.values()) {
             todos.addAll(l);
         }
         catalog.put("Todos", todos);
-
     }
 
     private JPanel buildTabsBar() {
@@ -396,7 +390,6 @@ public class pantallaCajero extends JFrame {
     }
 
     // ---------- Tarjeta de producto ----------
-    // ---------- Tarjeta de producto ----------
     class ItemCard extends JPanel {
 
         ItemCard(MenuItem item) {
@@ -458,7 +451,17 @@ public class pantallaCajero extends JFrame {
             addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    orderPanel.addItem(item);
+                    // Hamburguesas con receta: abrir ventana de ingredientes
+                    Recipe recipe = RECIPES.get(item.name);
+                    if ("Hamburguesas".equals(item.category) && recipe != null) {
+                        content.setBorder(new EmptyBorder(18, 12, 18, 12));
+                        Customization c = CustomizeDialog.open(pantallaCajero.this, item, recipe, null);
+                        if (c != null) {
+                            orderPanel.addCustom(item, c);
+                        }
+                    } else {
+                        orderPanel.addItem(item);
+                    }
                 }
 
                 @Override
@@ -501,6 +504,9 @@ public class pantallaCajero extends JFrame {
         }
     }
 
+    // =====================================================================
+    // ---------- Panel derecho: orden actual (REDISEÑADO) ----------
+    // =====================================================================
 
     // Colores extra para el panel de orden
     static final Color RED_PAY = new Color(0xD7, 0x1F, 0x3A);
@@ -579,7 +585,7 @@ public class pantallaCajero extends JFrame {
             list.setCellRenderer(new OrderLineRenderer());
             list.setFixedCellHeight(-1);
             list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-            list.setToolTipText("Doble clic: agregar nota  |  Clic derecho: más opciones");
+            list.setToolTipText("Doble clic: editar ingredientes / nota  |  Clic derecho: más opciones");
             list.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
@@ -654,9 +660,17 @@ public class pantallaCajero extends JFrame {
                             "Ir al pago", JOptionPane.WARNING_MESSAGE);
                     return;
                 }
-                JOptionPane.showMessageDialog(this,
-                        "Cobro realizado: " + totalLabel.getText(),
-                        "Ir al pago", JOptionPane.INFORMATION_MESSAGE);
+                double subtotal = 0;
+                for (OrderLine l : lines) {
+                    subtotal += l.unitPrice * l.qty;
+                }
+                // Ventana de pago: efectivo, tarjeta, mixto y cupones
+                PaymentResult pago = PaymentDialog.open(this, subtotal);
+                if (pago == null) {
+                    return; // canceló el pago
+                }
+                JOptionPane.showMessageDialog(this, pago.summary(),
+                        "Pago realizado", JOptionPane.INFORMATION_MESSAGE);
                 lines.clear();
                 model.clear();
                 updateTotal();
@@ -707,13 +721,35 @@ public class pantallaCajero extends JFrame {
                 return;
             }
             for (OrderLine line : lines) {
-                if (line.item.name.equals(item.name) && line.notes.isEmpty()) {
+                if (line.custom == null && line.item.name.equals(item.name) && line.notes.isEmpty()) {
                     line.qty++;
                     refresh();
                     return;
                 }
             }
             OrderLine line = new OrderLine(item);
+            lines.add(line);
+            model.addElement(line);
+            refresh();
+            list.ensureIndexIsVisible(model.size() - 1);
+        }
+
+        // Agrega una hamburguesa personalizada (desde la ventana de ingredientes)
+        void addCustom(MenuItem item, Customization c) {
+            String notes = c.describe();
+            double price = c.unitPrice(item);
+            for (OrderLine line : lines) {
+                if (line.item.name.equals(item.name) && line.notes.equals(notes)
+                        && Math.abs(line.unitPrice - price) < 0.001) {
+                    line.qty++;
+                    refresh();
+                    return;
+                }
+            }
+            OrderLine line = new OrderLine(item);
+            line.custom = c;
+            line.notes = notes;
+            line.unitPrice = price;
             lines.add(line);
             model.addElement(line);
             refresh();
@@ -727,6 +763,18 @@ public class pantallaCajero extends JFrame {
         }
 
         private void editNote(OrderLine line) {
+            // Si es hamburguesa, se reabre la ventana de ingredientes
+            Recipe recipe = RECIPES.get(line.item.name);
+            if (recipe != null) {
+                Customization c = CustomizeDialog.open(this, line.item, recipe, line.custom);
+                if (c != null) {
+                    line.custom = c;
+                    line.notes = c.describe();
+                    line.unitPrice = c.unitPrice(line.item);
+                    refresh();
+                }
+                return;
+            }
             Object res = JOptionPane.showInputDialog(this,
                     "Nota para " + line.item.name + "\n(ej. Sin pepinillos, sin cebolla)",
                     "Personalizar producto", JOptionPane.PLAIN_MESSAGE, null, null, line.notes);
@@ -752,7 +800,7 @@ public class pantallaCajero extends JFrame {
                     refresh();
                 }
             });
-            JMenuItem note = new JMenuItem("Editar nota...");
+            JMenuItem note = new JMenuItem("Editar ingredientes / nota...");
             note.addActionListener(a -> editNote(line));
             JMenuItem del = new JMenuItem("Eliminar producto");
             del.addActionListener(a -> removeLine(line));
@@ -776,7 +824,7 @@ public class pantallaCajero extends JFrame {
         void updateTotal() {
             double total = 0;
             for (OrderLine l : lines) {
-                total += l.item.price * l.qty;
+                total += l.unitPrice * l.qty;
             }
             subtotalLabel.setText(String.format("Q %.2f", total));
             totalLabel.setText(String.format("Q %.2f", total));
@@ -789,9 +837,12 @@ public class pantallaCajero extends JFrame {
         MenuItem item;
         int qty = 1;
         String notes = "";
+        double unitPrice;          // precio con extras incluidos
+        Customization custom;      // ingredientes elegidos (solo hamburguesas)
 
         OrderLine(MenuItem item) {
             this.item = item;
+            this.unitPrice = item.price;
         }
     }
 
@@ -859,7 +910,7 @@ public class pantallaCajero extends JFrame {
                         + esc(value.notes) + "</div></html>");
             }
 
-            priceLbl.setText(String.format("Q %.2f", value.item.price * value.qty));
+            priceLbl.setText(String.format("Q %.2f", value.unitPrice * value.qty));
             selected = isSelected;
             drawSeparator = index < list.getModel().getSize() - 1;
             return this;
@@ -1071,6 +1122,1271 @@ public class pantallaCajero extends JFrame {
             g2.dispose();
         }
     }
+
+    // =====================================================================
+    // ---------- RECETAS: ingredientes de cada hamburguesa ----------
+    // =====================================================================
+
+    // Tipo de hamburguesa: define qué "tipo de carne" se puede elegir y qué extras hay
+    enum Kind {
+        RES, POLLO_CRUJIENTE, POLLO_PLANCHA,
+        DESAYUNO_SALCHICHA, DESAYUNO_JAMON, DESAYUNO_TOCINO, DESAYUNO_SIN_CARNE
+    }
+
+    // ---------- Opciones de cada tipo de ingrediente ----------
+    // "Sin" siempre quita el ingrediente. Puedes agregar o cambiar opciones aquí.
+    static final Map<String, String[]> ING_OPTIONS = new HashMap<>();
+
+    static {
+        String[] cantidad = {"Sin", "Normal", "Extra"};
+        String[] salsa = {"Sin", "Menos", "Normal", "Extra"};
+
+        ING_OPTIONS.put("Lechuga", cantidad);
+        ING_OPTIONS.put("Tomate", cantidad);
+        ING_OPTIONS.put("Pepinillos", cantidad);
+        ING_OPTIONS.put("Frijol volteado", cantidad);
+        ING_OPTIONS.put("Plátano frito", cantidad);
+        ING_OPTIONS.put("Guacamol", cantidad);
+        ING_OPTIONS.put("Pico de gallo", cantidad);
+        ING_OPTIONS.put("Cebolla crujiente", cantidad);
+
+        ING_OPTIONS.put("Cebolla", new String[]{"Sin", "Blanca", "Morada", "Caramelizada"});
+        ING_OPTIONS.put("Queso", new String[]{"Sin", "Amarillo", "Cheddar", "Emmental", "Blanco"});
+        ING_OPTIONS.put("Tocino", new String[]{"Sin", "Normal", "Bien tostado"});
+        ING_OPTIONS.put("Huevo", new String[]{"Sin", "Estrellado", "Revuelto"});
+
+        ING_OPTIONS.put("Ketchup", salsa);
+        ING_OPTIONS.put("Mostaza", salsa);
+        ING_OPTIONS.put("Mayonesa", salsa);
+        ING_OPTIONS.put("Salsa especial", salsa);
+        ING_OPTIONS.put("Salsa Big Tasty", salsa);
+        ING_OPTIONS.put("Aderezo ranch", salsa);
+        ING_OPTIONS.put("Salsa BBQ ahumada", salsa);
+        ING_OPTIONS.put("Salsa blanca", salsa);
+        ING_OPTIONS.put("Salsa de queso cheddar", salsa);
+
+        // Preferencias generales (se agregan a TODAS las hamburguesas)
+        ING_OPTIONS.put("Sal", new String[]{"Sin", "Con"});
+        ING_OPTIONS.put("Pan", new String[]{"Normal", "Bien tostado", "Sin tostar"});
+    }
+
+    // Un ingrediente dentro de una receta
+    static class Ing {
+
+        final String label;     // lo que se muestra, ej. "Queso (x2)"
+        final String type;      // tipo base, ej. "Queso"
+        final String[] options;
+        final String def;       // opción original de la receta
+
+        // spec: "Lechuga"  o  "Cebolla:Blanca"  o  "Queso (x2):Amarillo"
+        Ing(String spec) {
+            String[] parts = spec.split(":", 2);
+            this.label = parts[0];
+            this.type = parts[0].replaceAll(" \\(x\\d\\)$", "");
+            String[] opts = ING_OPTIONS.get(type);
+            this.options = opts != null ? opts : new String[]{"Sin", "Normal"};
+            if (parts.length > 1) {
+                this.def = parts[1];
+            } else {
+                this.def = Arrays.asList(options).contains("Normal") ? "Normal" : options[options.length > 1 ? 1 : 0];
+            }
+        }
+    }
+
+    static class Extra {
+
+        final String name;
+        final double price;
+
+        Extra(String name, double price) {
+            this.name = name;
+            this.price = price;
+        }
+    }
+
+    // Extras con costo (puedes cambiar nombres y precios aquí)
+    static final Extra[] EXTRAS_DESAYUNO = {
+        new Extra("Huevo extra", 5.00),
+        new Extra("Queso extra", 4.00),
+        new Extra("Tocino extra", 7.00),
+        new Extra("Salchicha extra", 7.00),
+        new Extra("Aguacate", 6.00)
+    };
+    static final Extra[] EXTRAS_ALMUERZO = {
+        new Extra("Queso extra", 5.00),
+        new Extra("Tocino extra", 8.00),
+        new Extra("Carne extra", 12.00),
+        new Extra("Guacamol extra", 7.00),
+        new Extra("Jalapeños", 4.00),
+        new Extra("Huevo estrellado", 6.00)
+    };
+
+    static class Recipe {
+
+        final Kind kind;
+        final int portions;                    // cuántas carnes lleva
+        final List<Ing> ingredients = new ArrayList<>();
+        final List<Ing> general = new ArrayList<>();
+
+        Recipe(Kind kind, int portions, String... specs) {
+            this.kind = kind;
+            this.portions = portions;
+            for (String s : specs) {
+                ingredients.add(new Ing(s));
+            }
+            general.add(new Ing("Sal:Con"));
+            general.add(new Ing("Pan:Normal"));
+        }
+
+        List<Ing> all() {
+            List<Ing> l = new ArrayList<>(ingredients);
+            l.addAll(general);
+            return l;
+        }
+
+        boolean isBreakfast() {
+            return kind.name().startsWith("DESAYUNO");
+        }
+
+        // La primera opción es la original de la hamburguesa
+        String[] proteins() {
+            switch (kind) {
+                case RES:
+                    return new String[]{"Res", "Pollo crujiente", "Pollo a la plancha"};
+                case POLLO_CRUJIENTE:
+                    return new String[]{"Pollo crujiente", "Pollo a la plancha", "Res"};
+                case POLLO_PLANCHA:
+                    return new String[]{"Pollo a la plancha", "Pollo crujiente", "Res"};
+                case DESAYUNO_SALCHICHA:
+                    return new String[]{"Salchicha", "Jamón", "Tocino"};
+                case DESAYUNO_JAMON:
+                    return new String[]{"Jamón", "Salchicha", "Tocino"};
+                case DESAYUNO_TOCINO:
+                    return new String[]{"Tocino", "Salchicha", "Jamón"};
+                default:
+                    return new String[0];
+            }
+        }
+
+        String defaultProtein() {
+            String[] p = proteins();
+            return p.length == 0 ? null : p[0];
+        }
+
+        Extra[] extras() {
+            return isBreakfast() ? EXTRAS_DESAYUNO : EXTRAS_ALMUERZO;
+        }
+
+        double extraPrice(String name) {
+            for (Extra x : extras()) {
+                if (x.name.equals(name)) {
+                    return x.price;
+                }
+            }
+            return 0;
+        }
+    }
+
+    static final Map<String, Recipe> RECIPES = buildRecipes();
+
+    private static Map<String, Recipe> buildRecipes() {
+        Map<String, Recipe> m = new HashMap<>();
+
+        // ----- Desayunos (pan muffin inglés) -----
+        m.put("McMuffin Cheddar McMelt", new Recipe(Kind.DESAYUNO_SALCHICHA, 1,
+                "Huevo:Estrellado", "Tocino", "Salsa de queso cheddar"));
+        m.put("McMuffin Tocino Doble Huevo", new Recipe(Kind.DESAYUNO_TOCINO, 1,
+                "Huevo (x2):Estrellado", "Queso:Amarillo"));
+        m.put("McMuffin Salchicha y doble huevo", new Recipe(Kind.DESAYUNO_SALCHICHA, 1,
+                "Huevo (x2):Estrellado", "Queso:Amarillo"));
+        m.put("Egg McMuffin Doble Huevo", new Recipe(Kind.DESAYUNO_JAMON, 1,
+                "Huevo (x2):Estrellado", "Queso:Amarillo"));
+        m.put("McMuffin de Salchicha y Huevo", new Recipe(Kind.DESAYUNO_SALCHICHA, 1,
+                "Huevo:Estrellado", "Queso:Amarillo"));
+        m.put("McMuffin de Salchicha", new Recipe(Kind.DESAYUNO_SALCHICHA, 1,
+                "Queso:Amarillo"));
+        m.put("McMuffin Chapín Con Salchicha", new Recipe(Kind.DESAYUNO_SALCHICHA, 1,
+                "Huevo:Revuelto", "Frijol volteado", "Queso:Amarillo"));
+        m.put("Egg McMuffin", new Recipe(Kind.DESAYUNO_JAMON, 1,
+                "Huevo:Estrellado", "Queso:Amarillo"));
+        m.put("McMuffin Super Chapín Con Salchicha", new Recipe(Kind.DESAYUNO_SALCHICHA, 1,
+                "Huevo:Revuelto", "Plátano frito", "Frijol volteado", "Queso:Amarillo"));
+        m.put("Egg McMuffin Doble", new Recipe(Kind.DESAYUNO_JAMON, 2,
+                "Huevo:Estrellado", "Queso:Amarillo"));
+        m.put("McMuffin de Tocino y Huevo", new Recipe(Kind.DESAYUNO_TOCINO, 1,
+                "Huevo:Estrellado", "Queso:Amarillo"));
+        m.put("McMuffin Super Chapín Con Jamón", new Recipe(Kind.DESAYUNO_JAMON, 1,
+                "Huevo:Revuelto", "Plátano frito", "Frijol volteado", "Queso:Amarillo"));
+        m.put("McMuffin de Salchicha Doble y Huevo", new Recipe(Kind.DESAYUNO_SALCHICHA, 2,
+                "Huevo:Estrellado", "Queso:Amarillo"));
+        m.put("McMuffin Tocino Doble y Huevo", new Recipe(Kind.DESAYUNO_TOCINO, 2,
+                "Huevo:Estrellado", "Queso:Amarillo"));
+        m.put("McMuffin Huevo y Frijol", new Recipe(Kind.DESAYUNO_SIN_CARNE, 0,
+                "Huevo:Estrellado", "Frijol volteado"));
+        m.put("McMuffin Huevo y Queso", new Recipe(Kind.DESAYUNO_SIN_CARNE, 0,
+                "Huevo:Estrellado", "Queso:Amarillo"));
+        m.put("McMuffin Chapín Con Jamón", new Recipe(Kind.DESAYUNO_JAMON, 1,
+                "Huevo:Revuelto", "Frijol volteado", "Queso:Amarillo"));
+
+        // ----- Hamburguesas de res -----
+        m.put("Bacon Cheddar McMelt", new Recipe(Kind.RES, 2,
+                "Tocino", "Queso:Cheddar", "Salsa de queso cheddar", "Cebolla:Blanca"));
+        m.put("McCrispy Bacon Cheddar", new Recipe(Kind.POLLO_CRUJIENTE, 1,
+                "Tocino", "Salsa de queso cheddar"));
+        m.put("Git Mac", new Recipe(Kind.RES, 2,
+                "Lechuga", "Queso:Amarillo", "Pepinillos", "Cebolla:Blanca", "Salsa especial"));
+        m.put("Git Mac Doble", new Recipe(Kind.RES, 4,
+                "Lechuga", "Queso:Amarillo", "Pepinillos", "Cebolla:Blanca", "Salsa especial"));
+        m.put("Cuarto de Libra con Queso", new Recipe(Kind.RES, 1,
+                "Queso (x2):Amarillo", "Cebolla:Blanca", "Pepinillos", "Ketchup", "Mostaza"));
+        m.put("Cuarto de Libra Doble con Queso", new Recipe(Kind.RES, 2,
+                "Queso (x2):Amarillo", "Cebolla:Blanca", "Pepinillos", "Ketchup", "Mostaza"));
+        m.put("Cuarto de Libra Deluxe con Queso", new Recipe(Kind.RES, 1,
+                "Queso:Amarillo", "Lechuga", "Tomate", "Cebolla:Blanca", "Pepinillos", "Ketchup", "Mostaza"));
+        m.put("Cuarto de Libra Deluxe Doble con Queso", new Recipe(Kind.RES, 2,
+                "Queso:Amarillo", "Lechuga", "Tomate", "Cebolla:Blanca", "Pepinillos", "Ketchup", "Mostaza"));
+        m.put("Cuarto de Libra Bacon con Queso", new Recipe(Kind.RES, 1,
+                "Tocino", "Queso:Amarillo", "Cebolla:Blanca", "Pepinillos", "Ketchup", "Mostaza"));
+        m.put("Cuarto de Libra Bacon Doble con Queso", new Recipe(Kind.RES, 2,
+                "Tocino", "Queso:Amarillo", "Cebolla:Blanca", "Pepinillos", "Ketchup", "Mostaza"));
+        m.put("Big Tasty", new Recipe(Kind.RES, 1,
+                "Queso:Emmental", "Lechuga", "Tomate", "Cebolla:Blanca", "Salsa Big Tasty"));
+        m.put("Big Tasty Doble", new Recipe(Kind.RES, 2,
+                "Queso:Emmental", "Lechuga", "Tomate", "Cebolla:Blanca", "Salsa Big Tasty"));
+        m.put("Big Tasty Bacon", new Recipe(Kind.RES, 1,
+                "Tocino", "Queso:Emmental", "Lechuga", "Tomate", "Cebolla:Blanca", "Salsa Big Tasty"));
+        m.put("Big Tasty Bacon Doble", new Recipe(Kind.RES, 2,
+                "Tocino", "Queso:Emmental", "Lechuga", "Tomate", "Cebolla:Blanca", "Salsa Big Tasty"));
+        m.put("Triple Bacon", new Recipe(Kind.RES, 3,
+                "Tocino", "Queso:Cheddar", "Cebolla:Blanca", "Pepinillos", "Ketchup", "Mostaza"));
+        m.put("Quesoburguesa", new Recipe(Kind.RES, 1,
+                "Queso:Amarillo", "Cebolla:Blanca", "Pepinillos", "Ketchup", "Mostaza"));
+        m.put("Quesoburguesa Doble", new Recipe(Kind.RES, 2,
+                "Queso (x2):Amarillo", "Cebolla:Blanca", "Pepinillos", "Ketchup", "Mostaza"));
+        m.put("Quesoburguesa Triple", new Recipe(Kind.RES, 3,
+                "Queso (x2):Amarillo", "Cebolla:Blanca", "Pepinillos", "Ketchup", "Mostaza"));
+        m.put("Hamburguesa", new Recipe(Kind.RES, 1,
+                "Cebolla:Blanca", "Pepinillos", "Ketchup", "Mostaza"));
+        m.put("Hamburguesa Jr.", new Recipe(Kind.RES, 1,
+                "Lechuga", "Tomate", "Mayonesa"));
+        m.put("GitNífica de Res", new Recipe(Kind.RES, 1,
+                "Queso:Amarillo", "Lechuga", "Tomate", "Cebolla:Blanca", "Ketchup", "Mostaza", "Mayonesa"));
+        m.put("GitNífica de Res Doble", new Recipe(Kind.RES, 2,
+                "Queso:Amarillo", "Lechuga", "Tomate", "Cebolla:Blanca", "Ketchup", "Mostaza", "Mayonesa"));
+
+        // ----- Pollo -----
+        m.put("McCrispy Chicken Bacon Ranch", new Recipe(Kind.POLLO_CRUJIENTE, 1,
+                "Tocino", "Lechuga", "Tomate", "Aderezo ranch"));
+        m.put("McCrispy Chicken Deluxe", new Recipe(Kind.POLLO_CRUJIENTE, 1,
+                "Lechuga", "Tomate", "Mayonesa"));
+        m.put("Big Tasty de Pollo", new Recipe(Kind.POLLO_PLANCHA, 1,
+                "Queso:Emmental", "Lechuga", "Tomate", "Cebolla:Blanca", "Salsa Big Tasty"));
+        m.put("Sándwich McPollo Doble", new Recipe(Kind.POLLO_CRUJIENTE, 2,
+                "Lechuga", "Mayonesa"));
+
+        // ----- Creaciones Gourmet (pan brioche) -----
+        m.put("Smoke Tocino Gourmet de Res", new Recipe(Kind.RES, 1,
+                "Tocino", "Queso:Blanco", "Cebolla crujiente", "Salsa BBQ ahumada"));
+        m.put("Smoke Tocino Gourmet doble", new Recipe(Kind.RES, 2,
+                "Tocino", "Queso:Blanco", "Cebolla crujiente", "Salsa BBQ ahumada"));
+        m.put("Clásica Gourmet Res", new Recipe(Kind.RES, 1,
+                "Queso:Blanco", "Lechuga", "Tomate", "Cebolla:Blanca", "Mayonesa"));
+        m.put("Clásica Gourmet Res doble", new Recipe(Kind.RES, 2,
+                "Queso:Blanco", "Lechuga", "Tomate", "Cebolla:Blanca", "Mayonesa"));
+        m.put("Pico Guacamol Gourmet Res", new Recipe(Kind.RES, 1,
+                "Guacamol", "Pico de gallo", "Lechuga", "Queso:Blanco", "Salsa blanca"));
+        m.put("Pico Guacamol Gourmet doble", new Recipe(Kind.RES, 2,
+                "Guacamol", "Pico de gallo", "Lechuga", "Queso:Blanco", "Salsa blanca"));
+        return m;
+    }
+
+    static String lowerFirst(String s) {
+        return s.isEmpty() ? s : Character.toLowerCase(s.charAt(0)) + s.substring(1);
+    }
+
+    static String upperFirst(String s) {
+        return s.isEmpty() ? s : Character.toUpperCase(s.charAt(0)) + s.substring(1);
+    }
+
+    // ---------- Lo que eligió el cliente para una hamburguesa ----------
+    static class Customization {
+
+        final Recipe recipe;
+        String protein;
+        final Map<String, String> choices = new HashMap<>();   // ingrediente -> opción elegida
+        final Set<String> extras = new LinkedHashSet<>();
+        String note = "";
+
+        Customization(Recipe recipe) {
+            this.recipe = recipe;
+            this.protein = recipe.defaultProtein();
+        }
+
+        Customization copy() {
+            Customization c = new Customization(recipe);
+            c.protein = protein;
+            c.choices.putAll(choices);
+            c.extras.addAll(extras);
+            c.note = note;
+            return c;
+        }
+
+        String choiceFor(Ing ing) {
+            return choices.getOrDefault(ing.label, ing.def);
+        }
+
+        // Texto que aparece debajo del nombre en la orden
+        String describe() {
+            List<String> parts = new ArrayList<>();
+            if (protein != null && !protein.equals(recipe.defaultProtein())) {
+                parts.add("Con " + lowerFirst(protein));
+            }
+            List<String> mods = new ArrayList<>();
+            for (Ing ing : recipe.all()) {
+                String sel = choiceFor(ing);
+                if (sel.equals(ing.def)) {
+                    continue;
+                }
+                String t = lowerFirst(ing.type);
+                switch (sel) {
+                    case "Sin":
+                    case "Con":
+                    case "Extra":
+                    case "Menos":
+                    case "Normal":
+                        mods.add(lowerFirst(sel) + " " + t);        // "sin lechuga", "extra tomate"
+                        break;
+                    default:
+                        mods.add(t + " " + lowerFirst(sel));        // "cebolla morada", "queso cheddar"
+                }
+            }
+            if (!mods.isEmpty()) {
+                parts.add(upperFirst(String.join(", ", mods)));
+            }
+            if (!extras.isEmpty()) {
+                parts.add("+ " + String.join(", ", extras));
+            }
+            if (!note.isEmpty()) {
+                parts.add(note);
+            }
+            return String.join(" · ", parts);
+        }
+
+        double unitPrice(MenuItem item) {
+            double p = item.price;
+            for (String x : extras) {
+                p += recipe.extraPrice(x);
+            }
+            return p;
+        }
+    }
+
+    // ---------- Botón tipo "chip" que se activa/desactiva ----------
+    static class ChipToggle extends JToggleButton {
+
+        private final String onText, offText;
+        private final Color onBg, onFg, offBg, offFg, offBorder;
+
+        ChipToggle(String onText, String offText, Color onBg, Color onFg,
+                Color offBg, Color offFg, Color offBorder) {
+            super(onText);
+            this.onText = onText;
+            this.offText = offText;
+            this.onBg = onBg;
+            this.onFg = onFg;
+            this.offBg = offBg;
+            this.offFg = offFg;
+            this.offBorder = offBorder;
+            setFont(new Font("SansSerif", Font.BOLD, 14));
+            setContentAreaFilled(false);
+            setBorderPainted(false);
+            setFocusPainted(false);
+            setOpaque(false);
+            setCursor(new Cursor(Cursor.HAND_CURSOR));
+            setPreferredSize(new Dimension(110, 40));
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            boolean on = isSelected();
+            int w = getWidth(), h = getHeight();
+
+            g2.setColor(on ? onBg : offBg);
+            g2.fill(new RoundRectangle2D.Double(1, 1, w - 2, h - 2, 22, 22));
+            if (!on && offBorder != null) {
+                g2.setColor(offBorder);
+                g2.setStroke(new BasicStroke(2f));
+                g2.draw(new RoundRectangle2D.Double(1, 1, w - 3, h - 3, 22, 22));
+            }
+
+            // Achica la letra si el texto no cabe
+            String text = on ? onText : offText;
+            int size = 14;
+            g2.setFont(getFont().deriveFont((float) size));
+            while (size > 10 && g2.getFontMetrics().stringWidth(text) > w - 14) {
+                size--;
+                g2.setFont(getFont().deriveFont((float) size));
+            }
+            FontMetrics fm = g2.getFontMetrics();
+            g2.setColor(on ? onFg : offFg);
+            g2.drawString(text, (w - fm.stringWidth(text)) / 2, (h - fm.getHeight()) / 2 + fm.getAscent());
+            g2.dispose();
+        }
+    }
+
+    // =====================================================================
+    // ---------- Utilidades compartidas por las ventanas emergentes ----------
+    // =====================================================================
+    static JPanel dialogRoot() {
+        JPanel root = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(CARD_IMG_BG);
+                g2.fill(new RoundRectangle2D.Double(0, 0, getWidth() - 1, getHeight() - 1, 30, 30));
+                g2.setColor(PANEL_DARK);
+                g2.setStroke(new BasicStroke(2f));
+                g2.draw(new RoundRectangle2D.Double(1, 1, getWidth() - 3, getHeight() - 3, 30, 30));
+                g2.dispose();
+            }
+        };
+        root.setOpaque(false);
+        return root;
+    }
+
+    static JPanel dialogHeader() {
+        JPanel header = new JPanel(new BorderLayout(18, 0)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(PANEL_DARK);
+                // más alto que el panel para que solo se redondeen las esquinas de arriba
+                g2.fill(new RoundRectangle2D.Double(0, 0, getWidth(), getHeight() + 30, 30, 30));
+                g2.dispose();
+            }
+        };
+        header.setOpaque(false);
+        header.setBorder(new EmptyBorder(18, 22, 18, 18));
+        return header;
+    }
+
+    static JPanel closeButton(JDialog d) {
+        RoundedButton closeBtn = new RoundedButton("X", new Color(0x5A, 0x3A, 0x24), new Color(0x74, 0x4C, 0x30), 16);
+        closeBtn.setPreferredSize(new Dimension(42, 42));
+        closeBtn.addActionListener(e -> d.dispose());
+        JPanel wrap = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        wrap.setOpaque(false);
+        wrap.add(closeBtn);
+        return wrap;
+    }
+
+    static JPanel sectionTitle(String title, String sub) {
+        JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        p.setOpaque(false);
+        JLabel t = new JLabel(title);
+        t.setFont(new Font("SansSerif", Font.BOLD, 19));
+        t.setForeground(BROWN_DARK);
+        JLabel s = new JLabel("    " + sub);
+        s.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        s.setForeground(NOTE_TEXT);
+        p.add(t);
+        p.add(s);
+        p.setBorder(new EmptyBorder(0, 0, 10, 0));
+        return stretchX(p);
+    }
+
+    static <T extends JComponent> T stretchX(T c) {
+        c.setAlignmentX(Component.LEFT_ALIGNMENT);
+        c.setMaximumSize(new Dimension(Integer.MAX_VALUE, c.getPreferredSize().height));
+        return c;
+    }
+
+    static JTextField styledField() {
+        JTextField f = new JTextField();
+        f.setFont(new Font("SansSerif", Font.PLAIN, 16));
+        f.setForeground(BROWN_DARK);
+        f.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(LINE_SEP, 2, true),
+                new EmptyBorder(8, 12, 8, 12)));
+        return f;
+    }
+
+    static JScrollPane transparentScroll(JComponent body) {
+        JScrollPane scroll = new JScrollPane(body);
+        scroll.setBorder(null);
+        scroll.setOpaque(false);
+        scroll.getViewport().setOpaque(false);
+        scroll.getVerticalScrollBar().setUnitIncrement(16);
+        scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        return scroll;
+    }
+
+    static void sizeDialog(JDialog d, Window owner, int width) {
+        d.pack();
+        Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+        int h = Math.min(d.getHeight() + 10, (int) (screen.height * 0.90));
+        d.setSize(width, h);
+        d.setLocationRelativeTo(owner);
+    }
+
+    static Window windowOf(Component c) {
+        return c instanceof Window ? (Window) c : SwingUtilities.getWindowAncestor(c);
+    }
+
+    static String money(double v) {
+        return String.format("Q %.2f", v);
+    }
+
+    // =====================================================================
+    // ---------- Ventana para elegir ingredientes ----------
+    // =====================================================================
+    static class CustomizeDialog extends JDialog {
+
+        private Customization result;
+        private final JLabel priceLbl = new JLabel();
+
+        static Customization open(Component parent, MenuItem item, Recipe recipe, Customization existing) {
+            CustomizeDialog d = new CustomizeDialog(windowOf(parent), item, recipe, existing);
+            d.setVisible(true); // se queda esperando hasta que se cierre
+            return d.result;
+        }
+
+        private CustomizeDialog(Window owner, MenuItem item, Recipe recipe, Customization existing) {
+            super(owner, "Personalizar", Dialog.ModalityType.APPLICATION_MODAL);
+            setUndecorated(true);
+            try {
+                setBackground(new Color(0, 0, 0, 0)); // esquinas redondeadas
+            } catch (Exception ignored) {
+            }
+
+            final Customization work = existing != null ? existing.copy() : new Customization(recipe);
+
+            JPanel root = dialogRoot();
+            setContentPane(root);
+
+            // ----- Encabezado café con imagen y nombre -----
+            JPanel header = dialogHeader();
+            JLabel img = new JLabel(loadBig(item.imagePath), SwingConstants.CENTER);
+            img.setPreferredSize(new Dimension(120, 90));
+            header.add(img, BorderLayout.WEST);
+
+            JPanel titles = new JPanel();
+            titles.setOpaque(false);
+            titles.setLayout(new BoxLayout(titles, BoxLayout.Y_AXIS));
+            JLabel nameLbl = new JLabel("<html><div style='width:420px'>" + item.name + "</div></html>");
+            nameLbl.setFont(new Font("SansSerif", Font.BOLD, 24));
+            nameLbl.setForeground(WHITE_TEXT);
+            JLabel subLbl = new JLabel(money(item.price) + "  ·  Personaliza tu orden");
+            subLbl.setFont(new Font("SansSerif", Font.BOLD, 15));
+            subLbl.setForeground(YELLOW_BRIGHT);
+            titles.add(Box.createVerticalGlue());
+            titles.add(nameLbl);
+            titles.add(Box.createVerticalStrut(6));
+            titles.add(subLbl);
+            titles.add(Box.createVerticalGlue());
+            header.add(titles, BorderLayout.CENTER);
+            header.add(closeButton(this), BorderLayout.EAST);
+
+            // ----- Cuerpo con las opciones -----
+            JPanel body = new JPanel();
+            body.setOpaque(false);
+            body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
+            body.setBorder(new EmptyBorder(16, 22, 14, 22));
+
+            // Tipo de carne
+            String[] proteins = recipe.proteins();
+            if (proteins.length > 0) {
+                String sub = recipe.portions > 1
+                        ? "Aplica a las " + recipe.portions + " porciones"
+                        : "Elige una opción";
+                body.add(sectionTitle("Tipo de carne", sub));
+                body.add(optionRow("Carne", proteins, work.protein, recipe.defaultProtein(),
+                        opt -> work.protein = opt));
+                body.add(Box.createVerticalStrut(14));
+            }
+
+            // Ingredientes de la receta
+            body.add(sectionTitle("Ingredientes", "La opción con punto amarillo es la receta original"));
+            for (Ing ing : recipe.ingredients) {
+                body.add(optionRow(ing.label, ing.options, work.choiceFor(ing), ing.def,
+                        opt -> work.choices.put(ing.label, opt)));
+            }
+            body.add(Box.createVerticalStrut(14));
+
+            // Preferencias generales (sal, pan)
+            body.add(sectionTitle("Preferencias", "Aplica a toda la hamburguesa"));
+            for (Ing ing : recipe.general) {
+                body.add(optionRow(ing.label, ing.options, work.choiceFor(ing), ing.def,
+                        opt -> work.choices.put(ing.label, opt)));
+            }
+            body.add(Box.createVerticalStrut(14));
+
+            // Extras con costo
+            body.add(sectionTitle("Extras", "Tienen costo adicional"));
+            JPanel exGrid = new JPanel(new GridLayout(0, 3, 10, 10));
+            exGrid.setOpaque(false);
+            exGrid.setAlignmentX(Component.LEFT_ALIGNMENT);
+            for (Extra x : recipe.extras()) {
+                String label = String.format("+ %s  Q%.2f", x.name, x.price);
+                ChipToggle chip = new ChipToggle(label, label, GREEN_ADD, Color.WHITE, CARD_BG, BROWN_TEXT, null);
+                chip.setPreferredSize(new Dimension(200, 42));
+                chip.setSelected(work.extras.contains(x.name));
+                chip.addActionListener(e -> {
+                    if (chip.isSelected()) {
+                        work.extras.add(x.name);
+                    } else {
+                        work.extras.remove(x.name);
+                    }
+                    priceLbl.setText(money(work.unitPrice(item)));
+                });
+                exGrid.add(chip);
+            }
+            body.add(exGrid);
+            body.add(Box.createVerticalStrut(18));
+
+            // Nota libre
+            body.add(sectionTitle("Nota adicional", "Opcional"));
+            JTextField noteField = styledField();
+            noteField.setText(work.note);
+            body.add(stretchX(noteField));
+
+            JScrollPane scroll = transparentScroll(body);
+
+            // ----- Pie con precio y botones -----
+            JPanel footer = new JPanel(new BorderLayout());
+            footer.setOpaque(false);
+            footer.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(1, 0, 0, 0, LINE_SEP),
+                    new EmptyBorder(14, 22, 18, 22)));
+
+            JPanel totalBox = new JPanel();
+            totalBox.setOpaque(false);
+            totalBox.setLayout(new BoxLayout(totalBox, BoxLayout.Y_AXIS));
+            JLabel totalCap = new JLabel("Precio");
+            totalCap.setFont(new Font("SansSerif", Font.PLAIN, 13));
+            totalCap.setForeground(NOTE_TEXT);
+            priceLbl.setFont(new Font("SansSerif", Font.BOLD, 26));
+            priceLbl.setForeground(BROWN_DARK);
+            priceLbl.setText(money(work.unitPrice(item)));
+            totalBox.add(totalCap);
+            totalBox.add(priceLbl);
+            footer.add(totalBox, BorderLayout.WEST);
+
+            RoundedButton cancelBtn = new RoundedButton("Cancelar", new Color(0xA8, 0x93, 0x78), new Color(0x93, 0x7E, 0x64), 16);
+            cancelBtn.setPreferredSize(new Dimension(130, 50));
+            cancelBtn.addActionListener(e -> dispose());
+
+            RoundedButton okBtn = new RoundedButton(existing != null ? "Guardar cambios" : "Agregar a la orden",
+                    RED_PAY, RED_PAY_HOVER, 17);
+            okBtn.setPreferredSize(new Dimension(220, 50));
+            okBtn.addActionListener(e -> {
+                work.note = noteField.getText().trim();
+                result = work;
+                dispose();
+            });
+
+            JPanel btns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+            btns.setOpaque(false);
+            btns.add(cancelBtn);
+            btns.add(okBtn);
+            footer.add(btns, BorderLayout.EAST);
+
+            root.add(header, BorderLayout.NORTH);
+            root.add(scroll, BorderLayout.CENTER);
+            root.add(footer, BorderLayout.SOUTH);
+
+            root.registerKeyboardAction(e -> dispose(),
+                    KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
+                    JComponent.WHEN_IN_FOCUSED_WINDOW);
+
+            sizeDialog(this, owner, 860);
+        }
+
+        // Fila: nombre del ingrediente + botones de opciones (solo se elige una)
+        private static JPanel optionRow(String label, String[] options, String selected, String original,
+                java.util.function.Consumer<String> onPick) {
+            JPanel row = new JPanel(new BorderLayout(12, 0));
+            row.setOpaque(false);
+            row.setBorder(new EmptyBorder(0, 0, 8, 0));
+
+            JLabel l = new JLabel(label);
+            l.setFont(new Font("SansSerif", Font.BOLD, 15));
+            l.setForeground(BROWN_DARK);
+            l.setPreferredSize(new Dimension(190, 40));
+            row.add(l, BorderLayout.WEST);
+
+            JPanel chips = new JPanel(new GridLayout(1, 5, 8, 0));
+            chips.setOpaque(false);
+            ButtonGroup group = new ButtonGroup();
+            for (String opt : options) {
+                boolean isSin = opt.equals("Sin");
+                String text = opt;
+                ChipToggle chip = new ChipToggle(text, text,
+                        isSin ? RED_PAY : BROWN_DARK, Color.WHITE,
+                        CARD_BG, BROWN_TEXT, null) {
+                    @Override
+                    protected void paintComponent(Graphics g) {
+                        super.paintComponent(g);
+                        // punto amarillo = opción original de la receta
+                        if (opt.equals(original)) {
+                            Graphics2D g2 = (Graphics2D) g.create();
+                            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                            g2.setColor(YELLOW_BRIGHT);
+                            g2.fillOval(getWidth() - 14, 6, 8, 8);
+                            g2.dispose();
+                        }
+                    }
+                };
+                chip.setSelected(opt.equals(selected));
+                chip.addActionListener(e -> onPick.accept(opt));
+                group.add(chip);
+                chips.add(chip);
+            }
+            for (int i = options.length; i < 5; i++) {
+                JLabel filler = new JLabel();
+                chips.add(filler);
+            }
+            row.add(chips, BorderLayout.CENTER);
+            return stretchX(row);
+        }
+
+        private static ImageIcon loadBig(String path) {
+            java.net.URL url = CustomizeDialog.class.getResource(path);
+            if (url == null) {
+                return null;
+            }
+            ImageIcon raw = new ImageIcon(url);
+            int iw = raw.getIconWidth(), ih = raw.getIconHeight();
+            if (iw <= 0 || ih <= 0) {
+                return null;
+            }
+            double s = Math.min(120.0 / iw, 90.0 / ih);
+            return new ImageIcon(raw.getImage().getScaledInstance(
+                    Math.max(1, (int) (iw * s)), Math.max(1, (int) (ih * s)), Image.SCALE_SMOOTH));
+        }
+    }
+
+    // =====================================================================
+    // ---------- PAGO: efectivo, tarjeta, mixto y cupones ----------
+    // =====================================================================
+
+    static class Coupon {
+
+        final String code;
+        final double percent;   // ej. 10 = 10%
+        final double fixed;     // ej. 15 = Q15 de descuento
+        final String description;
+
+        Coupon(String code, double percent, double fixed, String description) {
+            this.code = code;
+            this.percent = percent;
+            this.fixed = fixed;
+            this.description = description;
+        }
+
+        double discountFor(double subtotal) {
+            double d = subtotal * percent / 100.0 + fixed;
+            return Math.min(round2(d), subtotal);
+        }
+    }
+
+    // Cupones válidos (agrega o cambia los que quieras aquí; se escriben en MAYÚSCULAS)
+    static final Map<String, Coupon> COUPONS = new HashMap<>();
+
+    static {
+        COUPONS.put("GIT10", new Coupon("GIT10", 10, 0, "10% de descuento"));
+        COUPONS.put("GIT20", new Coupon("GIT20", 20, 0, "20% de descuento"));
+        COUPONS.put("EMPLEADO", new Coupon("EMPLEADO", 25, 0, "25% descuento de empleado"));
+        COUPONS.put("DESC15", new Coupon("DESC15", 0, 15, "Q15.00 de descuento"));
+    }
+
+    static double round2(double v) {
+        return Math.round(v * 100.0) / 100.0;
+    }
+
+    // Convierte texto a número. Vacío = 0, inválido = -1
+    static double parseMoney(String s) {
+        s = s.replace("Q", "").replace(",", "").trim();
+        if (s.isEmpty()) {
+            return 0;
+        }
+        try {
+            return Double.parseDouble(s);
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+
+    // Resultado del pago (para el comprobante)
+    static class PaymentResult {
+
+        String method;
+        double subtotal, discount, total, card, cash, cashReceived, change;
+        String couponCode, cardLast4 = "";
+
+        String summary() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Subtotal: ").append(money(subtotal)).append("\n");
+            if (couponCode != null) {
+                sb.append("Cupón ").append(couponCode).append(": -").append(money(discount)).append("\n");
+            }
+            sb.append("TOTAL PAGADO: ").append(money(total)).append("\n\n");
+            sb.append("Método: ").append(method).append("\n");
+            if (card > 0) {
+                sb.append("   Tarjeta: ").append(money(card));
+                if (!cardLast4.isEmpty()) {
+                    sb.append("  (**** ").append(cardLast4).append(")");
+                }
+                sb.append("\n");
+            }
+            if (cash > 0) {
+                sb.append("   Efectivo: ").append(money(cash)).append("\n");
+                sb.append("   Recibido: ").append(money(cashReceived)).append("\n");
+                sb.append("   Cambio: ").append(money(change)).append("\n");
+            }
+            return sb.toString();
+        }
+    }
+
+    static class PaymentDialog extends JDialog {
+
+        private PaymentResult result;
+
+        private final double subtotal;
+        private Coupon coupon;
+        private String method = "Efectivo";
+
+        private final JLabel discountLbl = new JLabel();
+        private final JLabel totalLbl = new JLabel();
+        private final JLabel footerTotal = new JLabel();
+        private final JLabel couponStatus = new JLabel(" ");
+
+        // Efectivo
+        private final JTextField cashReceived = styledField();
+        private final JLabel cashChange = new JLabel();
+        // Tarjeta
+        private final JTextField cardLast4 = styledField();
+        private final JLabel cardInfo = new JLabel();
+        // Mixto
+        private final JTextField mixCard = styledField();
+        private final JTextField mixCashReceived = styledField();
+        private final JTextField mixLast4 = styledField();
+        private final JLabel mixCashPart = new JLabel();
+        private final JLabel mixChange = new JLabel();
+
+        private final CardLayout methodCards = new CardLayout();
+        private final JPanel methodPanel = new JPanel(methodCards);
+
+        static PaymentResult open(Component parent, double subtotal) {
+            PaymentDialog d = new PaymentDialog(windowOf(parent), subtotal);
+            d.setVisible(true);
+            return d.result;
+        }
+
+        private PaymentDialog(Window owner, double subtotal) {
+            super(owner, "Pago", Dialog.ModalityType.APPLICATION_MODAL);
+            this.subtotal = round2(subtotal);
+            setUndecorated(true);
+            try {
+                setBackground(new Color(0, 0, 0, 0));
+            } catch (Exception ignored) {
+            }
+
+            JPanel root = dialogRoot();
+            setContentPane(root);
+
+            // ----- Encabezado -----
+            JPanel header = dialogHeader();
+            JPanel titles = new JPanel();
+            titles.setOpaque(false);
+            titles.setLayout(new BoxLayout(titles, BoxLayout.Y_AXIS));
+            JLabel t = new JLabel("Pago de la orden");
+            t.setFont(new Font("SansSerif", Font.BOLD, 26));
+            t.setForeground(WHITE_TEXT);
+            JLabel s = new JLabel("Subtotal: " + money(this.subtotal));
+            s.setFont(new Font("SansSerif", Font.BOLD, 15));
+            s.setForeground(YELLOW_BRIGHT);
+            titles.add(t);
+            titles.add(Box.createVerticalStrut(6));
+            titles.add(s);
+            header.add(titles, BorderLayout.CENTER);
+            header.add(closeButton(this), BorderLayout.EAST);
+
+            // ----- Cuerpo -----
+            JPanel body = new JPanel();
+            body.setOpaque(false);
+            body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
+            body.setBorder(new EmptyBorder(16, 22, 14, 22));
+
+            // Cupón
+            body.add(sectionTitle("Cupón de descuento", "Opcional"));
+            JTextField couponField = styledField();
+            RoundedButton applyBtn = new RoundedButton("Aplicar", GREEN_ADD, GREEN_ADD_HOVER, 15);
+            applyBtn.setPreferredSize(new Dimension(120, 42));
+            RoundedButton removeBtn = new RoundedButton("Quitar", new Color(0xA8, 0x93, 0x78), new Color(0x93, 0x7E, 0x64), 15);
+            removeBtn.setPreferredSize(new Dimension(100, 42));
+            JPanel couponRow = new JPanel(new BorderLayout(10, 0));
+            couponRow.setOpaque(false);
+            couponRow.add(couponField, BorderLayout.CENTER);
+            JPanel couponBtns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+            couponBtns.setOpaque(false);
+            couponBtns.add(applyBtn);
+            couponBtns.add(removeBtn);
+            couponRow.add(couponBtns, BorderLayout.EAST);
+            body.add(stretchX(couponRow));
+            couponStatus.setFont(new Font("SansSerif", Font.BOLD, 13));
+            couponStatus.setBorder(new EmptyBorder(6, 4, 0, 0));
+            body.add(stretchX(couponStatus));
+
+            applyBtn.addActionListener(e -> {
+                String code = couponField.getText().trim().toUpperCase();
+                Coupon c = COUPONS.get(code);
+                if (c == null) {
+                    coupon = null;
+                    couponStatus.setForeground(RED_PAY);
+                    couponStatus.setText(code.isEmpty() ? "Escribe un código de cupón" : "El cupón \"" + code + "\" no es válido");
+                } else {
+                    coupon = c;
+                    couponStatus.setForeground(GREEN_ADD);
+                    couponStatus.setText("Cupón " + c.code + " aplicado: " + c.description);
+                }
+                recalc();
+            });
+            removeBtn.addActionListener(e -> {
+                coupon = null;
+                couponField.setText("");
+                couponStatus.setText(" ");
+                recalc();
+            });
+            body.add(Box.createVerticalStrut(14));
+
+            // Resumen
+            RoundedPanel summary = new RoundedPanel(CARD_BG, 18);
+            summary.setLayout(new GridLayout(0, 2, 0, 6));
+            summary.setBorder(new EmptyBorder(14, 18, 14, 18));
+            summary.add(summaryLabel("Subtotal", false));
+            JLabel subV = summaryLabel(money(this.subtotal), false);
+            subV.setHorizontalAlignment(SwingConstants.RIGHT);
+            summary.add(subV);
+            summary.add(summaryLabel("Descuento", false));
+            discountLbl.setFont(new Font("SansSerif", Font.PLAIN, 16));
+            discountLbl.setForeground(GREEN_ADD);
+            discountLbl.setHorizontalAlignment(SwingConstants.RIGHT);
+            summary.add(discountLbl);
+            summary.add(summaryLabel("Total a pagar", true));
+            totalLbl.setFont(new Font("SansSerif", Font.BOLD, 22));
+            totalLbl.setForeground(BROWN_DARK);
+            totalLbl.setHorizontalAlignment(SwingConstants.RIGHT);
+            summary.add(totalLbl);
+            body.add(stretchX(summary));
+            body.add(Box.createVerticalStrut(18));
+
+            // Método de pago
+            body.add(sectionTitle("Método de pago", "Elige cómo paga el cliente"));
+            JPanel methods = new JPanel(new GridLayout(1, 3, 10, 0));
+            methods.setOpaque(false);
+            ButtonGroup mg = new ButtonGroup();
+            String[] names = {"Efectivo", "Tarjeta", "Mixto (tarjeta + efectivo)"};
+            for (String n : names) {
+                ChipToggle chip = new ChipToggle(n, n, RED_PAY, Color.WHITE, CARD_BG, BROWN_TEXT, null);
+                chip.setPreferredSize(new Dimension(180, 48));
+                chip.setSelected(n.equals("Efectivo"));
+                chip.addActionListener(e -> {
+                    method = n.startsWith("Mixto") ? "Mixto" : n;
+                    methodCards.show(methodPanel, method);
+                    if (method.equals("Mixto") && mixCard.getText().trim().isEmpty()) {
+                        mixCard.setText(String.format("%.2f", round2(total() / 2)));
+                    }
+                    recalc();
+                });
+                mg.add(chip);
+                methods.add(chip);
+            }
+            body.add(stretchX(methods));
+            body.add(Box.createVerticalStrut(14));
+
+            methodPanel.setOpaque(false);
+            methodPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+            methodPanel.add(buildCashPanel(), "Efectivo");
+            methodPanel.add(buildCardPanel(), "Tarjeta");
+            methodPanel.add(buildMixPanel(), "Mixto");
+            body.add(methodPanel);
+
+            JScrollPane scroll = transparentScroll(body);
+
+            // ----- Pie -----
+            JPanel footer = new JPanel(new BorderLayout());
+            footer.setOpaque(false);
+            footer.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(1, 0, 0, 0, LINE_SEP),
+                    new EmptyBorder(14, 22, 18, 22)));
+            JPanel totalBox = new JPanel();
+            totalBox.setOpaque(false);
+            totalBox.setLayout(new BoxLayout(totalBox, BoxLayout.Y_AXIS));
+            JLabel cap = new JLabel("Total");
+            cap.setFont(new Font("SansSerif", Font.PLAIN, 13));
+            cap.setForeground(NOTE_TEXT);
+            footerTotal.setFont(new Font("SansSerif", Font.BOLD, 26));
+            footerTotal.setForeground(BROWN_DARK);
+            totalBox.add(cap);
+            totalBox.add(footerTotal);
+            footer.add(totalBox, BorderLayout.WEST);
+
+            RoundedButton cancelBtn = new RoundedButton("Cancelar", new Color(0xA8, 0x93, 0x78), new Color(0x93, 0x7E, 0x64), 16);
+            cancelBtn.setPreferredSize(new Dimension(130, 50));
+            cancelBtn.addActionListener(e -> dispose());
+            RoundedButton payBtn = new RoundedButton("Confirmar pago", RED_PAY, RED_PAY_HOVER, 17);
+            payBtn.setPreferredSize(new Dimension(210, 50));
+            payBtn.addActionListener(e -> confirm());
+            JPanel btns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+            btns.setOpaque(false);
+            btns.add(cancelBtn);
+            btns.add(payBtn);
+            footer.add(btns, BorderLayout.EAST);
+
+            root.add(header, BorderLayout.NORTH);
+            root.add(scroll, BorderLayout.CENTER);
+            root.add(footer, BorderLayout.SOUTH);
+
+            root.registerKeyboardAction(e -> dispose(),
+                    KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
+                    JComponent.WHEN_IN_FOCUSED_WINDOW);
+
+            // Recalcular cada vez que se escribe en un campo
+            javax.swing.event.DocumentListener dl = new javax.swing.event.DocumentListener() {
+                public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                    recalc();
+                }
+
+                public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                    recalc();
+                }
+
+                public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                    recalc();
+                }
+            };
+            cashReceived.getDocument().addDocumentListener(dl);
+            mixCard.getDocument().addDocumentListener(dl);
+            mixCashReceived.getDocument().addDocumentListener(dl);
+
+            recalc();
+            sizeDialog(this, owner, 700);
+        }
+
+        private JLabel summaryLabel(String text, boolean bold) {
+            JLabel l = new JLabel(text);
+            l.setFont(new Font("SansSerif", bold ? Font.BOLD : Font.PLAIN, bold ? 20 : 16));
+            l.setForeground(BROWN_DARK);
+            return l;
+        }
+
+        private JLabel fieldLabel(String text) {
+            JLabel l = new JLabel(text);
+            l.setFont(new Font("SansSerif", Font.BOLD, 15));
+            l.setForeground(BROWN_DARK);
+            l.setBorder(new EmptyBorder(8, 0, 6, 0));
+            return stretchX(l);
+        }
+
+        private JLabel infoLabel(JLabel l) {
+            l.setText("Texto de ejemplo"); // para que calcule bien la altura
+            l.setFont(new Font("SansSerif", Font.BOLD, 17));
+            l.setForeground(BROWN_DARK);
+            l.setBorder(new EmptyBorder(10, 0, 0, 0));
+            return stretchX(l);
+        }
+
+        private JPanel column() {
+            JPanel p = new JPanel();
+            p.setOpaque(false);
+            p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
+            return p;
+        }
+
+        private JPanel buildCashPanel() {
+            JPanel p = column();
+            p.add(fieldLabel("Monto recibido en efectivo"));
+            p.add(stretchX(cashReceived));
+            p.add(Box.createVerticalStrut(10));
+
+            // Botones rápidos
+            JPanel quick = new JPanel(new GridLayout(1, 5, 8, 0));
+            quick.setOpaque(false);
+            String[] labels = {"Exacto", "Q 50", "Q 100", "Q 200", "Q 500"};
+            for (String q : labels) {
+                RoundedButton b = new RoundedButton(q, new Color(0x8A, 0x63, 0x42), new Color(0x74, 0x50, 0x33), 15);
+                b.setPreferredSize(new Dimension(90, 40));
+                b.addActionListener(e -> {
+                    if (q.equals("Exacto")) {
+                        cashReceived.setText(String.format("%.2f", total()));
+                    } else {
+                        cashReceived.setText(q.replace("Q ", "") + ".00");
+                    }
+                });
+                quick.add(b);
+            }
+            p.add(stretchX(quick));
+            p.add(infoLabel(cashChange));
+            return p;
+        }
+
+        private JPanel buildCardPanel() {
+            JPanel p = column();
+            p.add(fieldLabel("Últimos 4 dígitos de la tarjeta (opcional)"));
+            p.add(stretchX(cardLast4));
+            p.add(infoLabel(cardInfo));
+            return p;
+        }
+
+        private JPanel buildMixPanel() {
+            JPanel p = column();
+
+            JPanel cardRow = new JPanel(new BorderLayout(10, 0));
+            cardRow.setOpaque(false);
+            cardRow.add(mixCard, BorderLayout.CENTER);
+            RoundedButton half = new RoundedButton("Mitad y mitad", new Color(0x8A, 0x63, 0x42), new Color(0x74, 0x50, 0x33), 15);
+            half.setPreferredSize(new Dimension(160, 42));
+            half.addActionListener(e -> mixCard.setText(String.format("%.2f", round2(total() / 2))));
+            cardRow.add(half, BorderLayout.EAST);
+
+            p.add(fieldLabel("Monto que se cobra con tarjeta"));
+            p.add(stretchX(cardRow));
+            p.add(infoLabel(mixCashPart));
+            p.add(fieldLabel("Efectivo recibido"));
+            p.add(stretchX(mixCashReceived));
+            p.add(infoLabel(mixChange));
+            p.add(fieldLabel("Últimos 4 dígitos de la tarjeta (opcional)"));
+            p.add(stretchX(mixLast4));
+            return p;
+        }
+
+        private double discount() {
+            return coupon == null ? 0 : coupon.discountFor(subtotal);
+        }
+
+        private double total() {
+            return round2(subtotal - discount());
+        }
+
+        private void recalc() {
+            double total = total();
+            discountLbl.setText(discount() > 0 ? "- " + money(discount()) : money(0));
+            totalLbl.setText(money(total));
+            footerTotal.setText(money(total));
+
+            // Efectivo
+            double rec = parseMoney(cashReceived.getText());
+            if (rec < 0) {
+                setInfo(cashChange, "Monto no válido", RED_PAY);
+            } else if (rec == 0) {
+                setInfo(cashChange, "Cambio: " + money(0), BROWN_DARK);
+            } else if (rec < total) {
+                setInfo(cashChange, "Faltan " + money(total - rec), RED_PAY);
+            } else {
+                setInfo(cashChange, "Cambio: " + money(rec - total), GREEN_ADD);
+            }
+
+            // Tarjeta
+            setInfo(cardInfo, "Cobrar " + money(total) + " en la terminal (POS)", BROWN_DARK);
+
+            // Mixto
+            double card = parseMoney(mixCard.getText());
+            if (card < 0 || card > total) {
+                setInfo(mixCashPart, "El monto con tarjeta no es válido", RED_PAY);
+                setInfo(mixChange, " ", BROWN_DARK);
+            } else {
+                double cashPart = round2(total - card);
+                setInfo(mixCashPart, "Resta en efectivo: " + money(cashPart), BROWN_DARK);
+                double mrec = parseMoney(mixCashReceived.getText());
+                if (mrec < 0) {
+                    setInfo(mixChange, "Monto no válido", RED_PAY);
+                } else if (mrec < cashPart) {
+                    setInfo(mixChange, "Faltan " + money(cashPart - mrec), RED_PAY);
+                } else {
+                    setInfo(mixChange, "Cambio: " + money(mrec - cashPart), GREEN_ADD);
+                }
+            }
+        }
+
+        private void setInfo(JLabel l, String text, Color c) {
+            l.setText(text);
+            l.setForeground(c);
+        }
+
+        private boolean validLast4(String s) {
+            return s.isEmpty() || s.matches("\\d{4}");
+        }
+
+        private void warn(String msg) {
+            JOptionPane.showMessageDialog(this, msg, "Revisa el pago", JOptionPane.WARNING_MESSAGE);
+        }
+
+        private void confirm() {
+            double total = total();
+            PaymentResult r = new PaymentResult();
+            r.method = method;
+            r.subtotal = subtotal;
+            r.discount = discount();
+            r.total = total;
+            r.couponCode = coupon == null ? null : coupon.code;
+
+            switch (method) {
+                case "Efectivo": {
+                    double rec = parseMoney(cashReceived.getText());
+                    if (rec < total) {
+                        warn("El efectivo recibido no alcanza para cubrir " + money(total) + ".");
+                        return;
+                    }
+                    r.cash = total;
+                    r.cashReceived = rec;
+                    r.change = round2(rec - total);
+                    break;
+                }
+                case "Tarjeta": {
+                    String l4 = cardLast4.getText().trim();
+                    if (!validLast4(l4)) {
+                        warn("Los últimos dígitos deben ser 4 números.");
+                        return;
+                    }
+                    r.card = total;
+                    r.cardLast4 = l4;
+                    break;
+                }
+                default: { // Mixto
+                    double card = parseMoney(mixCard.getText());
+                    if (card <= 0 || card >= total) {
+                        warn("En pago mixto, el monto con tarjeta debe ser mayor a Q0 y menor al total.");
+                        return;
+                    }
+                    double cashPart = round2(total - card);
+                    double rec = parseMoney(mixCashReceived.getText());
+                    if (rec < cashPart) {
+                        warn("El efectivo recibido no alcanza para cubrir " + money(cashPart) + ".");
+                        return;
+                    }
+                    String l4 = mixLast4.getText().trim();
+                    if (!validLast4(l4)) {
+                        warn("Los últimos dígitos deben ser 4 números.");
+                        return;
+                    }
+                    r.card = round2(card);
+                    r.cash = cashPart;
+                    r.cashReceived = rec;
+                    r.change = round2(rec - cashPart);
+                    r.cardLast4 = l4;
+                }
+            }
+            result = r;
+            dispose();
+        }
+    }
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             try {
