@@ -125,9 +125,18 @@ public class pantallaEstadistica extends JFrame {
                 new gestionProductos().setVisible(true);
                 dispose();
                 return;
-            default:
-                JOptionPane.showMessageDialog(this, "Sección en desarrollo.", "Información",
-                        JOptionPane.INFORMATION_MESSAGE);
+            case 2:
+                new gestionPedidos().setVisible(true);
+                dispose();
+                return;
+            case 4:
+                new gestionCaja().setVisible(true);
+                dispose();
+                return;
+            case 5:
+                new seguridadAuditoria().setVisible(true);
+                dispose();
+                return;
         }
     }
 
@@ -144,11 +153,6 @@ public class pantallaEstadistica extends JFrame {
                 JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
         if (opcion != JOptionPane.YES_OPTION) {
             return;
-        }
-
-        // 1. Detener el reloj de esta pantalla
-        if (clockTimer != null) {
-            clockTimer.stop();
         }
 
         // 2. Limpiar los datos de la sesión actual (usuario logueado, etc.)
@@ -368,31 +372,6 @@ public class pantallaEstadistica extends JFrame {
 
         JPanel rightHeader = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 10));
         rightHeader.setOpaque(false);
-
-        JPanel timePanel = new JPanel(new GridLayout(2, 1));
-        timePanel.setOpaque(false);
-
-        lblClock = new JLabel("--:--:--", SwingConstants.RIGHT);
-        lblClock.setFont(new Font("SansSerif", Font.BOLD, 22));
-        lblClock.setForeground(Color.WHITE);
-
-        lblDate = new JLabel("Cargando fecha...", SwingConstants.RIGHT);
-        lblDate.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        lblDate.setForeground(new Color(230, 230, 230));
-
-        timePanel.add(lblClock);
-        timePanel.add(lblDate);
-        rightHeader.add(timePanel);
-
-        JButton btnRefresh = new JButton("🔄");
-        btnRefresh.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 20));
-        btnRefresh.setFocusPainted(false);
-        btnRefresh.setContentAreaFilled(false);
-        btnRefresh.setForeground(Color.WHITE);
-        btnRefresh.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnRefresh.setToolTipText("Actualizar datos");
-        btnRefresh.addActionListener(e -> generarReporte());
-        rightHeader.add(btnRefresh);
 
         header.add(rightHeader, BorderLayout.EAST);
         return header;

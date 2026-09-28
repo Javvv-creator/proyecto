@@ -155,32 +155,30 @@ public class gestionCaja extends JFrame {
                         app.setVisible(true);
                         dispose();
                         return;
+                    } else if (index == 2) {
+                        gestionPedidos app = new gestionPedidos();
+                        app.setVisible(true);
+                        dispose();
+                        return;
                     } else if (index == 3) {
                         pantallaEstadistica app = new pantallaEstadistica();
                         app.setVisible(true);
                         dispose();
                         return;
-                    }
-                    else if (index == 4) {
+                    } else if (index == 4) {
                         gestionCaja app = new gestionCaja();
                         app.setVisible(true);
                         dispose();
                         return;
-                    }
-                     else
-                    if (index == 5) {
+                    } else if (index == 5) {
                         seguridadAuditoria app = new seguridadAuditoria();
                         app.setVisible(true);
                         dispose();
                         return;
                     }
-                    // Las demás ventanas todavía no existen
-                    JOptionPane.showMessageDialog(
-                            gestionCaja.this,
-                            "Esta sección todavía está en desarrollo.",
-                            "Próximamente",
-                            JOptionPane.INFORMATION_MESSAGE);
-        }});
+
+                }
+            });
 
             menuButtons[i] = btnPanel;
             menuPanel.add(btnPanel);

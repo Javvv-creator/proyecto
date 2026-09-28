@@ -33,6 +33,7 @@ public class dashboardAdmin extends JFrame {
     private static final Color COLOR_TABLE_GRID = new Color(222, 210, 191);
     private static final Color COLOR_SIDEBAR_HOVER = new Color(160, 110, 65);
     private static final Color COLOR_SIDEBAR_ACTIVE = new Color(110, 72, 38);
+    private static final Color COLOR_CERRAR_SESION = new Color(211, 53, 58);
 
     private JLabel lblClock;
     private JLabel lblDate;
@@ -65,32 +66,48 @@ public class dashboardAdmin extends JFrame {
         startLiveClock();
     }
 
-    // --- BARRA LATERAL ---
+    // ==========================================
+    // --- BARRA LATERAL (idéntica al resto + botón Cerrar Sesión) ---
+    // ==========================================
     private JPanel createSidebarPanel() {
         RoundedPanel sidebar = new RoundedPanel(25, COLOR_SIDEBAR);
         sidebar.setLayout(new BorderLayout(0, 15));
         sidebar.setPreferredSize(new Dimension(320, 0));
         sidebar.setBorder(new EmptyBorder(15, 15, 20, 15));
 
-        // Tarjeta contenedora blanca para el logo
+        // Tarjeta contenedora blanca para el logo (clic = volver al Dashboard)
         RoundedPanel logoCard = new RoundedPanel(20, Color.WHITE);
         logoCard.setPreferredSize(new Dimension(290, 140));
         logoCard.setLayout(new GridBagLayout());
         logoCard.add(createLogoLabel());
+        logoCard.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        logoCard.setToolTipText("Volver al Dashboard");
+        logoCard.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                dashboardAdmin app = new dashboardAdmin();
+                app.setVisible(true);
+                dispose();
+            }
+        });
         sidebar.add(logoCard, BorderLayout.NORTH);
 
-        // Menú de navegación con íconos vectoriales HD estilizados
+        // Panel central: menú de navegación + botón de Cerrar Sesión debajo
+        JPanel centerWrapper = new JPanel(new BorderLayout(0, 15));
+        centerWrapper.setOpaque(false);
+
         JPanel menuPanel = new JPanel(new GridLayout(7, 1, 0, 8));
         menuPanel.setOpaque(false);
 
         Object[][] items = {
-            {SidebarVectorIcon.IconType.EMPLOYEES, "gui/images/employees.png", "<html>Gestión de<br>empleados (cajeros)</html>"},
-            {SidebarVectorIcon.IconType.MENU, "gui/images/menu.png", "<html>Gestión de menú /<br>productos</html>"},
-            {SidebarVectorIcon.IconType.ORDERS, "gui/images/orders.png", "Gestión de pedidos"},
-            {SidebarVectorIcon.IconType.REPORTS, "gui/images/reports.png", "Reportes y estadísticas"},
-            {SidebarVectorIcon.IconType.CASH, "gui/images/cash.png", "Gestión de caja"},
-            {SidebarVectorIcon.IconType.SETTINGS, "gui/images/settings.png", "<html>Configuración<br>general</html>"},
-            {SidebarVectorIcon.IconType.SECURITY, "gui/images/security.png", "Seguridad y auditoría"}
+                { SidebarVectorIcon.IconType.EMPLOYEES, "gui/images/employees.png",
+                        "<html>Gestión de<br>empleados (cajeros)</html>" },
+                { SidebarVectorIcon.IconType.MENU, "gui/images/menu.png",
+                        "<html>Gestión de menú /<br>productos</html>" },
+                { SidebarVectorIcon.IconType.ORDERS, "gui/images/orders.png", "Gestión de pedidos" },
+                { SidebarVectorIcon.IconType.REPORTS, "gui/images/reports.png", "Reportes y estadísticas" },
+                { SidebarVectorIcon.IconType.CASH, "gui/images/cash.png", "Gestión de caja" },
+                { SidebarVectorIcon.IconType.SECURITY, "gui/images/security.png", "Seguridad y auditoría" }
         };
 
         menuButtons = new JPanel[items.length];
@@ -133,16 +150,30 @@ public class dashboardAdmin extends JFrame {
 
                 @Override
                 public void mouseClicked(MouseEvent e) {
+
                     if (index == 0) {
-                        // Navegar a la ventana de Gestión de Empleados
                         gestionEmpleados app = new gestionEmpleados();
                         app.setVisible(true);
                         dispose();
                         return;
                     }
-                    else if (index == 1){
-                        // ventana de gestion de productos
+                    if (index == 1) {
                         gestionProductos app = new gestionProductos();
+                        app.setVisible(true);
+                        dispose();
+                        return;
+                    } else if (index == 3) {
+                        pantallaEstadistica app = new pantallaEstadistica();
+                        app.setVisible(true);
+                        dispose();
+                        return;
+                    } else if (index == 4) {
+                        gestionCaja app = new gestionCaja();
+                        app.setVisible(true);
+                        dispose();
+                        return;
+                    } else if (index == 5) {
+                        seguridadAuditoria app = new seguridadAuditoria();
                         app.setVisible(true);
                         dispose();
                         return;
@@ -150,10 +181,9 @@ public class dashboardAdmin extends JFrame {
                     // Las demás ventanas todavía no existen
                     JOptionPane.showMessageDialog(
                             dashboardAdmin.this,
-                            "aun no  JAJAJAJAJA.",
-                            "........",
-                            JOptionPane.INFORMATION_MESSAGE
-                    );
+                            "Esta sección todavía está en desarrollo.",
+                            "Próximamente",
+                            JOptionPane.INFORMATION_MESSAGE);
                 }
             });
 
@@ -161,7 +191,50 @@ public class dashboardAdmin extends JFrame {
             menuPanel.add(btnPanel);
         }
 
-        sidebar.add(menuPanel, BorderLayout.CENTER);
+        centerWrapper.add(menuPanel, BorderLayout.NORTH);
+
+        // Botón "Cerrar Sesión" (rojo) al final de la barra lateral
+        RoundedPanel btnCerrarSesion = new RoundedPanel(15, COLOR_CERRAR_SESION);
+        btnCerrarSesion.setLayout(new GridBagLayout());
+        btnCerrarSesion.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnCerrarSesion.setPreferredSize(new Dimension(0, 55));
+
+        JLabel lblCerrarSesion = new JLabel("Cerrar Sesión");
+        lblCerrarSesion.setFont(new Font("SansSerif", Font.BOLD, 16));
+        lblCerrarSesion.setForeground(Color.WHITE);
+        btnCerrarSesion.add(lblCerrarSesion);
+
+        btnCerrarSesion.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int confirmacion = JOptionPane.showConfirmDialog(
+                        SwingUtilities.getWindowAncestor(btnCerrarSesion),
+                        "¿Desea cerrar la sesión actual?",
+                        "Confirmar Cierre de Sesión",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.QUESTION_MESSAGE);
+
+                if (confirmacion == JOptionPane.YES_OPTION) {
+                    // Abrir la ventana de Login
+                    SwingUtilities.invokeLater(() -> {
+                        new pantallaLogin().setVisible(true);
+                    });
+
+                    // Cerrar todas las ventanas abiertas
+                    for (Window window : Window.getWindows()) {
+                        window.dispose();
+                    }
+                }
+            }
+        });
+
+        JPanel logoutWrapper = new JPanel(new BorderLayout());
+        logoutWrapper.setOpaque(false);
+        logoutWrapper.add(btnCerrarSesion, BorderLayout.SOUTH);
+
+        sidebar.add(centerWrapper, BorderLayout.CENTER);
+        sidebar.add(logoutWrapper, BorderLayout.SOUTH);
+
         return sidebar;
     }
 
@@ -182,19 +255,19 @@ public class dashboardAdmin extends JFrame {
     }
 
     // dejenlo aqui
-    /* 
-    private void updateSidebarSelection() {
-        for (int i = 0; i < menuButtons.length; i++) {
-            RoundedPanel btn = (RoundedPanel) menuButtons[i];
-            if (i == selectedMenuIndex) {
-                btn.setBackgroundColor(COLOR_SIDEBAR_ACTIVE);
-            } else {
-                btn.setBackgroundColor(COLOR_SIDEBAR);
-            }
-            btn.repaint();
-        }
-    }
-        */
+    /*
+     * private void updateSidebarSelection() {
+     * for (int i = 0; i < menuButtons.length; i++) {
+     * RoundedPanel btn = (RoundedPanel) menuButtons[i];
+     * if (i == selectedMenuIndex) {
+     * btn.setBackgroundColor(COLOR_SIDEBAR_ACTIVE);
+     * } else {
+     * btn.setBackgroundColor(COLOR_SIDEBAR);
+     * }
+     * btn.repaint();
+     * }
+     * }
+     */
 
     private JLabel createLogoLabel() {
         JLabel lblLogo = new JLabel();
@@ -366,7 +439,7 @@ public class dashboardAdmin extends JFrame {
         return panel;
     }
 
-// Asigna un color según el turno del empleado (Mañana/Tarde/Noche)
+    // Asigna un color según el turno del empleado (Mañana/Tarde/Noche)
     private Color colorPorTurno(String turno) {
         if (turno == null) {
             return COLOR_SIDEBAR;
@@ -410,11 +483,11 @@ public class dashboardAdmin extends JFrame {
     private JPanel createPedidosRecientesCard() {
         RoundedPanel panel = createBaseCard("Pedidos Recientes", null);
 
-        String[] columns = {"Pedido", "Mesa", "Hora", "Total", "Estado"};
+        String[] columns = { "Pedido", "Mesa", "Hora", "Total", "Estado" };
         Object[][] data = {
-            {"#1035", "Mesa 5", "12:54", "Q45.80", "Preparando"},
-            {"#1034", "Mesa 6", "12:56", "Q45.80", "Preparando"},
-            {"#1030", "Mesa 8", "13:05", "Q45.80", "Preparando"}
+                { "#1035", "Mesa 5", "12:54", "Q45.80", "Preparando" },
+                { "#1034", "Mesa 6", "12:56", "Q45.80", "Preparando" },
+                { "#1030", "Mesa 8", "13:05", "Q45.80", "Preparando" }
         };
 
         DefaultTableModel model = new DefaultTableModel(data, columns) {
@@ -459,8 +532,7 @@ public class dashboardAdmin extends JFrame {
         JScrollPane scroll = new JScrollPane(table);
         scroll.setBorder(BorderFactory.createCompoundBorder(
                 new EmptyBorder(2, 15, 6, 15),
-                BorderFactory.createLineBorder(COLOR_TABLE_GRID, 1)
-        ));
+                BorderFactory.createLineBorder(COLOR_TABLE_GRID, 1)));
         scroll.getViewport().setBackground(Color.WHITE);
         panel.add(scroll, BorderLayout.CENTER);
 
@@ -564,7 +636,7 @@ public class dashboardAdmin extends JFrame {
 
             // Cuadrícula y etiquetas Y
             g2.setFont(new Font("SansSerif", Font.BOLD, 9));
-            String[] yLabels = {"200", "150", "100", "50", "0"};
+            String[] yLabels = { "200", "150", "100", "50", "0" };
             for (int i = 0; i < 5; i++) {
                 int y = 10 + i * (chartH / 4);
                 g2.setColor(new Color(240, 240, 240));
@@ -574,7 +646,7 @@ public class dashboardAdmin extends JFrame {
             }
 
             // Días X
-            String[] days = {"Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom"};
+            String[] days = { "Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom" };
             int stepX = chartW / (days.length - 1);
             for (int i = 0; i < days.length; i++) {
                 int x = leftMargin + i * stepX;
@@ -582,7 +654,7 @@ public class dashboardAdmin extends JFrame {
             }
 
             // Puntos de datos y área rellenada con degradado
-            double[] values = {0.25, 0.74, 0.83, 0.28, 0.54, 0.48, 0.94};
+            double[] values = { 0.25, 0.74, 0.83, 0.28, 0.54, 0.48, 0.94 };
             Path2D path = new Path2D.Double();
 
             int startX = leftMargin;
@@ -602,8 +674,7 @@ public class dashboardAdmin extends JFrame {
             // Aplicar degradado verde dinámico
             GradientPaint gradient = new GradientPaint(
                     0, 10, COLOR_GREEN,
-                    0, 10 + chartH, new Color(106, 161, 46, 100)
-            );
+                    0, 10 + chartH, new Color(106, 161, 46, 100));
             g2.setPaint(gradient);
             g2.fill(path);
 
@@ -636,14 +707,14 @@ public class dashboardAdmin extends JFrame {
 
             g2.setFont(new Font("SansSerif", Font.BOLD, 9));
             g2.setColor(Color.BLACK);
-            String[] yLabels = {"100", "80", "60", "40", "20", "0"};
+            String[] yLabels = { "100", "80", "60", "40", "20", "0" };
             for (int i = 0; i < yLabels.length; i++) {
                 int y = 10 + i * (chartH / 5);
                 g2.drawString(yLabels[i], 2, y + 3);
             }
 
-            String[] names = {"Ana", "Luis", "Carlos"};
-            double[] values = {0.79, 0.45, 0.84};
+            String[] names = { "Ana", "Luis", "Carlos" };
+            double[] values = { 0.79, 0.45, 0.84 };
 
             int numBars = names.length;
             int gap = 16;

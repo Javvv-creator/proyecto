@@ -148,6 +148,18 @@ public class seguridadAuditoria extends JFrame {
                         dispose();
                         return;
                     }
+                    else if (index == 2) {
+                        gestionPedidos app = new gestionPedidos();
+                        app.setVisible(true);
+                        dispose();
+                        return;
+                    }
+                    else if (index == 3) {
+                        pantallaEstadistica app = new pantallaEstadistica();
+                        app.setVisible(true);
+                        dispose();
+                        return;
+                    }
                     else if (index == 4) {
                         gestionCaja app = new gestionCaja();
                         app.setVisible(true);
@@ -160,13 +172,7 @@ public class seguridadAuditoria extends JFrame {
                         dispose();
                         return;
                     }
-                    // Las demás ventanas todavía no existen
-                    JOptionPane.showMessageDialog(
-                            seguridadAuditoria.this,
-                            "Esta sección todavía está en desarrollo.",
-                            "Próximamente",
-                            JOptionPane.INFORMATION_MESSAGE
-                    );
+                
                 }
             });
 
