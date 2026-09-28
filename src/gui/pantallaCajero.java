@@ -7,6 +7,7 @@ import java.awt.event.*;
 import java.awt.geom.RoundRectangle2D;
 import java.util.*;
 import java.util.List;
+import main.Conexion.Conexion;
 
 /**
  * MenuPOS - Interfaz de punto de venta para restaurante de hamburguesas.
@@ -136,150 +137,66 @@ public class pantallaCajero extends JFrame {
                 JComponent.WHEN_IN_FOCUSED_WINDOW);
     }
 
+    // Carga categorías y productos desde la base de datos GITEAT
     private void buildCatalog() {
-        // ----- Hamburguesas (todo junto aquí) -----
-        List<MenuItem> hamburguesas = new ArrayList<>();
+        String sqlCategorias = "SELECT nombre FROM categoria WHERE estado = 1 ORDER BY id_categoria";
+        String sqlProductos = "SELECT p.nombre, p.precio_base, p.imagen, p.seccion, c.nombre AS categoria "
+                + "FROM producto p "
+                + "JOIN categoria c ON c.id_categoria = p.id_categoria "
+                + "WHERE p.estado = 1 AND c.estado = 1 "
+                + "ORDER BY c.id_categoria, p.orden_menu, p.id_producto";
 
-        // Mensajito de Desayunos
-        hamburguesas.add(new MenuItem("🍳 Desayunos", 0.00, "Hamburguesas", "📌"));
-        // Desayunos
-        hamburguesas.add(new MenuItem("McMuffin Cheddar McMelt", 28.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("McMuffin Tocino Doble Huevo", 30.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("McMuffin Salchicha y doble huevo", 30.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Egg McMuffin Doble Huevo", 32.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("McMuffin de Salchicha y Huevo", 28.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("McMuffin de Salchicha", 26.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("McMuffin Chapín Con Salchicha", 30.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Egg McMuffin", 26.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("McMuffin Super Chapín Con Salchicha", 32.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Egg McMuffin Doble", 30.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("McMuffin de Tocino y Huevo", 28.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("McMuffin Super Chapín Con Jamón", 32.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("McMuffin de Salchicha Doble y Huevo", 32.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("McMuffin Tocino Doble y Huevo", 32.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("McMuffin Huevo y Frijol", 25.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("McMuffin Huevo y Queso", 26.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("McMuffin Chapín Con Jamón", 28.00, "Hamburguesas", "🍔"));
+        try (java.sql.Connection con = new Conexion().getConnection()) {
+            if (con == null) {
+                throw new java.sql.SQLException("Revisa que MySQL esté encendido y que el usuario y contraseña sean correctos.");
+            }
 
-        // Mensajito de Hamburguesas
-        hamburguesas.add(new MenuItem("🍔 Hamburguesas", 0.00, "Hamburguesas", "📌"));
-        // Hamburguesas
-        hamburguesas.add(new MenuItem("Bacon Cheddar McMelt", 38.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("McCrispy Bacon Cheddar", 40.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Git Mac Doble", 41.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Cuarto de Libra con Queso", 39.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Cuarto de Libra Doble con Queso", 44.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Cuarto de Libra Deluxe con Queso", 42.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Cuarto de Libra Deluxe Doble con Queso", 46.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Cuarto de Libra Bacon con Queso", 42.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Cuarto de Libra Bacon Doble con Queso", 46.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Big Tasty", 48.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Big Tasty Doble", 55.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Big Tasty Bacon", 50.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Big Tasty Bacon Doble", 58.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Triple Bacon", 60.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Quesoburguesa", 32.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Quesoburguesa Doble", 44.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Quesoburguesa Triple", 46.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Hamburguesa", 20.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Hamburguesa Jr.", 18.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("GitNífica de Res", 42.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("GitNífica de Res Doble", 48.00, "Hamburguesas", "🍔"));
+            // ----- Categorías (una lista vacía por cada una) -----
+            try (java.sql.PreparedStatement ps = con.prepareStatement(sqlCategorias);
+                    java.sql.ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    catalog.put(rs.getString("nombre"), new ArrayList<>());
+                }
+            }
 
-        // Mensajito de Pollo
-        hamburguesas.add(new MenuItem("🐔 Pollo", 0.00, "Hamburguesas", "📌"));
-        // Pollo
-        hamburguesas.add(new MenuItem("McCrispy Chicken Bacon Ranch", 42.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("McCrispy Chicken Deluxe", 40.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Big Tasty de Pollo", 48.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Sándwich McPollo Doble", 49.00, "Hamburguesas", "🍔"));
+            // ----- Productos -----
+            Map<String, String> ultimaSeccion = new HashMap<>();
+            try (java.sql.PreparedStatement ps = con.prepareStatement(sqlProductos);
+                    java.sql.ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String nombre = rs.getString("nombre");
+                    double precio = rs.getDouble("precio_base");
+                    String imagen = rs.getString("imagen");
+                    String seccion = rs.getString("seccion");
+                    String categoria = rs.getString("categoria");
 
-        // Mensajito de Gourmet
-        hamburguesas.add(new MenuItem("🥩 Creaciones Gourmet", 0.00, "Hamburguesas", "📌"));
-        // Gourmet
-        hamburguesas.add(new MenuItem("Smoke Tocino Gourmet de Res", 50.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Smoke Tocino Gourmet doble", 58.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Clásica Gourmet Res", 48.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Clásica Gourmet Res doble", 55.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Pico Guacamol Gourmet Res", 50.00, "Hamburguesas", "🍔"));
-        hamburguesas.add(new MenuItem("Pico Guacamol Gourmet doble", 58.00, "Hamburguesas", "🍔"));
+                    List<MenuItem> lista = catalog.computeIfAbsent(categoria, k -> new ArrayList<>());
+                    String emoji = categoria.equals("Bebidas") ? "🥤" : "🍔";
 
-        // ----- Bebidas -----
-        List<MenuItem> bebidas = new ArrayList<>();
+                    // Cuando cambia la sección, se agrega el "mensajito" (Desayunos, Pollo, Sodas...)
+                    if (seccion != null && !seccion.equals(ultimaSeccion.get(categoria))) {
+                        lista.add(new MenuItem(seccion, 0.00, categoria, "📌"));
+                        ultimaSeccion.put(categoria, seccion);
+                    }
 
-        // Mensajito de Bebidas Frías
-        bebidas.add(new MenuItem("🥤 Bebidas Frías", 0.00, "Bebidas", "📌"));
-        bebidas.add(new MenuItem("Horchata", 15.00, "Bebidas", "🥤", "horchata.png"));
-        bebidas.add(new MenuItem("Iced Coffee Horchata", 22.00, "Bebidas", "🥤", "iced_coffee_horchata.png"));
-        bebidas.add(new MenuItem("GITFizz Pink", 20.00, "Bebidas", "🥤", "mc_fizzpink.png"));
-        bebidas.add(new MenuItem("GITFizz Manzana Verde", 20.00, "Bebidas", "🥤", "mc_fizz_manzana_verde.png"));
-        bebidas.add(new MenuItem("GITFizz Blue", 20.00, "Bebidas", "🥤", "mc_fizz_blue.png"));
-        bebidas.add(new MenuItem("Frappé Oreo", 32.00, "Bebidas", "🥤", "frappe_oreo.png"));
-        bebidas.add(new MenuItem("Frappé Original", 28.00, "Bebidas", "🥤", "frappe_original.png"));
-        bebidas.add(new MenuItem("Frappé Vainilla", 30.00, "Bebidas", "🥤", "frappe_vainilla.png"));
-        bebidas.add(new MenuItem("Frappé Chocolate", 30.00, "Bebidas", "🥤", "frappe_chocolate.png"));
-        bebidas.add(new MenuItem("Frappé Caramelo", 30.00, "Bebidas", "🥤", "frappe_caramelo.png"));
-        bebidas.add(new MenuItem("Frappé Vainilla Light", 28.00, "Bebidas", "🥤", "frappe_vainilla_light.png"));
-        bebidas.add(new MenuItem("Iced Coffee Original", 22.00, "Bebidas", "🥤", "iced_coffee_original.png"));
-        bebidas.add(new MenuItem("Iced Coffee Vainilla", 24.00, "Bebidas", "🥤", "iced_coffee_vainilla.png"));
-        bebidas.add(new MenuItem("Iced Coffee Vainilla Light", 24.00, "Bebidas", "🥤", "iced_coffee_vainilla_light.png"));
-        bebidas.add(new MenuItem("Iced Coffee Chocolate", 24.00, "Bebidas", "🥤", "iced_coffee_chocolate.png"));
-        bebidas.add(new MenuItem("Iced Coffee Caramelo", 24.00, "Bebidas", "🥤", "iced_coffee_caramelo.png"));
-        bebidas.add(new MenuItem("Té Chai Frappé Té Verde", 28.00, "Bebidas", "🥤", "te_chai_frappe_te_verde.png"));
-        bebidas.add(new MenuItem("Té Chai Frappé Original", 28.00, "Bebidas", "🥤", "te_chai_frappe_original.png"));
-        bebidas.add(new MenuItem("Té Chai Frappé Vainilla", 30.00, "Bebidas", "🥤", "te_chai_frappe_vainilla.png"));
-        bebidas.add(new MenuItem("Té Chai Frappé Vainilla Light", 28.00, "Bebidas", "🥤", "te_chai_frappe_vainilla_light.png"));
-        bebidas.add(new MenuItem("Smoothie de Berries", 35.00, "Bebidas", "🥤", "smoothie_de_berries.png"));
-        bebidas.add(new MenuItem("Smoothie de Mango", 35.00, "Bebidas", "🥤", "smoothie_de_mango.png"));
-        bebidas.add(new MenuItem("GITFizz A.M.", 22.00, "Bebidas", "🥤", "mc_fizz_am.png"));
+                    if (imagen != null && !imagen.isEmpty()) {
+                        lista.add(new MenuItem(nombre, precio, categoria, emoji, imagen));
+                    } else {
+                        lista.add(new MenuItem(nombre, precio, categoria, emoji));
+                    }
+                }
+            }
 
-        // Mensajito de Bebidas Calientes
-        bebidas.add(new MenuItem("☕ Bebidas Calientes", 0.00, "Bebidas", "📌"));
-        bebidas.add(new MenuItem("Té Chai Original", 18.00, "Bebidas", "☕", "te_chai_original.png"));
-        bebidas.add(new MenuItem("Té Chai Té Verde", 18.00, "Bebidas", "☕", "te_chai_te_verde.png"));
-        bebidas.add(new MenuItem("Té Chai Vainilla", 20.00, "Bebidas", "☕", "te_chai_vainilla.png"));
-        bebidas.add(new MenuItem("Té Chai Vainilla Light", 20.00, "Bebidas", "☕", "te_chai_vainilla_light.png"));
-        bebidas.add(new MenuItem("Cappuccino", 22.00, "Bebidas", "☕", "cappuccino.png"));
-        bebidas.add(new MenuItem("Latte", 22.00, "Bebidas", "☕", "latte.png"));
-        bebidas.add(new MenuItem("Café Guatemalteco", 18.00, "Bebidas", "☕", "cafe_guatemalteco.png"));
-        bebidas.add(new MenuItem("Té Guatemalteco Manzanilla Relax", 15.00, "Bebidas", "☕", "te_guatemalteco_manzanilla_relax.png"));
-        bebidas.add(new MenuItem("Té Guatemalteco Melocotón Mix", 15.00, "Bebidas", "☕", "te_guatemalteco_melocoton_mix.png"));
-        bebidas.add(new MenuItem("Té Guatemalteco Bora Bora", 15.00, "Bebidas", "☕", "te_guatemalteco_borabora.png"));
-        bebidas.add(new MenuItem("Té Guatemalteco Menta Fusión", 15.00, "Bebidas", "☕", "te_guatemalteco_menta_fusion.png"));
-        bebidas.add(new MenuItem("Chocolate caliente", 20.00, "Bebidas", "☕", "chocolate_caliente.png"));
+        } catch (java.sql.SQLException ex) {
+            JOptionPane.showMessageDialog(null,
+                    "No se pudo cargar el menú desde la base de datos.\n\n" + ex.getMessage(),
+                    "Error de conexión", JOptionPane.ERROR_MESSAGE);
+        }
 
-        // Mensajito de Café en Bolsa
-        bebidas.add(new MenuItem("🛍️ Café en Bolsa", 0.00, "Bebidas", "📌"));
-        bebidas.add(new MenuItem("Blend Molido", 45.00, "Bebidas", "☕", "blend_molido.png"));
-        bebidas.add(new MenuItem("Blend Grano", 45.00, "Bebidas", "☕", "blend_grano.png"));
-
-        // Mensajito de Sodas
-        bebidas.add(new MenuItem("🥤 Sodas", 0.00, "Bebidas", "📌"));
-        bebidas.add(new MenuItem("Sprite", 10.00, "Bebidas", "🥤", "sprite.png"));
-        bebidas.add(new MenuItem("Coca-Cola", 10.00, "Bebidas", "🥤", "coca_cola.png"));
-        bebidas.add(new MenuItem("Coca Cola Zero", 10.00, "Bebidas", "🥤", "coca_cola_zero.png"));
-        bebidas.add(new MenuItem("Fanta", 10.00, "Bebidas", "🥤", "fanta.png"));
-
-        // Mensajito de Naturales
-        bebidas.add(new MenuItem("🍹 Naturales", 0.00, "Bebidas", "📌"));
-        bebidas.add(new MenuItem("Jugo de Naranja", 12.00, "Bebidas", "🥤", "jugo_de_naranja.png"));
-        bebidas.add(new MenuItem("Té Lipton", 12.00, "Bebidas", "🥤", "te_lipton.png"));
-        bebidas.add(new MenuItem("Rosa de Jamaica", 12.00, "Bebidas", "🥤", "rosa_de_jamaica.png"));
-        bebidas.add(new MenuItem("Agua Pura", 8.00, "Bebidas", "🥤", "agua_pura.png"));
-        bebidas.add(new MenuItem("Jugo de Manzana", 12.00, "Bebidas", "🥤", "jugo_de_manzana.png"));
-
-        // Mensajito de Calientes
-        bebidas.add(new MenuItem("🔥 Calientes", 0.00, "Bebidas", "📌"));
-        bebidas.add(new MenuItem("Café", 15.00, "Bebidas", "☕", "cafe.png"));
-        bebidas.add(new MenuItem("Café Con Leche", 18.00, "Bebidas", "☕", "cafe_con_leche.png"));
-        bebidas.add(new MenuItem("Chocolate", 18.00, "Bebidas", "☕", "chocolate.png"));
-        bebidas.add(new MenuItem("Té Caliente", 15.00, "Bebidas", "☕", "te_caliente.png"));
-
-        // ----- Guardar en catálogo -----
-        catalog.put("Hamburguesas", hamburguesas);
-        catalog.put("Bebidas", bebidas);
-        catalog.put("Postres", new ArrayList<>());
-        catalog.put("Combos", new ArrayList<>());
+        // Asegura que las pestañas existan aunque no haya datos
+        for (String cat : new String[]{"Hamburguesas", "Bebidas", "Postres", "Combos"}) {
+            catalog.putIfAbsent(cat, new ArrayList<>());
+        }
 
         // ----- Todos -----
         List<MenuItem> todos = new ArrayList<>();
