@@ -162,7 +162,14 @@ public class dashboardAdmin extends JFrame {
                         app.setVisible(true);
                         dispose();
                         return;
-                    } else if (index == 3) {
+                    } 
+                    else if (index == 2) {
+                        gestionPedidos app = new gestionPedidos(); 
+                        app.setVisible(true);
+                        dispose();
+                        return;
+                    }
+                    else if (index == 3) {
                         pantallaEstadistica app = new pantallaEstadistica();
                         app.setVisible(true);
                         dispose();
