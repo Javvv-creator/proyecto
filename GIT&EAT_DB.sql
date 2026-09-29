@@ -202,9 +202,11 @@ CREATE TABLE pago_orden (
 -- ---------------------------------------------------------------------
 -- Turnos del menú
 -- ---------------------------------------------------------------------
-INSERT INTO turno_menu (nombre, hora_inicio, hora_fin) VALUES
-('Mañana', '04:00:00', '11:00:00'),
-('Tarde', '11:01:00', '02:00:00');
+-- Mañana: 04:00 a 11:00 (desayunos) | Tarde: 11:01 a 02:00 (hamburguesas)
+-- El turno Tarde cruza la medianoche, el programa ya lo sabe manejar.
+INSERT INTO turno_menu (id_turno, nombre, hora_inicio, hora_fin) VALUES
+(1, 'Mañana', '04:00:00', '11:00:00'),
+(2, 'Tarde',  '11:01:00', '02:00:00');
  
 -- ---------------------------------------------------------------------
 -- Categorías (las pestañas de arriba)

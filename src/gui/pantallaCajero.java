@@ -35,6 +35,11 @@ public class pantallaCajero extends JFrame {
     private final JLabel sectionTitle;
     private final Map<String, JButton> tabButtons = new LinkedHashMap<>();
 
+    // ---------- Menú por horario ----------
+    private int turnoActual = -1;                 // id_turno del menú que se está mostrando
+    private String categoriaActual = "Todos";     // pestaña seleccionada
+    private final JLabel menuLabel = new JLabel(" ");
+
     // ---------- Datos ----------
     static class MenuItem {
 
@@ -90,6 +95,19 @@ public class pantallaCajero extends JFrame {
         leftPanel.setBorder(new EmptyBorder(30, 40, 30, 20));
 
         JPanel tabsBar = buildTabsBar();
+
+        // Etiqueta que indica qué menú está activo (Mañana / Tarde)
+        RoundedPanel menuPill = new RoundedPanel(PANEL_DARK, 30);
+        menuPill.setLayout(new BorderLayout());
+        menuPill.setBorder(new EmptyBorder(12, 22, 12, 22));
+        menuLabel.setFont(new Font("SansSerif", Font.BOLD, 15));
+        menuLabel.setForeground(YELLOW_BRIGHT);
+        menuPill.add(menuLabel, BorderLayout.CENTER);
+        JPanel pillWrap = new JPanel(new GridBagLayout());
+        pillWrap.setOpaque(false);
+        pillWrap.add(menuPill);
+
+        pillWrap.setBorder(new EmptyBorder(0, 20, 0, 0));
         leftPanel.add(tabsBar, BorderLayout.NORTH);
 
         JPanel centerArea = new JPanel(new BorderLayout());
@@ -110,6 +128,7 @@ public class pantallaCajero extends JFrame {
         sepWrap.setBorder(new EmptyBorder(20, 20, 0, 0));
         sepWrap.add(sep, BorderLayout.CENTER);
         titleRow.add(sepWrap, BorderLayout.CENTER);
+        titleRow.add(pillWrap, BorderLayout.EAST);   // etiqueta del menú activo
 
         centerArea.add(titleRow, BorderLayout.NORTH);
 
@@ -131,24 +150,83 @@ public class pantallaCajero extends JFrame {
 
         showCategory("Todos");
 
+        // Revisa cada minuto si ya cambió el turno del menú (ej. 12:00 o 2:00 am)
+        javax.swing.Timer relojMenu = new javax.swing.Timer(60_000, e -> revisarCambioDeTurno());
+        relojMenu.start();
+
         // Salir con ESC (ya que la ventana no tiene decoración)
         root.registerKeyboardAction(e -> System.exit(0),
                 KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
                 JComponent.WHEN_IN_FOCUSED_WINDOW);
     }
 
+    // ---------- Turno del menú según la hora ----------
+    // Devuelve {id_turno, nombre, hora_inicio, hora_fin} del turno vigente, o null si no hay.
+    // Soporta turnos que cruzan la medianoche (ej. 12:00 a 02:00).
+    private String[] buscarTurnoVigente(java.sql.Connection con) throws java.sql.SQLException {
+        String sql = "SELECT id_turno, nombre, "
+                + "DATE_FORMAT(hora_inicio, '%H:%i') AS ini, DATE_FORMAT(hora_fin, '%H:%i') AS fin "
+                + "FROM turno_menu "
+                + "WHERE estado = 1 AND ( "
+                + "   (hora_inicio < hora_fin AND ? >= hora_inicio AND ? < hora_fin) "      // turno normal
+                + "OR (hora_inicio > hora_fin AND (? >= hora_inicio OR ? < hora_fin)) "     // cruza medianoche
+                + ") ORDER BY id_turno LIMIT 1";
+        java.sql.Time ahora = java.sql.Time.valueOf(java.time.LocalTime.now().withNano(0));
+        try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
+            for (int i = 1; i <= 4; i++) {
+                ps.setTime(i, ahora);
+            }
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return new String[]{rs.getString("id_turno"), rs.getString("nombre"),
+                        rs.getString("ini"), rs.getString("fin")};
+                }
+            }
+        }
+        return null;
+    }
+
+    // Se llama cada minuto: si cambió el turno, recarga el menú sin cerrar la app
+    private void revisarCambioDeTurno() {
+        try (java.sql.Connection con = new Conexion().getConnection()) {
+            if (con == null) {
+                return; // sin conexión: se deja el menú como está
+            }
+            String[] turno = buscarTurnoVigente(con);
+            int id = turno == null ? 0 : Integer.parseInt(turno[0]);
+            if (id != turnoActual) {
+                buildCatalog();
+                showCategory(categoriaActual);
+            }
+        } catch (java.sql.SQLException ex) {
+            System.out.println("No se pudo revisar el turno: " + ex.getMessage());
+        }
+    }
+
     // Carga categorías y productos desde la base de datos GITEAT
+    // Solo trae los productos del turno actual + los que no tienen turno (bebidas)
     private void buildCatalog() {
+        catalog.clear();
         String sqlCategorias = "SELECT nombre FROM categoria WHERE estado = 1 ORDER BY id_categoria";
         String sqlProductos = "SELECT p.nombre, p.precio_base, p.imagen, p.seccion, c.nombre AS categoria "
                 + "FROM producto p "
                 + "JOIN categoria c ON c.id_categoria = p.id_categoria "
                 + "WHERE p.estado = 1 AND c.estado = 1 "
+                + "AND (p.id_turno IS NULL OR p.id_turno = ?) "
                 + "ORDER BY c.id_categoria, p.orden_menu, p.id_producto";
 
         try (java.sql.Connection con = new Conexion().getConnection()) {
             if (con == null) {
                 throw new java.sql.SQLException("Revisa que MySQL esté encendido y que el usuario y contraseña sean correctos.");
+            }
+
+            // ----- Turno vigente -----
+            String[] turno = buscarTurnoVigente(con);
+            turnoActual = turno == null ? 0 : Integer.parseInt(turno[0]);
+            if (turno != null) {
+                menuLabel.setText("Menú " + turno[1] + "  ·  " + turno[2] + " a " + turno[3]);
+            } else {
+                menuLabel.setText("Sin menú de horario activo");
             }
 
             // ----- Categorías (una lista vacía por cada una) -----
@@ -161,8 +239,9 @@ public class pantallaCajero extends JFrame {
 
             // ----- Productos -----
             Map<String, String> ultimaSeccion = new HashMap<>();
-            try (java.sql.PreparedStatement ps = con.prepareStatement(sqlProductos);
-                    java.sql.ResultSet rs = ps.executeQuery()) {
+            try (java.sql.PreparedStatement ps = con.prepareStatement(sqlProductos)) {
+                ps.setInt(1, turnoActual);
+                java.sql.ResultSet rs = ps.executeQuery();
                 while (rs.next()) {
                     String nombre = rs.getString("nombre");
                     double precio = rs.getDouble("precio_base");
@@ -220,6 +299,7 @@ public class pantallaCajero extends JFrame {
     }
 
     private void showCategory(String category) {
+        categoriaActual = category;
         for (Map.Entry<String, JButton> entry : tabButtons.entrySet()) {
             ((PillButton) entry.getValue()).setActive(entry.getKey().equals(category));
         }
