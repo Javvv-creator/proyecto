@@ -5,6 +5,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import main.Crud.crud;
 
+// Diálogo modal para modificar los datos de un usuario existente.
 public class editarEmpleadoDialog extends JDialog {
 
     private final int idUsuario;
@@ -16,6 +17,7 @@ public class editarEmpleadoDialog extends JDialog {
     private final JComboBox<String> cbRol = new JComboBox<>(new String[]{"Administrador", "Cajero"});
     private final JComboBox<String> cbEstado = new JComboBox<>(new String[]{"Activo", "Inactivo"});
 
+    // Recibe el ID, prepara el formulario y carga los valores actuales del usuario.
     public editarEmpleadoDialog(JFrame parent, int idUsuario) {
         super(parent, "Editar empleado", true);
         this.idUsuario = idUsuario;
@@ -53,6 +55,7 @@ public class editarEmpleadoDialog extends JDialog {
         setLocationRelativeTo(parent);
     }
 
+    // Consulta el CRUD y coloca cada dato en su campo correspondiente.
     private void cargarDatos() {
         Object[] u = crud.obtenerUsuario(idUsuario);
         if (u == null) {
@@ -67,6 +70,7 @@ public class editarEmpleadoDialog extends JDialog {
         cbEstado.setSelectedItem(((Integer) u[4]) == 1 ? "Activo" : "Inactivo");
     }
 
+    // Valida los campos y envía los cambios al método de actualización del CRUD.
     private void guardar() {
         String nombre = txtNombre.getText().trim();
         String apellido = txtApellido.getText().trim();
@@ -89,6 +93,7 @@ public class editarEmpleadoDialog extends JDialog {
         }
     }
 
+    // Informa al panel que abrió el diálogo si los cambios se guardaron.
     public boolean isGuardado() {
         return guardado;
     }

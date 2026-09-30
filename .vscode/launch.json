@@ -6,6 +6,20 @@
     "configurations": [
         {
             "type": "java",
+            "name": "gestionPedidos",
+            "request": "launch",
+            "mainClass": "gui.gestionPedidos",
+            "projectName": "proyecto_3e3a5145"
+        },
+        {
+            "type": "java",
+            "name": "gestionEmpleados",
+            "request": "launch",
+            "mainClass": "gui.gestionEmpleados",
+            "projectName": "proyecto_3e3a5145"
+        },
+        {
+            "type": "java",
             "name": "dashboardAdmin",
             "request": "launch",
             "mainClass": "gui.dashboardAdmin",

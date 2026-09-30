@@ -3,8 +3,10 @@ package gui;
 import java.awt.*;
 import javax.swing.*;
 
+// Muestra el splash animado mientras se prepara el acceso al sistema.
 public class pantallaCarga {
 
+    // Abre el GIF en una ventana temporal y luego inicia el formulario de login.
     public void iniciarCarga() {
         SwingUtilities.invokeLater(() -> {
             JWindow splash = new JWindow();

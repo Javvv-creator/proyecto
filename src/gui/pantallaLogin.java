@@ -17,6 +17,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+// Presenta el acceso por código de empleado y PIN y dirige al usuario por su rol.
 public class pantallaLogin {
 
     // Paleta de colores para la interfaz gráfica
@@ -30,10 +31,12 @@ public class pantallaLogin {
 
     private JFrame frame;
 
+    // Permite ejecutar el login directamente desde esta clase.
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new pantallaLogin().setVisible(true));
     }
 
+    // Construye la ventana de acceso con una imagen lateral y el formulario.
     public pantallaLogin() {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -86,6 +89,7 @@ public class pantallaLogin {
         frame.setContentPane(root);
     }
 
+    // Expone la visibilidad del JFrame interno a las demás pantallas.
     public void setVisible(boolean visible) {
         if (frame != null) {
             frame.setVisible(visible);
@@ -192,7 +196,8 @@ public class pantallaLogin {
         return card;
     }
 
-    // Consulta la base de datos para verificar credenciales y el estado activo del usuario
+    // Consulta la base de datos para verificar credenciales y el estado activo del
+    // usuario
     private static void validarUsuario(JFrame frame, String codigoEmpleado, String pin) {
         String sql = "SELECT id_usuario, nombre, apellido, rol, estado, turno FROM usuario WHERE codigo_empleado = ? AND contrasena = ?";
         Conexion conexionBD = new Conexion();

@@ -10,6 +10,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.plaf.basic.BasicComboBoxUI;
 import main.Conexion.Conexion;
 
+// Formulario modal para registrar un empleado y sus datos de acceso.
 public class nuevoEmpleadoDialog extends JDialog {
 
     // Paleta de colores ajustada al diseño
@@ -43,6 +44,7 @@ public class nuevoEmpleadoDialog extends JDialog {
         });
     }
 
+    // Construye el formulario y conecta los botones con cancelar o guardar.
     public nuevoEmpleadoDialog(Frame parent) {
         super(parent, "Nuevo empleado", true);
         setUndecorated(true);
@@ -159,6 +161,7 @@ public class nuevoEmpleadoDialog extends JDialog {
 
     // --- Lógica de procesamiento e inserción en Base de Datos ---
 
+    // Valida los campos, separa nombre y apellido, genera un código e inserta el usuario.
     private void procesarGuardado() {
         String nombreCompleto = txtNombre.getText().trim();
         String contrasena = new String(txtContrasena.getPassword()).trim();
@@ -229,6 +232,7 @@ public class nuevoEmpleadoDialog extends JDialog {
         }
     }
 
+    // Crea un código con prefijo ADM o CAJ y un consecutivo según el rol.
     private String generarCodigoEmpleado(Connection conn, String rol) throws SQLException {
         String prefijo = rol.equalsIgnoreCase("ADMINISTRADOR") ? "ADM" : "CAJ";
         String sql = "SELECT COUNT(*) FROM usuario WHERE rol = ?";
@@ -245,6 +249,7 @@ public class nuevoEmpleadoDialog extends JDialog {
         return prefijo + "01";
     }
 
+    // Mantiene un formato común para mensajes de validación y resultado.
     private void mostrarMensaje(String mensaje, int tipo) {
         JOptionPane.showMessageDialog(this, mensaje, "Git & Eat!", tipo);
     }

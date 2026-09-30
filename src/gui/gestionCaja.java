@@ -27,6 +27,7 @@ public class gestionCaja extends JFrame {
     // ------------------------------------------------------------------
     // MODELO (estado compartido entre pantallas)
     // ------------------------------------------------------------------
+    // Guarda una foto de los montos y horarios al cerrar un turno de caja.
     private static class Registro {
         final String apertura, cierre, cajero;
         final double inicial, ventas, esperado, contado, diferencia;
@@ -45,8 +46,8 @@ public class gestionCaja extends JFrame {
     }
 
     private static class EstadoCaja {
-        static String cajero = "Sin sesión iniciada";
-        static String turno = "";
+        static String cajero = "Samantha Martinez";
+        static String turno = "Cajera - Turno tarde";
 
         static boolean abierta = true;
         static String horaApertura = now();
@@ -63,18 +64,22 @@ public class gestionCaja extends JFrame {
 
         static final List<Registro> historial = new ArrayList<>();
 
+        // Devuelve la fecha y hora actual con el formato que muestra la interfaz.
         static String now() {
             return LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
         }
 
+        // Suma los ingresos registrados por efectivo, tarjeta y tarjetas regalo.
         static double ventasTotales() {
             return ventasEfectivo + ventasTarjeta + ventasRegalo;
         }
 
+        // Calcula el efectivo que debería haber en caja al momento del conteo.
         static double efectivoEsperado() {
             return inicial + ventasEfectivo + regalosVendidosMonto;
         }
 
+        // Inicia un turno nuevo y reinicia ventas, canjes y conteos anteriores.
         static void abrir(double montoInicial) {
             abierta = true;
             horaApertura = now();
@@ -312,6 +317,7 @@ public class gestionCaja extends JFrame {
     // ------------------------------------------------------------------
     // ACTUALIZACIÓN DE LA VISTA
     // ------------------------------------------------------------------
+    // Copia el estado compartido a los textos, indicadores y botones visibles.
     private void refresh() {
         boolean abierta = EstadoCaja.abierta;
 
@@ -354,6 +360,7 @@ public class gestionCaja extends JFrame {
     // ------------------------------------------------------------------
     // ACCIONES
     // ------------------------------------------------------------------
+    // Alterna entre el flujo de apertura y el de cierre según el estado actual.
     private void accionToggleCaja() {
         if (EstadoCaja.abierta)
             cerrarCaja();
@@ -361,6 +368,7 @@ public class gestionCaja extends JFrame {
             abrirCaja();
     }
 
+    // Solicita el fondo inicial y activa la caja si el usuario no cancela.
     private void abrirCaja() {
         Double monto = pedirMonto("Ingrese el monto inicial de la caja:", "Abrir caja", true);
         if (monto == null)
@@ -371,6 +379,7 @@ public class gestionCaja extends JFrame {
                 "Caja abierta", JOptionPane.INFORMATION_MESSAGE);
     }
 
+    // Cuenta el efectivo, calcula diferencias, pide confirmación y guarda el cierre.
     private void cerrarCaja() {
         // Si aún no se contó el efectivo, se solicita
         if (EstadoCaja.efectivoContado == null) {
@@ -408,6 +417,7 @@ public class gestionCaja extends JFrame {
                 JOptionPane.INFORMATION_MESSAGE);
     }
 
+    // Evita registrar ventas o conteos mientras la caja está cerrada.
     private boolean verificarAbierta() {
         if (!EstadoCaja.abierta) {
             JOptionPane.showMessageDialog(this, "La caja está cerrada. Ábrala primero.", "Caja cerrada",
@@ -417,6 +427,44 @@ public class gestionCaja extends JFrame {
         return true;
     }
 
+    private void registrarMovimiento() {
+        if (!verificarAbierta())
+            return;
+
+        String[] tipos = { "Venta en efectivo", "Venta con tarjeta", "Pago con tarjeta de regalo (canje)",
+                "Venta de tarjeta de regalo" };
+        Object t = JOptionPane.showInputDialog(this, "Tipo de movimiento:", "Registrar venta",
+                JOptionPane.QUESTION_MESSAGE, null, tipos, tipos[0]);
+        if (t == null)
+            return;
+
+        Double monto = pedirMonto("Monto (Q):", "Registrar venta", false);
+        if (monto == null)
+            return;
+
+        switch (t.toString()) {
+            case "Venta en efectivo":
+                EstadoCaja.ventasEfectivo += monto;
+                break;
+            case "Venta con tarjeta":
+                EstadoCaja.ventasTarjeta += monto;
+                break;
+            case "Pago con tarjeta de regalo (canje)":
+                EstadoCaja.ventasRegalo += monto;
+                EstadoCaja.regalosCanjeados++;
+                EstadoCaja.regalosCanjeadosMonto += monto;
+                break;
+            default: // Venta de tarjeta de regalo (se cobra en efectivo)
+                EstadoCaja.regalosVendidos++;
+                EstadoCaja.regalosVendidosMonto += monto;
+                break;
+        }
+        // El conteo anterior ya no es válido tras un nuevo movimiento
+        EstadoCaja.efectivoContado = null;
+        refresh();
+    }
+
+    // Guarda el efectivo contado para compararlo con el monto esperado.
     private void contarEfectivo() {
         if (!verificarAbierta())
             return;
@@ -428,6 +476,7 @@ public class gestionCaja extends JFrame {
         refresh();
     }
 
+    // Presenta en una tabla los cierres guardados durante esta ejecución.
     private void mostrarHistorial() {
         if (EstadoCaja.historial.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Aún no hay cierres de caja registrados.", "Historial de cajas",

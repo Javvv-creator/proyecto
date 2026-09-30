@@ -11,12 +11,23 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Path2D;
 import java.net.URL;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import main.Conexion.Conexion;
 
 /**
- * Pantalla de Gestión de pedidos - GIT & EAT!
- * Mantiene el mismo sidebar/header/paleta del resto de la aplicación.
- * La lógica real (búsqueda, alternar Tiempo real / Historial, limpiar filtros)
- * queda marcada con TODO para que otro compañero la conecte al backend.
+ * Permite consultar pedidos, buscar por criterios, ver sus detalles y cambiar
+ * su estado.
  */
 public class gestionPedidos extends JFrame {
 
@@ -48,6 +59,23 @@ public class gestionPedidos extends JFrame {
     private RoundedPanel tabHistorial;
     private JLabel lblTabTiempoReal;
     private JLabel lblTabHistorial;
+    private DefaultTableModel ordersModel;
+    private JTable ordersTable;
+    private SearchCriterion selectedCriterion = SearchCriterion.NONE;
+    private final Map<SearchCriterion, RoundedPanel> searchChips = new EnumMap<>(SearchCriterion.class);
+    private CardLayout searchInputLayout;
+    private JPanel searchInputPanel;
+    private JTextField txtSearchValue;
+    private JLabel lblSearchHint;
+    private JComboBox<String> cbSearchState;
+
+    private enum SearchCriterion {
+        NONE, ORDER_ID, DATE, CASHIER, STATE
+    }
+
+    private static final String[] ORDER_STATES = {
+        "En cocina", "Preparando", "Listo", "Entregado", "Cancelado", "Completada"
+    };
 
     public gestionPedidos() {
         setTitle("GIT & EAT! - Gestión de Pedidos");
@@ -71,6 +99,13 @@ public class gestionPedidos extends JFrame {
 
         mainContainer.add(contentPanel, BorderLayout.CENTER);
         add(mainContainer);
+
+        // Carga el historial inicial y consulta periódicamente los pedidos activos.
+        loadOrders(true);
+        Timer refreshTimer = new Timer(30_000, e -> {
+            if (selectedTab == 0) loadOrders(false);
+        });
+        refreshTimer.start();
     }
 
     // ==========================================
@@ -216,11 +251,16 @@ public class gestionPedidos extends JFrame {
         btnCerrarSesion.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                // TODO (compañero): implementar el cierre de sesión real:
-                //  - invalidar el token / sesión del usuario actual
-                //  - limpiar cualquier dato sensible que se tenga en memoria
-                //  - abrir la ventana de login y cerrar todas las ventanas abiertas
-                System.out.println("Cerrar sesión presionado (pendiente de implementar)");
+                int confirmacion = JOptionPane.showConfirmDialog(
+                        gestionPedidos.this,
+                        "¿Desea cerrar la sesión actual?",
+                        "Confirmar cierre de sesión",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.QUESTION_MESSAGE);
+                if (confirmacion == JOptionPane.YES_OPTION) {
+                    SwingUtilities.invokeLater(() -> new pantallaLogin().setVisible(true));
+                    for (Window window : Window.getWindows()) window.dispose();
+                }
             }
         });
 
@@ -361,9 +401,7 @@ public class gestionPedidos extends JFrame {
             public void mouseClicked(MouseEvent e) {
                 selectedTab = 0;
                 updateTabsSelection();
-                // TODO (compañero): cambiar la fuente de datos de la tabla a los
-                //  pedidos EN VIVO (por ejemplo, con un listener/polling al backend)
-                //  en lugar del historial estático que se muestra ahora.
+                loadOrders(true);
             }
         });
 
@@ -372,8 +410,7 @@ public class gestionPedidos extends JFrame {
             public void mouseClicked(MouseEvent e) {
                 selectedTab = 1;
                 updateTabsSelection();
-                // TODO (compañero): cambiar la fuente de datos de la tabla al
-                //  HISTORIAL completo de pedidos (consulta con filtros de fecha, etc.)
+                loadOrders(true);
             }
         });
 
@@ -395,7 +432,7 @@ public class gestionPedidos extends JFrame {
 
     // --- PANEL "BUSCAR POR:" (usa TitledBorder para el efecto de "fieldset") ---
     private JPanel createSearchByPanel() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
+        JPanel panel = new JPanel(new BorderLayout(8, 4));
         panel.setOpaque(false);
 
         TitledBorder titled = BorderFactory.createTitledBorder(
@@ -404,59 +441,103 @@ public class gestionPedidos extends JFrame {
         );
         titled.setTitleFont(new Font("SansSerif", Font.BOLD, 16));
         titled.setTitleColor(COLOR_TEXT_BROWN);
-        panel.setBorder(BorderFactory.createCompoundBorder(titled, new EmptyBorder(6, 15, 12, 15)));
+        panel.setBorder(BorderFactory.createCompoundBorder(titled, new EmptyBorder(4, 12, 8, 12)));
 
-        // TODO (compañero): al hacer clic en cada chip, mostrar el campo de entrada
-        //  correspondiente (número de pedido, selector de fecha, selector de cajero
-        //  o selector de estado) para capturar el valor de búsqueda.
-        panel.add(createSearchChip("No. Pedido"));
-        panel.add(createSearchChip("Fecha"));
-        panel.add(createSearchChip("Cajero"));
-        panel.add(createSearchChip("Estado"));
+        JPanel chipsRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 2));
+        chipsRow.setOpaque(false);
+        chipsRow.add(createSearchChip("No. Pedido", SearchCriterion.ORDER_ID));
+        chipsRow.add(createSearchChip("Fecha", SearchCriterion.DATE));
+        chipsRow.add(createSearchChip("Cajero", SearchCriterion.CASHIER));
+        chipsRow.add(createSearchChip("Estado", SearchCriterion.STATE));
+        panel.add(chipsRow, BorderLayout.NORTH);
 
-        RoundedPanel btnBuscar = new RoundedPanel(20, COLOR_BTN_BUSCAR);
-        btnBuscar.setLayout(new GridBagLayout());
-        btnBuscar.setPreferredSize(new Dimension(140, 50));
-        btnBuscar.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        JPanel controls = new JPanel(new BorderLayout(10, 0));
+        controls.setOpaque(false);
+        searchInputPanel = createSearchInputPanel();
+        controls.add(searchInputPanel, BorderLayout.CENTER);
 
-        JLabel lblBuscar = new JLabel("Buscar");
-        lblBuscar.setFont(new Font("SansSerif", Font.BOLD, 15));
-        lblBuscar.setForeground(Color.WHITE);
-        btnBuscar.add(lblBuscar);
-
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 2));
+        actions.setOpaque(false);
+        RoundedPanel btnBuscar = createSearchAction("Buscar", COLOR_BTN_BUSCAR);
         btnBuscar.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                // TODO (compañero): tomar los criterios seleccionados (chips activos +
-                //  sus valores) y consultar los pedidos reales; luego repoblar el
-                //  DefaultTableModel de la tabla con los resultados.
-                System.out.println("Buscar presionado (pendiente de implementar)");
+                loadOrders(true);
             }
         });
-        panel.add(btnBuscar);
+        actions.add(btnBuscar);
 
-        JLabel lblLimpiar = new JLabel("Limpiar");
-        lblLimpiar.setFont(new Font("SansSerif", Font.BOLD, 15));
-        lblLimpiar.setForeground(COLOR_LIMPIAR);
-        lblLimpiar.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        lblLimpiar.addMouseListener(new MouseAdapter() {
+        RoundedPanel btnLimpiar = createSearchAction("Limpiar", COLOR_LIMPIAR);
+        btnLimpiar.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                // TODO (compañero): limpiar los criterios de búsqueda seleccionados
-                //  y volver a mostrar el listado completo (sin filtros).
-                System.out.println("Limpiar presionado (pendiente de implementar)");
+                seleccionarCriterio(SearchCriterion.NONE);
+                txtSearchValue.setText("");
+                cbSearchState.setSelectedIndex(0);
+                loadOrders(true);
             }
         });
-        panel.add(lblLimpiar);
+        actions.add(btnLimpiar);
+        controls.add(actions, BorderLayout.EAST);
+        panel.add(controls, BorderLayout.CENTER);
 
         return panel;
     }
 
-    private RoundedPanel createSearchChip(String text) {
+    private JPanel createSearchInputPanel() {
+        searchInputLayout = new CardLayout();
+        JPanel inputPanel = new JPanel(searchInputLayout);
+        inputPanel.setOpaque(false);
+
+        JPanel textPanel = new JPanel(new BorderLayout(8, 0));
+        textPanel.setOpaque(false);
+        lblSearchHint = new JLabel("Selecciona un filtro:");
+        lblSearchHint.setForeground(COLOR_TEXT_BROWN);
+        lblSearchHint.setFont(new Font("SansSerif", Font.BOLD, 13));
+        txtSearchValue = new JTextField();
+        txtSearchValue.setToolTipText("Escribe el valor y presiona Buscar");
+        textPanel.add(lblSearchHint, BorderLayout.WEST);
+        textPanel.add(txtSearchValue, BorderLayout.CENTER);
+
+        JPanel statePanel = new JPanel(new BorderLayout(8, 0));
+        statePanel.setOpaque(false);
+        JLabel stateLabel = new JLabel("Estado:");
+        stateLabel.setForeground(COLOR_TEXT_BROWN);
+        stateLabel.setFont(new Font("SansSerif", Font.BOLD, 13));
+        cbSearchState = new JComboBox<>(new String[]{
+            "Todos", "En cocina", "Preparando", "Listo", "Entregado", "Cancelado", "Completada"
+        });
+        statePanel.add(stateLabel, BorderLayout.WEST);
+        statePanel.add(cbSearchState, BorderLayout.CENTER);
+
+        JLabel noFilter = new JLabel("Selecciona un criterio o presiona Buscar para actualizar.");
+        noFilter.setForeground(COLOR_TEXT_BROWN);
+        inputPanel.add(noFilter, "none");
+        inputPanel.add(textPanel, "text");
+        inputPanel.add(statePanel, "state");
+        searchInputLayout.show(inputPanel, "none");
+        return inputPanel;
+    }
+
+    private RoundedPanel createSearchAction(String text, Color background) {
+        RoundedPanel button = new RoundedPanel(18, background);
+        button.setLayout(new GridBagLayout());
+        button.setPreferredSize(new Dimension(105, 42));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("SansSerif", Font.BOLD, 14));
+        label.setForeground(Color.WHITE);
+        button.add(label);
+        return button;
+    }
+
+    private RoundedPanel createSearchChip(String text, SearchCriterion criterion) {
         RoundedPanel chip = new RoundedPanel(18, COLOR_SEARCH_CHIP);
         chip.setLayout(new GridBagLayout());
-        chip.setPreferredSize(new Dimension(140, 50));
+        chip.setPreferredSize(new Dimension(125, 38));
         chip.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        chip.setToolTipText("Filtrar pedidos por " + text.toLowerCase(Locale.ROOT));
+        searchChips.put(criterion, chip);
 
         JLabel lbl = new JLabel(text);
         lbl.setFont(new Font("SansSerif", Font.BOLD, 14));
@@ -466,13 +547,40 @@ public class gestionPedidos extends JFrame {
         chip.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                // TODO (compañero): marcar este chip como criterio de búsqueda activo
-                //  y mostrar el control de captura correspondiente (texto, fecha, etc.)
-                System.out.println("Filtro '" + text + "' presionado (pendiente de implementar)");
+                seleccionarCriterio(selectedCriterion == criterion ? SearchCriterion.NONE : criterion);
             }
         });
 
         return chip;
+    }
+
+    // Activa un filtro, resalta su chip y muestra el control de entrada adecuado.
+    private void seleccionarCriterio(SearchCriterion criterion) {
+        selectedCriterion = criterion;
+        for (Map.Entry<SearchCriterion, RoundedPanel> entry : searchChips.entrySet()) {
+            entry.getValue().setBackgroundColor(entry.getKey() == criterion ? COLOR_TAB_ACTIVE : COLOR_SEARCH_CHIP);
+            entry.getValue().repaint();
+        }
+
+        if (criterion == SearchCriterion.NONE) {
+            searchInputLayout.show(searchInputPanel, "none");
+            return;
+        }
+
+        if (criterion == SearchCriterion.STATE) {
+            searchInputLayout.show(searchInputPanel, "state");
+            return;
+        }
+
+        lblSearchHint.setText(switch (criterion) {
+            case ORDER_ID -> "No. de pedido:";
+            case DATE -> "Fecha (dd/MM/aaaa):";
+            case CASHIER -> "Cajero:";
+            default -> "Buscar:";
+        });
+        txtSearchValue.setText("");
+        searchInputLayout.show(searchInputPanel, "text");
+        txtSearchValue.requestFocusInWindow();
     }
 
     // --- TABLA DE PEDIDOS ---
@@ -481,31 +589,25 @@ public class gestionPedidos extends JFrame {
         card.setLayout(new BorderLayout());
         card.setBorder(new EmptyBorder(12, 12, 12, 12));
 
-        String[] columns = {"Pedido", "Fecha", "Hora", "Cajero", "Productos", "Total", "Estado", "Entrega"};
-
-        Object[][] data = {
-            {"#1040", "09/09/26", "15:20", "Sofía", "Combo clásico", "Q35.00", "Entregado", "15:36"},
-            {"#1039", "09/09/26", "15:05", "Ana", "2x Hamburguesa", "Q50.00", "Entregado", "15:18"},
-            {"#1038", "09/09/26", "14:52", "Sofía", "Nuggets + bebida", "Q28.00", "Cancelado", "-"},
-            {"#1037", "09/09/26", "14:40", "Carlos", "Combo familiar", "Q65.00", "Entregado", "14:55"}
-        };
-
-        DefaultTableModel model = new DefaultTableModel(data, columns) {
+        String[] columns = {"ID", "Pedido", "Fecha", "Hora", "Cajero", "Productos", "Total", "Estado", "Pago"};
+        ordersModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
             }
         };
 
-        JTable table = new JTable(model);
-        table.setRowHeight(55);
-        table.setShowGrid(true);
-        table.setGridColor(COLOR_TABLE_GRID);
-        table.setIntercellSpacing(new Dimension(1, 1));
-        table.setFont(new Font("SansSerif", Font.PLAIN, 16));
-        table.setBackground(Color.WHITE);
+        ordersTable = new JTable(ordersModel);
+        ordersTable.setRowHeight(45);
+        ordersTable.setShowGrid(true);
+        ordersTable.setGridColor(COLOR_TABLE_GRID);
+        ordersTable.setIntercellSpacing(new Dimension(1, 1));
+        ordersTable.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        ordersTable.setBackground(Color.WHITE);
+        ordersTable.setAutoCreateRowSorter(true);
+        ordersTable.setFillsViewportHeight(true);
 
-        JTableHeader header = table.getTableHeader();
+        JTableHeader header = ordersTable.getTableHeader();
         header.setPreferredSize(new Dimension(0, 45));
         header.setDefaultRenderer(new DefaultTableCellRenderer() {
             @Override
@@ -526,27 +628,264 @@ public class gestionPedidos extends JFrame {
         centerRenderer.setForeground(COLOR_TEXT_BROWN);
 
         for (int i = 0; i < columns.length; i++) {
-            table.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+            ordersTable.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
         }
 
-        table.getColumnModel().getColumn(6).setCellRenderer((t, val, isS, hasF, row, col) -> {
-            String estado = (String) val;
+        ordersTable.getColumnModel().getColumn(7).setCellRenderer((t, val, isS, hasF, row, col) -> {
+            String estado = val == null ? "" : val.toString();
             JLabel lbl = new JLabel(estado, SwingConstants.CENTER);
             lbl.setFont(new Font("SansSerif", Font.BOLD, 16));
-            if ("Entregado".equalsIgnoreCase(estado)) {
+            if (estado.equalsIgnoreCase("Entregado") || estado.equalsIgnoreCase("Completada")) {
                 lbl.setForeground(COLOR_TEXT_GREEN);
-            } else {
+            } else if (estado.toLowerCase(Locale.ROOT).contains("cancel")) {
                 lbl.setForeground(COLOR_TEXT_RED);
+            } else {
+                lbl.setForeground(COLOR_TEXT_BROWN);
             }
             return lbl;
         });
 
-        JScrollPane scroll = new JScrollPane(table);
+        // El ID queda en el modelo para ejecutar acciones, pero no ocupa espacio en pantalla.
+        ordersTable.removeColumn(ordersTable.getColumnModel().getColumn(0));
+        ordersTable.getColumnModel().getColumn(0).setPreferredWidth(80);
+        ordersTable.getColumnModel().getColumn(1).setPreferredWidth(105);
+        ordersTable.getColumnModel().getColumn(2).setPreferredWidth(70);
+        ordersTable.getColumnModel().getColumn(3).setPreferredWidth(160);
+        ordersTable.getColumnModel().getColumn(4).setPreferredWidth(250);
+        ordersTable.getColumnModel().getColumn(5).setPreferredWidth(105);
+        ordersTable.getColumnModel().getColumn(6).setPreferredWidth(125);
+        ordersTable.getColumnModel().getColumn(7).setPreferredWidth(150);
+
+        ordersTable.addMouseListener(new MouseAdapter() {
+            private void showPopup(MouseEvent e) {
+                if (!e.isPopupTrigger()) return;
+                int viewRow = ordersTable.rowAtPoint(e.getPoint());
+                if (viewRow < 0) return;
+                ordersTable.setRowSelectionInterval(viewRow, viewRow);
+                int modelRow = ordersTable.convertRowIndexToModel(viewRow);
+                JPopupMenu menu = new JPopupMenu();
+
+                JMenuItem details = new JMenuItem("Ver detalle");
+                details.addActionListener(event -> mostrarDetallePedido(modelRow));
+                menu.add(details);
+
+                JMenuItem changeState = new JMenuItem("Cambiar estado");
+                changeState.addActionListener(event -> cambiarEstadoPedido(modelRow));
+                menu.add(changeState);
+                menu.show(ordersTable, e.getX(), e.getY());
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+                showPopup(e);
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                showPopup(e);
+            }
+
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2 && !e.isPopupTrigger()) {
+                    int viewRow = ordersTable.rowAtPoint(e.getPoint());
+                    if (viewRow >= 0) {
+                        mostrarDetallePedido(ordersTable.convertRowIndexToModel(viewRow));
+                    }
+                }
+            }
+        });
+
+        JScrollPane scroll = new JScrollPane(ordersTable);
         scroll.setBorder(BorderFactory.createLineBorder(COLOR_TABLE_GRID, 1));
         scroll.getViewport().setBackground(Color.WHITE);
 
         card.add(scroll, BorderLayout.CENTER);
         return card;
+    }
+
+    // Consulta pedidos activos o del historial y añade el criterio seleccionado al SQL.
+    // Los parámetros se enlazan con PreparedStatement para evitar concatenar valores.
+    private void loadOrders(boolean showErrors) {
+        StringBuilder sql = new StringBuilder(
+                "SELECT o.id_orden, DATE_FORMAT(o.fecha, '%d/%m/%Y') AS fecha, "
+                + "TIME_FORMAT(o.hora, '%H:%i') AS hora, "
+                + "COALESCE(CONCAT(u.nombre, ' ', u.apellido), 'Sin asignar') AS cajero, "
+                + "COALESCE(det.productos, 'Sin productos') AS productos, o.total, o.estado, "
+                + "COALESCE(pay.metodos, 'Sin pago') AS metodos "
+                + "FROM orden o LEFT JOIN usuario u ON u.id_usuario = o.id_usuario "
+                + "LEFT JOIN (SELECT d.id_orden, GROUP_CONCAT(CONCAT(d.cantidad, 'x ', p.nombre) "
+                + "ORDER BY p.nombre SEPARATOR ', ') AS productos FROM detalle_orden d "
+                + "JOIN producto p ON p.id_producto = d.id_producto GROUP BY d.id_orden) det "
+                + "ON det.id_orden = o.id_orden "
+                + "LEFT JOIN (SELECT id_orden, GROUP_CONCAT(DISTINCT metodo_pago SEPARATOR ', ') AS metodos "
+                + "FROM pago_orden GROUP BY id_orden) pay ON pay.id_orden = o.id_orden WHERE ");
+        List<Object> parameters = new ArrayList<>();
+
+        if (selectedTab == 0) {
+            sql.append("UPPER(TRIM(o.estado)) NOT IN ('ENTREGADO', 'CANCELADO', 'CANCELADA', 'COMPLETADA', 'COMPLETADO') ");
+        } else {
+            sql.append("UPPER(TRIM(o.estado)) IN ('ENTREGADO', 'CANCELADO', 'CANCELADA', 'COMPLETADA', 'COMPLETADO') ");
+        }
+
+        if (selectedCriterion == SearchCriterion.ORDER_ID) {
+            String orderIdText = txtSearchValue.getText().trim().replace("#", "");
+            try {
+                parameters.add(Integer.parseInt(orderIdText));
+            } catch (NumberFormatException e) {
+                mostrarError("Escribe un número de pedido válido.");
+                return;
+            }
+            sql.append("AND o.id_orden = ? ");
+        } else if (selectedCriterion == SearchCriterion.DATE) {
+            try {
+                LocalDate date = LocalDate.parse(txtSearchValue.getText().trim(),
+                        DateTimeFormatter.ofPattern("dd/MM/uuuu"));
+                parameters.add(java.sql.Date.valueOf(date));
+            } catch (DateTimeParseException e) {
+                mostrarError("Escribe la fecha con el formato dd/MM/aaaa.");
+                return;
+            }
+            sql.append("AND o.fecha = ? ");
+        } else if (selectedCriterion == SearchCriterion.CASHIER) {
+            String cashier = txtSearchValue.getText().trim();
+            if (cashier.isEmpty()) {
+                mostrarError("Escribe el nombre del cajero.");
+                return;
+            }
+            parameters.add("%" + cashier + "%");
+            sql.append("AND CONCAT(u.nombre, ' ', u.apellido) LIKE ? ");
+        } else if (selectedCriterion == SearchCriterion.STATE) {
+            String state = (String) cbSearchState.getSelectedItem();
+            if (state != null && !state.equals("Todos")) {
+                parameters.add(state);
+                sql.append("AND UPPER(TRIM(o.estado)) = UPPER(?) ");
+            }
+        }
+        sql.append("ORDER BY o.fecha DESC, o.hora DESC, o.id_orden DESC");
+
+        try (Connection conn = new Conexion().getConnection()) {
+            if (conn == null) {
+                if (showErrors) mostrarError("No hay conexión con la base de datos.");
+                return;
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+                for (int i = 0; i < parameters.size(); i++) {
+                    Object value = parameters.get(i);
+                    if (value instanceof Integer) {
+                        ps.setInt(i + 1, (Integer) value);
+                    } else if (value instanceof java.sql.Date) {
+                        ps.setDate(i + 1, (java.sql.Date) value);
+                    } else {
+                        ps.setString(i + 1, value.toString());
+                    }
+                }
+                try (ResultSet rs = ps.executeQuery()) {
+                    ordersModel.setRowCount(0);
+                    while (rs.next()) {
+                        ordersModel.addRow(new Object[]{
+                            rs.getInt("id_orden"),
+                            "#" + rs.getInt("id_orden"),
+                            rs.getString("fecha"),
+                            rs.getString("hora"),
+                            rs.getString("cajero"),
+                            rs.getString("productos"),
+                            String.format(Locale.US, "Q %,.2f", rs.getDouble("total")),
+                            rs.getString("estado"),
+                            rs.getString("metodos")
+                        });
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error cargando pedidos: " + e.getMessage());
+            if (showErrors) mostrarError("No se pudieron cargar los pedidos.\n" + e.getMessage());
+        }
+    }
+
+    // Recupera los productos del pedido seleccionado y presenta un resumen detallado.
+    private void mostrarDetallePedido(int modelRow) {
+        int orderId = (Integer) ordersModel.getValueAt(modelRow, 0);
+        StringBuilder details = new StringBuilder();
+        details.append("Pedido ").append(ordersModel.getValueAt(modelRow, 1)).append('\n')
+                .append("Fecha: ").append(ordersModel.getValueAt(modelRow, 2)).append("  ")
+                .append(ordersModel.getValueAt(modelRow, 3)).append('\n')
+                .append("Cajero: ").append(ordersModel.getValueAt(modelRow, 4)).append('\n')
+                .append("Estado: ").append(ordersModel.getValueAt(modelRow, 7)).append('\n')
+                .append("Pago: ").append(ordersModel.getValueAt(modelRow, 8)).append("\n\nProductos:\n");
+
+        String sql = "SELECT p.nombre, d.cantidad, d.precio_unitario, d.subtotal "
+                + "FROM detalle_orden d JOIN producto p ON p.id_producto = d.id_producto "
+                + "WHERE d.id_orden = ? ORDER BY d.id_detalle";
+        try (Connection conn = new Conexion().getConnection()) {
+            if (conn == null) {
+                mostrarError("No hay conexión con la base de datos.");
+                return;
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, orderId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    boolean hasProducts = false;
+                    while (rs.next()) {
+                        hasProducts = true;
+                        details.append(rs.getInt("cantidad")).append(" x ")
+                                .append(rs.getString("nombre")).append("  Q")
+                                .append(String.format(Locale.US, "%.2f", rs.getDouble("subtotal")))
+                                .append('\n');
+                    }
+                    if (!hasProducts) details.append("Sin productos registrados.\n");
+                }
+            }
+        } catch (SQLException e) {
+            mostrarError("No se pudo cargar el detalle del pedido.\n" + e.getMessage());
+            return;
+        }
+
+        details.append("\nTotal: ").append(ordersModel.getValueAt(modelRow, 6));
+        JTextArea textArea = new JTextArea(details.toString(), 12, 42);
+        textArea.setEditable(false);
+        textArea.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        JOptionPane.showMessageDialog(this, new JScrollPane(textArea),
+                "Detalle del pedido", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    // Pide un estado nuevo, actualiza la fila en MySQL y vuelve a cargar la lista.
+    private void cambiarEstadoPedido(int modelRow) {
+        int orderId = (Integer) ordersModel.getValueAt(modelRow, 0);
+        String currentState = ordersModel.getValueAt(modelRow, 7).toString();
+        String newState = (String) JOptionPane.showInputDialog(
+                this,
+                "Selecciona el nuevo estado:",
+                "Cambiar estado del pedido",
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                ORDER_STATES,
+                currentState);
+        if (newState == null || newState.equals(currentState)) return;
+
+        String sql = "UPDATE orden SET estado = ? WHERE id_orden = ?";
+        try (Connection conn = new Conexion().getConnection()) {
+            if (conn == null) {
+                mostrarError("No hay conexión con la base de datos.");
+                return;
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, newState);
+                ps.setInt(2, orderId);
+                if (ps.executeUpdate() == 0) {
+                    mostrarError("El pedido ya no existe o no se pudo actualizar.");
+                    return;
+                }
+            }
+            loadOrders(true);
+        } catch (SQLException e) {
+            mostrarError("No se pudo actualizar el estado.\n" + e.getMessage());
+        }
+    }
+
+    // Centraliza los avisos de validación y los errores de la pantalla.
+    private void mostrarError(String message) {
+        JOptionPane.showMessageDialog(this, message, "Gestión de pedidos", JOptionPane.WARNING_MESSAGE);
     }
 
     // --- CLASE DE ICONOS VECTORIALES PARA LA BARRA LATERAL (idéntica al resto) ---
