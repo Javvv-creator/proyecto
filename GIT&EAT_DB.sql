@@ -360,6 +360,29 @@ INSERT INTO producto (nombre, precio_base, es_combo, id_categoria, id_turno, ima
 ('Pastel de Manzana', 12.00, 0, 3, NULL, 'PasteldeManzana.png', 'Pasteles', 110),
 ('Pastel de Queso', 12.00, 0, 3, NULL, 'PasteldeQueso.png', 'Pasteles', 111);
 
+-- Combos / Cajas y Cajitas Felices 
+('Bucket Para Todos', 115.00, 1, 4, 2, 'BucketParaTodos.jpg', 'Familiares', 112),
+('Bucket Pollo McCrispy', 95.00, 1, 4, 2, 'BucketPolloMcCrispy.jpg', 'Familiares', 113),
+('Bucket Pollo McCrispy Para Tres', 105.00, 1, 4, 2, 'BucketPolloMcCrispyParaTres.jpg', 'Familiares', 114),
+('Bucket Pollo McCrispy Snack', 85.00, 1, 4, 2, 'BucketPolloMcCrispySnack.jpg', 'Familiares', 115),
+('Caja de McNuggets', 85.00, 1, 4, NULL, 'CajadeMcNuggets.jpg', 'Cajas', 116),
+('Caja Grande', 120.00, 1, 4, NULL, 'CajaGrande.jpg', 'Cajas', 117),
+('Caja Grande Con Postre', 135.00, 1, 4, NULL, 'CajaGrandeConPostre.jpg', 'Cajas', 118),
+('Caja Grande Deluxe', 140.00, 1, 4, NULL, 'CajaGrandeDeluxe.jpg', 'Cajas', 119),
+('Caja Grande Desayuno', 110.00, 1, 4, 1, 'CajaGrandeDesayuno.jpg', 'Cajas', 120),
+('Caja Grande Snack', 100.00, 1, 4, NULL, 'CajaGrandeSnack.jpg', 'Cajas', 121),
+('Cajita Feliz de Derretido', 35.00, 1, 4, NULL, 'CajitaFelizdeDerretido.png', 'Cajita Feliz', 122),
+('Cajita Feliz de Derretido Almuerzo Cena', 35.00, 1, 4, 2, 'CajitaFelizdeDerretidoAlmuerzoCena.png', 'Cajita Feliz', 123),
+('Cajita Feliz de Hamburguesa', 38.00, 1, 4, 2, 'CajitaFelizdeHamburguesa.jpg', 'Cajita Feliz', 124),
+('Cajita Feliz de Hamburguesa Jr.', 36.00, 1, 4, 2, 'CajitaFelizdeHamburguesaJr.jpg', 'Cajita Feliz', 125),
+('Cajita Feliz de Hotcakes', 35.00, 1, 4, 1, 'CajitaFelizdeHotcakes.jpg', 'Cajita Feliz', 126),
+('Cajita Feliz de McMuffin De Frijol', 35.00, 1, 4, 1, 'CajitaFelizdeMcMuffindeFrijol.jpg', 'Cajita Feliz', 127),
+('Cajita Feliz de McMuffin de Huevo y Queso', 35.00, 1, 4, 1, 'CajitaFelizdeMcMuffindeHuevoyQueso.jpg', 'Cajita Feliz', 128),
+('Cajita Feliz de McMuffin de Salchicha', 35.00, 1, 4, 1, 'CajitaFelizdeMcMuffindeSalchicha.png', 'Cajita Feliz', 129),
+('Cajita Feliz de McNuggets', 38.00, 1, 4, NULL, 'CajitaFelizdeMcNuggets.jpg', 'Cajita Feliz', 130),
+('Cajita Feliz de Pollo McCrispy', 40.00, 1, 4, 2, 'CajitaFelizdePolloMcCrispy.jpg', 'Cajita Feliz', 131),
+('Cajita Feliz de Quesoburguesa', 38.00, 1, 4, 2, 'CajitaFelizdeQuesoburguesa.jpg', 'Cajita Feliz', 132);
+
 -- ---------------------------------------------------------------------
 -- AGREGADOS FALTANTES: Usuarios Iniciales
 -- ---------------------------------------------------------------------
