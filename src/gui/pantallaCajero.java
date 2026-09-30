@@ -5,6 +5,11 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.RoundRectangle2D;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 import java.util.List;
 import main.Conexion.Conexion;
@@ -38,6 +43,9 @@ public class pantallaCajero extends JFrame {
     private final CardsGridPanel gridPanel;
     private final OrderPanel orderPanel;
     private final JLabel sectionTitle;
+    private final int idUsuario;
+    private final String nombreUsuario;
+    private final String turnoUsuario;
     private final Map<String, JButton> tabButtons = new LinkedHashMap<>();
 
     // ---------- Cajero que tiene la sesión abierta ----------
@@ -52,7 +60,6 @@ public class pantallaCajero extends JFrame {
 
     // ---------- Datos ----------
     static class MenuItem {
-
         final int idProducto; // -1 para las tarjetas de encabezado de sección (no son productos reales)
         final String name;
         final double price;
@@ -95,14 +102,15 @@ public class pantallaCajero extends JFrame {
     }
 
     private final Map<String, List<MenuItem>> catalog = new LinkedHashMap<>();
-
     /** Abre la pantalla usando un cajero específico (por ejemplo, tras un login real). */
     public pantallaCajero(int idUsuarioCajero, String nombreCajero, String turnoCajero) {
         super("Pantalla - Cajero");
+        this.idUsuario = 0;
+        this.nombreUsuario = "";
+        this.turnoUsuario = "";
         this.idUsuarioCajero = idUsuarioCajero;
         this.nombreCajero = nombreCajero;
         this.turnoCajero = turnoCajero == null ? "" : turnoCajero;
-
         buildCatalog();
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -311,7 +319,6 @@ public class pantallaCajero extends JFrame {
                         String imagen = rs.getString("imagen");
                         String seccion = rs.getString("seccion");
                         String categoria = rs.getString("categoria");
-
                         List<MenuItem> lista = catalog.computeIfAbsent(categoria, k -> new ArrayList<>());
 
                         // Cuando cambia la sección, se agrega el "mensajito" (Desayunos, Pollo, Sodas...)
@@ -319,7 +326,6 @@ public class pantallaCajero extends JFrame {
                             lista.add(MenuItem.encabezado(seccion, categoria));
                             ultimaSeccion.put(categoria, seccion);
                         }
-
                         lista.add(new MenuItem(idProducto, nombre, precio, categoria, imagen));
                     }
                 }
@@ -764,7 +770,6 @@ public class pantallaCajero extends JFrame {
                 if (pago == null) {
                     return; // canceló el pago
                 }
-
                 // 1) Guardar en la base de datos (si falla, NO se limpia la orden)
                 int idOrden;
                 try {
@@ -811,6 +816,75 @@ public class pantallaCajero extends JFrame {
             add(centerWrap, BorderLayout.CENTER);
 
             updateTotal();
+        }
+
+        private void guardarVenta(PaymentResult pago) throws SQLException {
+            if (idUsuario <= 0) {
+                throw new SQLException("No hay un cajero autenticado para asociar la venta.");
+            }
+
+            double subtotalBruto = lines.stream().mapToDouble(line -> line.unitPrice * line.qty).sum();
+            if (subtotalBruto <= 0) {
+                throw new SQLException("El total de la orden no es válido.");
+            }
+
+            try (Connection conn = new Conexion().getConnection()) {
+                if (conn == null) {
+                    throw new SQLException("No hay conexión con MySQL.");
+                }
+                conn.setAutoCommit(false);
+                try {
+                    int idOrden;
+                    String sqlOrden = "INSERT INTO orden (fecha, hora, estado, total, id_usuario) "
+                            + "VALUES (CURRENT_DATE(), CURRENT_TIME(), 'Completada', ?, ?)";
+                    try (PreparedStatement ps = conn.prepareStatement(sqlOrden, Statement.RETURN_GENERATED_KEYS)) {
+                        ps.setDouble(1, pago.total);
+                        ps.setInt(2, idUsuario);
+                        ps.executeUpdate();
+                        try (ResultSet keys = ps.getGeneratedKeys()) {
+                            if (!keys.next()) {
+                                throw new SQLException("MySQL no devolvió el ID de la venta.");
+                            }
+                            idOrden = keys.getInt(1);
+                        }
+                    }
+
+                    String sqlDetalle = "INSERT INTO detalle_orden "
+                            + "(cantidad, precio_unitario, subtotal, es_agrandado, id_orden, id_producto) "
+                            + "VALUES (?, ?, ?, 0, ?, ?)";
+                    double totalRestante = pago.total;
+                    for (int i = 0; i < lines.size(); i++) {
+                        OrderLine line = lines.get(i);
+                        if (line.item.idProducto <= 0) {
+                            throw new SQLException("No se encontró el producto " + line.item.name + " en la base de datos.");
+                        }
+                        double subtotalLinea = i == lines.size() - 1
+                                ? totalRestante
+                                : round2(pago.total * (line.unitPrice * line.qty) / subtotalBruto);
+                        totalRestante = round2(totalRestante - subtotalLinea);
+                        try (PreparedStatement ps = conn.prepareStatement(sqlDetalle)) {
+                            ps.setInt(1, line.qty);
+                            ps.setDouble(2, line.unitPrice);
+                            ps.setDouble(3, subtotalLinea);
+                            ps.setInt(4, idOrden);
+                            ps.setInt(5, line.item.idProducto);
+                            ps.executeUpdate();
+                        }
+                    }
+
+                    String sqlPago = "INSERT INTO pago_orden (monto, metodo_pago, id_orden) VALUES (?, ?, ?)";
+                    try (PreparedStatement ps = conn.prepareStatement(sqlPago)) {
+                        ps.setDouble(1, pago.total);
+                        ps.setString(2, pago.method);
+                        ps.setInt(3, idOrden);
+                        ps.executeUpdate();
+                    }
+                    conn.commit();
+                } catch (SQLException ex) {
+                    conn.rollback();
+                    throw ex;
+                }
+            }
         }
 
         // Hace que el componente ocupe todo el ancho en un BoxLayout vertical

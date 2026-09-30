@@ -5,6 +5,8 @@ import main.Conexion.Conexion;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.RoundRectangle2D;
@@ -56,8 +58,7 @@ public class pantallaLogin {
                 KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
                 JComponent.WHEN_IN_FOCUSED_WINDOW);
 
-        // Estructura principal: Dividida en panel izquierdo (imagen) y derecho
-        // (formulario)
+        // Estructura principal: Dividida en panel izquierdo (imagen) y derecho (formulario)
         JPanel root = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.BOTH;
@@ -191,8 +192,7 @@ public class pantallaLogin {
         return card;
     }
 
-    // Consulta la base de datos para verificar credenciales y el estado activo del
-    // usuario
+    // Consulta la base de datos para verificar credenciales y el estado activo del usuario
     private static void validarUsuario(JFrame frame, String codigoEmpleado, String pin) {
         String sql = "SELECT id_usuario, nombre, apellido, rol, estado, turno FROM usuario WHERE codigo_empleado = ? AND contrasena = ?";
         Conexion conexionBD = new Conexion();
@@ -220,17 +220,18 @@ public class pantallaLogin {
                             return;
                         }
 
-                        // 2. Obtiene los datos del ResultSet
+                        // 2. Obtiene los datos del ResultSet (Sin redeclarar idUsuario)
+                        int idUsuario = rs.getInt("id_usuario");
                         String nombre = rs.getString("nombre");
                         String apellido = rs.getString("apellido");
-                        String rol = rs.getString("rol"); // 'ADMINISTRADOR' o 'CAJERO' desde MySQL
+                        String rol = rs.getString("rol");
+                        String turno = rs.getString("turno");
 
                         JOptionPane.showMessageDialog(frame,
                                 "¡Autenticación exitosa!\n\nBienvenido, " + nombre + " " + apellido + "\nRol: " + rol,
                                 "Git & Eat!", JOptionPane.INFORMATION_MESSAGE);
 
-                        int idUsuario = rs.getInt("id_usuario");
-                        String turno = rs.getString("turno");
+                        // Inicialización de sesión
                         Sesion.iniciar(idUsuario, codigoEmpleado, nombre, apellido, rol, turno);
 
                         // 3. Cierra la ventana actual SOLO si la autenticación fue exitosa
@@ -242,7 +243,7 @@ public class pantallaLogin {
                                 new dashboardAdmin().setVisible(true);
                                 break;
                             case "cajero":
-                                new pantallaCajero().setVisible(true);
+                                new pantallaCajero(idUsuario, nombre + " " + apellido, turno).setVisible(true);
                                 break;
                             default:
                                 JOptionPane.showMessageDialog(null,
@@ -284,7 +285,6 @@ public class pantallaLogin {
 
     // --- Clases de diseño y componentes personalizados ---
 
-    // Panel izquierdo que escala la imagen manteniendo la proporción
     static class ImagePanel extends JPanel {
         private final Image imagen;
 
@@ -315,7 +315,6 @@ public class pantallaLogin {
         }
     }
 
-    // Tarjeta con bordes redondeados y sombra
     static class RoundedPanel extends JPanel {
         private final int radio;
         private final Color colorFondo;
@@ -339,8 +338,6 @@ public class pantallaLogin {
         }
     }
 
-    // Contenedor estético para los campos de entrada (ícono + texto + botón
-    // opcional)
     static class RoundedFieldPanel extends JPanel {
         RoundedFieldPanel(Icon icono, JTextField campo, JButton extra) {
             setOpaque(false);
@@ -374,12 +371,17 @@ public class pantallaLogin {
         }
     }
 
-    // Campo de texto con placeholder cuando está vacío
+    // Campo de texto con placeholder mejorado
     static class PlaceholderField extends JTextField {
         private final String placeholder;
 
         PlaceholderField(String placeholder) {
             this.placeholder = placeholder;
+            getDocument().addDocumentListener(new DocumentListener() {
+                public void insertUpdate(DocumentEvent e) { repaint(); }
+                public void removeUpdate(DocumentEvent e) { repaint(); }
+                public void changedUpdate(DocumentEvent e) { repaint(); }
+            });
         }
 
         String getRealText() {
@@ -396,13 +398,13 @@ public class pantallaLogin {
                 g2.setFont(getFont());
                 FontMetrics fm = g2.getFontMetrics();
                 int y = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
-                g2.drawString(placeholder, 2, y);
+                g2.drawString(placeholder, getInsets().left, y);
                 g2.dispose();
             }
         }
     }
 
-    // Campo de contraseña con placeholder cuando está vacío
+    // Campo de contraseña con placeholder mejorado
     static class PlaceholderPasswordField extends JPasswordField {
         private final String placeholder;
         private final char echoOculto = '•';
@@ -410,6 +412,11 @@ public class pantallaLogin {
         PlaceholderPasswordField(String placeholder) {
             this.placeholder = placeholder;
             setEchoChar(echoOculto);
+            getDocument().addDocumentListener(new DocumentListener() {
+                public void insertUpdate(DocumentEvent e) { repaint(); }
+                public void removeUpdate(DocumentEvent e) { repaint(); }
+                public void changedUpdate(DocumentEvent e) { repaint(); }
+            });
         }
 
         void setEchoVisible(boolean visible) {
@@ -430,13 +437,12 @@ public class pantallaLogin {
                 g2.setFont(getFont());
                 FontMetrics fm = g2.getFontMetrics();
                 int y = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
-                g2.drawString(placeholder, 2, y);
+                g2.drawString(placeholder, getInsets().left, y);
                 g2.dispose();
             }
         }
     }
 
-    // Botón redondeado con efecto visual al pasar el cursor (Hover)
     static class RoundButton extends JButton {
         private final Color colorFondo;
         private boolean hover = false;
@@ -477,7 +483,6 @@ public class pantallaLogin {
         }
     }
 
-    // Dibujado vectorial de íconos en 2D (persona, candado, ojo)
     static class IconoFactory {
         static Icon icono(String tipo) {
             return new Icon() {

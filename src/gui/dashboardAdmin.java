@@ -3,12 +3,23 @@ package gui;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.geom.Path2D;
 import java.net.URL;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -39,6 +50,11 @@ public class dashboardAdmin extends JFrame {
     private JLabel lblDate;
     private int selectedMenuIndex = 0;
     private JPanel[] menuButtons;
+    private AreaChartPanel weeklySalesChart;
+    private BarChartPanel cashierPerformanceChart;
+    private DefaultTableModel recentOrdersModel;
+    private JLabel totalSalesValue;
+    private JLabel openOrdersValue;
 
     public dashboardAdmin() {
         setTitle("GIT & EAT! - Dashboard Administrador");
@@ -64,6 +80,15 @@ public class dashboardAdmin extends JFrame {
         add(mainContainer);
 
         startLiveClock();
+        refreshDashboardData();
+        Timer refreshTimer = new Timer(60_000, e -> refreshDashboardData());
+        refreshTimer.start();
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowActivated(WindowEvent e) {
+                refreshDashboardData();
+            }
+        });
     }
 
     // ==========================================
@@ -483,28 +508,24 @@ public class dashboardAdmin extends JFrame {
 
     private JPanel createVentasSemanalesCard() {
         RoundedPanel panel = createBaseCard("Ventas Semanales", null);
-        panel.add(new AreaChartPanel(), BorderLayout.CENTER);
+        weeklySalesChart = new AreaChartPanel();
+        panel.add(weeklySalesChart, BorderLayout.CENTER);
         return panel;
     }
 
     private JPanel createPedidosRecientesCard() {
         RoundedPanel panel = createBaseCard("Pedidos Recientes", null);
 
-        String[] columns = { "Pedido", "Mesa", "Hora", "Total", "Estado" };
-        Object[][] data = {
-                { "#1035", "Mesa 5", "12:54", "Q45.80", "Preparando" },
-                { "#1034", "Mesa 6", "12:56", "Q45.80", "Preparando" },
-                { "#1030", "Mesa 8", "13:05", "Q45.80", "Preparando" }
-        };
+        String[] columns = { "Pedido", "Cajero", "Fecha / hora", "Total", "Estado" };
 
-        DefaultTableModel model = new DefaultTableModel(data, columns) {
+        recentOrdersModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
             }
         };
 
-        JTable table = new JTable(model);
+        JTable table = new JTable(recentOrdersModel);
         table.setRowHeight(32);
         table.setTableHeader(null);
         table.setShowGrid(true);
@@ -520,15 +541,17 @@ public class dashboardAdmin extends JFrame {
         }
 
         table.getColumnModel().getColumn(4).setCellRenderer((t, val, isS, hasF, row, col) -> {
+            String estado = val == null ? "" : val.toString();
             JPanel container = new JPanel(new GridBagLayout());
             container.setBackground(Color.WHITE);
 
-            RoundedPanel pill = new RoundedPanel(18, COLOR_PREPARANDO);
+            Color color = colorPorEstado(estado);
+            RoundedPanel pill = new RoundedPanel(18, color);
             pill.setPreferredSize(new Dimension(185, 24));
             pill.setLayout(new GridBagLayout());
 
-            JLabel lbl = new JLabel("Preparando");
-            lbl.setForeground(Color.WHITE);
+            JLabel lbl = new JLabel(estado);
+            lbl.setForeground(color.equals(COLOR_YELLOW) ? Color.BLACK : Color.WHITE);
             lbl.setFont(new Font("SansSerif", Font.BOLD, 13));
             pill.add(lbl);
 
@@ -548,7 +571,8 @@ public class dashboardAdmin extends JFrame {
 
     private JPanel createRendimientoCard() {
         RoundedPanel panel = createBaseCard("Rendimiento", "Ventas por mesero");
-        panel.add(new BarChartPanel(), BorderLayout.CENTER);
+        cashierPerformanceChart = new BarChartPanel();
+        panel.add(cashierPerformanceChart, BorderLayout.CENTER);
         return panel;
     }
 
@@ -567,10 +591,10 @@ public class dashboardAdmin extends JFrame {
 
         gbc.gridy = 1;
         gbc.insets = new Insets(0, 0, 0, 0);
-        JLabel val = new JLabel("Q5,005.67", SwingConstants.CENTER);
-        val.setForeground(Color.WHITE);
-        val.setFont(new Font("SansSerif", Font.BOLD, 52));
-        panel.add(val, gbc);
+        totalSalesValue = new JLabel("Q 0.00", SwingConstants.CENTER);
+        totalSalesValue.setForeground(Color.WHITE);
+        totalSalesValue.setFont(new Font("SansSerif", Font.BOLD, 52));
+        panel.add(totalSalesValue, gbc);
 
         return panel;
     }
@@ -590,12 +614,131 @@ public class dashboardAdmin extends JFrame {
 
         gbc.gridy = 1;
         gbc.insets = new Insets(0, 0, 0, 0);
-        JLabel val = new JLabel("49", SwingConstants.CENTER);
-        val.setForeground(Color.BLACK);
-        val.setFont(new Font("SansSerif", Font.BOLD, 64));
-        panel.add(val, gbc);
+        openOrdersValue = new JLabel("0", SwingConstants.CENTER);
+        openOrdersValue.setForeground(Color.BLACK);
+        openOrdersValue.setFont(new Font("SansSerif", Font.BOLD, 64));
+        panel.add(openOrdersValue, gbc);
 
         return panel;
+    }
+
+    private Color colorPorEstado(String estado) {
+        String normalized = estado.trim().toLowerCase(Locale.ROOT);
+        if (normalized.contains("cancel")) return COLOR_RED;
+        if (normalized.contains("entreg") || normalized.contains("complet")) return COLOR_GREEN;
+        if (normalized.contains("listo")) return COLOR_YELLOW;
+        return COLOR_PREPARANDO;
+    }
+
+    private void refreshDashboardData() {
+        try (Connection conn = new main.Conexion.Conexion().getConnection()) {
+            if (conn == null) {
+                System.err.println("No se pudo conectar para actualizar el dashboard.");
+                return;
+            }
+            LocalDate today = getDatabaseDate(conn);
+            cargarVentasSemanales(conn, today);
+            cargarRendimientoCajeros(conn, today);
+            cargarPedidosRecientes(conn);
+            cargarIndicadores(conn);
+        } catch (SQLException e) {
+            System.err.println("Error actualizando dashboard: " + e.getMessage());
+        }
+    }
+
+    private LocalDate getDatabaseDate(Connection conn) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement("SELECT CURDATE()");
+                ResultSet rs = ps.executeQuery()) {
+            rs.next();
+            return rs.getDate(1).toLocalDate();
+        }
+    }
+
+    private void cargarVentasSemanales(Connection conn, LocalDate today) throws SQLException {
+        LocalDate firstDay = today.minusDays(6);
+        Map<LocalDate, Double> salesByDay = new HashMap<>();
+        String sql = "SELECT o.fecha, SUM(po.monto) AS ventas "
+                + "FROM orden o JOIN pago_orden po ON po.id_orden = o.id_orden "
+                + "WHERE o.fecha BETWEEN ? AND ? GROUP BY o.fecha ORDER BY o.fecha";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setDate(1, java.sql.Date.valueOf(firstDay));
+            ps.setDate(2, java.sql.Date.valueOf(today));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    salesByDay.put(rs.getDate("fecha").toLocalDate(), rs.getDouble("ventas"));
+                }
+            }
+        }
+
+        DateTimeFormatter dayFormat = DateTimeFormatter.ofPattern("EEE", Locale.forLanguageTag("es-GT"));
+        String[] labels = new String[7];
+        double[] values = new double[7];
+        for (int i = 0; i < 7; i++) {
+            LocalDate day = firstDay.plusDays(i);
+            String label = day.format(dayFormat);
+            labels[i] = Character.toUpperCase(label.charAt(0)) + label.substring(1);
+            values[i] = salesByDay.getOrDefault(day, 0.0);
+        }
+        weeklySalesChart.setData(labels, values);
+    }
+
+    private void cargarRendimientoCajeros(Connection conn, LocalDate today) throws SQLException {
+        LocalDate firstDay = today.withDayOfMonth(1);
+        String sql = "SELECT CONCAT(u.nombre, ' ', u.apellido) AS cajero, COALESCE(SUM(po.monto), 0) AS ventas "
+                + "FROM usuario u "
+                + "LEFT JOIN orden o ON o.id_usuario = u.id_usuario AND o.fecha BETWEEN ? AND ? "
+                + "LEFT JOIN pago_orden po ON po.id_orden = o.id_orden "
+                + "WHERE u.rol = 'CAJERO' AND u.estado = 1 "
+                + "GROUP BY u.id_usuario, u.nombre, u.apellido ORDER BY ventas DESC, cajero LIMIT 5";
+        List<String> names = new java.util.ArrayList<>();
+        List<Double> values = new java.util.ArrayList<>();
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setDate(1, java.sql.Date.valueOf(firstDay));
+            ps.setDate(2, java.sql.Date.valueOf(today));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    names.add(rs.getString("cajero"));
+                    values.add(rs.getDouble("ventas"));
+                }
+            }
+        }
+        cashierPerformanceChart.setData(names.toArray(new String[0]),
+                values.stream().mapToDouble(Double::doubleValue).toArray());
+    }
+
+    private void cargarPedidosRecientes(Connection conn) throws SQLException {
+        String sql = "SELECT o.id_orden, COALESCE(CONCAT(u.nombre, ' ', u.apellido), 'Sin asignar') AS cajero, "
+                + "DATE_FORMAT(TIMESTAMP(o.fecha, o.hora), '%d/%m %H:%i') AS fecha_hora, o.total, o.estado "
+                + "FROM orden o LEFT JOIN usuario u ON u.id_usuario = o.id_usuario "
+                + "ORDER BY o.fecha DESC, o.hora DESC, o.id_orden DESC LIMIT 5";
+        recentOrdersModel.setRowCount(0);
+        try (PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                recentOrdersModel.addRow(new Object[]{
+                    "#" + rs.getInt("id_orden"),
+                    rs.getString("cajero"),
+                    rs.getString("fecha_hora"),
+                    String.format(Locale.US, "Q %,.2f", rs.getDouble("total")),
+                    rs.getString("estado")
+                });
+            }
+        }
+    }
+
+    private void cargarIndicadores(Connection conn) throws SQLException {
+        String sqlVentas = "SELECT COALESCE(SUM(po.monto), 0) FROM pago_orden po "
+                + "JOIN orden o ON o.id_orden = po.id_orden WHERE o.fecha = CURDATE()";
+        try (PreparedStatement ps = conn.prepareStatement(sqlVentas); ResultSet rs = ps.executeQuery()) {
+            rs.next();
+            totalSalesValue.setText(String.format(Locale.US, "Q %,.2f", rs.getDouble(1)));
+        }
+
+        String sqlAbiertos = "SELECT COUNT(*) FROM orden WHERE UPPER(TRIM(estado)) NOT IN "
+                + "('COMPLETADA', 'COMPLETADO', 'ENTREGADO', 'CANCELADA', 'CANCELADO')";
+        try (PreparedStatement ps = conn.prepareStatement(sqlAbiertos); ResultSet rs = ps.executeQuery()) {
+            rs.next();
+            openOrdersValue.setText(Integer.toString(rs.getInt(1)));
+        }
     }
 
     private RoundedPanel createBaseCard(String titleText, String subtitleText) {
@@ -626,9 +769,18 @@ public class dashboardAdmin extends JFrame {
     // --- GRÁFICAS DIBUJADAS A MEDIDA ---
     private static class AreaChartPanel extends JPanel {
 
+        private String[] labels = new String[0];
+        private double[] values = new double[0];
+
         public AreaChartPanel() {
             setOpaque(false);
             setBorder(new EmptyBorder(5, 12, 8, 12));
+        }
+
+        void setData(String[] labels, double[] values) {
+            this.labels = labels;
+            this.values = values;
+            repaint();
         }
 
         @Override
@@ -638,39 +790,37 @@ public class dashboardAdmin extends JFrame {
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
             int w = getWidth(), h = getHeight();
-            int leftMargin = 28, bottomMargin = 18;
+            int leftMargin = 42, bottomMargin = 18;
             int chartW = w - leftMargin - 10, chartH = h - bottomMargin - 10;
+            if (chartW <= 0 || chartH <= 0 || labels.length == 0) return;
 
-            // Cuadrícula y etiquetas Y
+            double maxValue = 0;
+            for (double value : values) maxValue = Math.max(maxValue, value);
+            if (maxValue <= 0) maxValue = 1;
+
             g2.setFont(new Font("SansSerif", Font.BOLD, 9));
-            String[] yLabels = { "200", "150", "100", "50", "0" };
             for (int i = 0; i < 5; i++) {
                 int y = 10 + i * (chartH / 4);
                 g2.setColor(new Color(240, 240, 240));
                 g2.drawLine(leftMargin, y, w - 10, y);
                 g2.setColor(Color.BLACK);
-                g2.drawString(yLabels[i], 2, y + 3);
+                g2.drawString(String.format(Locale.US, "Q%.0f", maxValue * (4 - i) / 4), 2, y + 3);
             }
 
-            // Días X
-            String[] days = { "Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom" };
-            int stepX = chartW / (days.length - 1);
-            for (int i = 0; i < days.length; i++) {
+            int stepX = chartW / Math.max(1, labels.length - 1);
+            for (int i = 0; i < labels.length; i++) {
                 int x = leftMargin + i * stepX;
-                g2.drawString(days[i], x - 6, h - 2);
+                g2.drawString(labels[i], x - 8, h - 2);
             }
 
-            // Puntos de datos y área rellenada con degradado
-            double[] values = { 0.25, 0.74, 0.83, 0.28, 0.54, 0.48, 0.94 };
             Path2D path = new Path2D.Double();
-
             int startX = leftMargin;
-            int startY = 10 + (int) ((1.0 - values[0]) * chartH);
+            int startY = 10 + (int) ((1.0 - values[0] / maxValue) * chartH);
             path.moveTo(startX, startY);
 
             for (int i = 1; i < values.length; i++) {
                 int x = leftMargin + i * stepX;
-                int y = 10 + (int) ((1.0 - values[i]) * chartH);
+                int y = 10 + (int) ((1.0 - values[i] / maxValue) * chartH);
                 path.lineTo(x, y);
             }
 
@@ -689,7 +839,7 @@ public class dashboardAdmin extends JFrame {
             g2.setColor(COLOR_GREEN.darker());
             for (int i = 0; i < values.length; i++) {
                 int x = leftMargin + i * stepX;
-                int y = 10 + (int) ((1.0 - values[i]) * chartH);
+                int y = 10 + (int) ((1.0 - values[i] / maxValue) * chartH);
                 g2.fillOval(x - 3, y - 3, 6, 6);
             }
         }
@@ -697,9 +847,18 @@ public class dashboardAdmin extends JFrame {
 
     private static class BarChartPanel extends JPanel {
 
+        private String[] names = new String[0];
+        private double[] values = new double[0];
+
         public BarChartPanel() {
             setOpaque(false);
             setBorder(new EmptyBorder(5, 12, 8, 12));
+        }
+
+        void setData(String[] names, double[] values) {
+            this.names = names;
+            this.values = values;
+            repaint();
         }
 
         @Override
@@ -709,27 +868,31 @@ public class dashboardAdmin extends JFrame {
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
             int w = getWidth(), h = getHeight();
-            int leftMargin = 28, bottomMargin = 18;
+            int leftMargin = 42, bottomMargin = 18;
             int chartW = w - leftMargin - 10, chartH = h - bottomMargin - 10;
+            if (chartW <= 0 || chartH <= 0) return;
 
             g2.setFont(new Font("SansSerif", Font.BOLD, 9));
             g2.setColor(Color.BLACK);
-            String[] yLabels = { "100", "80", "60", "40", "20", "0" };
-            for (int i = 0; i < yLabels.length; i++) {
+            double maxValue = 0;
+            for (double value : values) maxValue = Math.max(maxValue, value);
+            if (maxValue <= 0) maxValue = 1;
+            for (int i = 0; i <= 5; i++) {
                 int y = 10 + i * (chartH / 5);
-                g2.drawString(yLabels[i], 2, y + 3);
+                g2.drawString(String.format(Locale.US, "Q%.0f", maxValue * (5 - i) / 5), 2, y + 3);
             }
 
-            String[] names = { "Ana", "Luis", "Carlos" };
-            double[] values = { 0.79, 0.45, 0.84 };
-
-            int numBars = names.length;
-            int gap = 16;
-            int barWidth = (chartW - (numBars + 1) * gap) / numBars;
+            int numBars = Math.min(names.length, values.length);
+            if (numBars == 0) {
+                g2.drawString("Sin datos", leftMargin + 8, 28);
+                return;
+            }
+            int gap = 12;
+            int barWidth = Math.max(1, (chartW - (numBars + 1) * gap) / numBars);
 
             for (int i = 0; i < numBars; i++) {
                 int x = leftMargin + gap + i * (barWidth + gap);
-                int barH = (int) (values[i] * chartH);
+                int barH = (int) (values[i] / maxValue * chartH);
                 int y = 10 + (chartH - barH);
 
                 g2.setColor(COLOR_GREEN);
@@ -737,8 +900,13 @@ public class dashboardAdmin extends JFrame {
 
                 g2.setColor(Color.BLACK);
                 FontMetrics fm = g2.getFontMetrics();
-                int textW = fm.stringWidth(names[i]);
-                g2.drawString(names[i], x + (barWidth - textW) / 2, h - 2);
+                String label = names[i];
+                while (label.length() > 1 && fm.stringWidth(label) > barWidth) {
+                    label = label.substring(0, label.length() - 1);
+                }
+                if (!label.equals(names[i])) label = label.substring(0, Math.max(1, label.length() - 1)) + ".";
+                int textW = fm.stringWidth(label);
+                g2.drawString(label, x + (barWidth - textW) / 2, h - 2);
             }
         }
     }

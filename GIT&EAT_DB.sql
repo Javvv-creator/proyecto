@@ -187,7 +187,7 @@ CREATE TABLE modificacion_orden (
 CREATE TABLE pago_orden (
     id_pago         INT AUTO_INCREMENT PRIMARY KEY,
     monto           DECIMAL(10,2) NOT NULL,
-    metodo_pago     ENUM('Efectivo', 'Tarjeta de Crédito', 'Tarjeta de Débito', 'Vale', 'Defecto de Fábrica') NOT NULL,
+    metodo_pago     ENUM('Efectivo', 'Tarjeta de Crédito', 'Tarjeta de Débito', 'Tarjeta', 'Mixto', 'Vale', 'Defecto de Fábrica') NOT NULL,
     id_orden        INT           NOT NULL,
     CONSTRAINT fk_pago_orden
         FOREIGN KEY (id_orden) REFERENCES orden(id_orden)
@@ -340,7 +340,101 @@ INSERT INTO producto (nombre, precio_base, es_combo, id_categoria, id_turno, ima
 ('Café Con Leche', 18.00, 0, 2, NULL, 'cafe_con_leche.png', 'Calientes', 96),
 ('Chocolate', 18.00, 0, 2, NULL, 'chocolate.png', 'Calientes', 97),
 ('Té Caliente', 15.00, 0, 2, NULL, 'te_caliente.png', 'Calientes', 98);
- 
+
+-- Postres / Helados McFlurry
+('McFlurry Oreo', 20.00, 0, 3, NULL, 'McFlurryOreo.png', 'Helados McFlurry', 99),
+('McFlurry Oreo Caramelo', 22.00, 0, 3, NULL, 'McFlurryOreoCaramelo.png', 'Helados McFlurry', 100),
+('McFlurry Oreo Chocolate', 22.00, 0, 3, NULL, 'McFlurryOreoChocolate.png', 'Helados McFlurry', 101),
+('McFlurry Oreo Fresa', 22.00, 0, 3, NULL, 'McFlurryOreoFresa.png', 'Helados McFlurry', 102),
+('McFlurry M&M''s', 20.00, 0, 3, NULL, 'McFlurryM&Ms.png', 'Helados McFlurry', 103),
+('McFlurry M&M''s Caramelo', 22.00, 0, 3, NULL, 'McFlurryM&MsCaramelo.png', 'Helados McFlurry', 104),
+('McFlurry M&M''s Chocolate', 22.00, 0, 3, NULL, 'McFlurryM&MsChocolate.png', 'Helados McFlurry', 105),
+('McFlurry M&M''s Fresa', 22.00, 0, 3, NULL, 'McFlurryM&MsFresa.png', 'Helados McFlurry', 106),
+
+-- Postres / Sundaes
+('Sundae de Caramelo', 15.00, 0, 3, NULL, 'SundaedeCaramelo.png', 'Sundaes', 107),
+('Sundae de Chocolate', 15.00, 0, 3, NULL, 'SundaedeChocolate.png', 'Sundaes', 108),
+('Sundae de Fresa', 15.00, 0, 3, NULL, 'SundaedeFresa.png', 'Sundaes', 109),
+
+-- Postres / Pasteles
+('Pastel de Manzana', 12.00, 0, 3, NULL, 'PasteldeManzana.png', 'Pasteles', 110),
+('Pastel de Queso', 12.00, 0, 3, NULL, 'PasteldeQueso.png', 'Pasteles', 111);
+
+-- Combos / Cajas y Cajitas Felices 
+('Bucket Para Todos', 115.00, 1, 4, 2, 'BucketParaTodos.jpg', 'Familiares', 112),
+('Bucket Pollo McCrispy', 95.00, 1, 4, 2, 'BucketPolloMcCrispy.jpg', 'Familiares', 113),
+('Bucket Pollo McCrispy Para Tres', 105.00, 1, 4, 2, 'BucketPolloMcCrispyParaTres.jpg', 'Familiares', 114),
+('Bucket Pollo McCrispy Snack', 85.00, 1, 4, 2, 'BucketPolloMcCrispySnack.jpg', 'Familiares', 115),
+('Caja de McNuggets', 85.00, 1, 4, NULL, 'CajadeMcNuggets.jpg', 'Cajas', 116),
+('Caja Grande', 120.00, 1, 4, NULL, 'CajaGrande.jpg', 'Cajas', 117),
+('Caja Grande Con Postre', 135.00, 1, 4, NULL, 'CajaGrandeConPostre.jpg', 'Cajas', 118),
+('Caja Grande Deluxe', 140.00, 1, 4, NULL, 'CajaGrandeDeluxe.jpg', 'Cajas', 119),
+('Caja Grande Desayuno', 110.00, 1, 4, 1, 'CajaGrandeDesayuno.jpg', 'Cajas', 120),
+('Caja Grande Snack', 100.00, 1, 4, NULL, 'CajaGrandeSnack.jpg', 'Cajas', 121),
+('Cajita Feliz de Derretido', 35.00, 1, 4, NULL, 'CajitaFelizdeDerretido.png', 'Cajita Feliz', 122),
+('Cajita Feliz de Derretido Almuerzo Cena', 35.00, 1, 4, 2, 'CajitaFelizdeDerretidoAlmuerzoCena.png', 'Cajita Feliz', 123),
+('Cajita Feliz de Hamburguesa', 38.00, 1, 4, 2, 'CajitaFelizdeHamburguesa.jpg', 'Cajita Feliz', 124),
+('Cajita Feliz de Hamburguesa Jr.', 36.00, 1, 4, 2, 'CajitaFelizdeHamburguesaJr.jpg', 'Cajita Feliz', 125),
+('Cajita Feliz de Hotcakes', 35.00, 1, 4, 1, 'CajitaFelizdeHotcakes.jpg', 'Cajita Feliz', 126),
+('Cajita Feliz de McMuffin De Frijol', 35.00, 1, 4, 1, 'CajitaFelizdeMcMuffindeFrijol.jpg', 'Cajita Feliz', 127),
+('Cajita Feliz de McMuffin de Huevo y Queso', 35.00, 1, 4, 1, 'CajitaFelizdeMcMuffindeHuevoyQueso.jpg', 'Cajita Feliz', 128),
+('Cajita Feliz de McMuffin de Salchicha', 35.00, 1, 4, 1, 'CajitaFelizdeMcMuffindeSalchicha.png', 'Cajita Feliz', 129),
+('Cajita Feliz de McNuggets', 38.00, 1, 4, NULL, 'CajitaFelizdeMcNuggets.jpg', 'Cajita Feliz', 130),
+('Cajita Feliz de Pollo McCrispy', 40.00, 1, 4, 2, 'CajitaFelizdePolloMcCrispy.jpg', 'Cajita Feliz', 131),
+('Cajita Feliz de Quesoburguesa', 38.00, 1, 4, 2, 'CajitaFelizdeQuesoburguesa.jpg', 'Cajita Feliz', 132);
+
+-- ---------------------------------------------------------------------
+-- AGREGADOS FALTANTES: Usuarios Iniciales
+-- ---------------------------------------------------------------------
+INSERT INTO usuario (id_usuario, nombre, apellido, codigo_empleado, contrasena, rol, estado, turno) VALUES
+(1, 'Admin', 'General', 'ADM001', 'admin123', 'ADMINISTRADOR', 1, 'Mañana'),
+(2, 'Carlos', 'Gómez', 'CAJ001', 'cajero123', 'CAJERO', 1, 'Mañana'),
+(3, 'Ana', 'Martínez', 'CAJ002', 'cajero123', 'CAJERO', 1, 'Tarde');
+
+-- ---------------------------------------------------------------------
+-- AGREGADOS FALTANTES: Ingredientes
+-- ---------------------------------------------------------------------
+INSERT INTO ingrediente (id_ingrediente, nombre, precio_extra_defecto) VALUES
+(1, 'Pepinillos', 3.00),
+(2, 'Queso Cheddar', 5.00),
+(3, 'Cebolla', 2.00),
+(4, 'Salsa Git Mac', 4.00),
+(5, 'Tocino', 6.00),
+(6, 'Torta de Res', 12.00),
+(7, 'Papas Fritas Medianas', 10.00),
+(8, 'Lechuga', 2.50),
+(9, 'Tomate', 3.00),
+(10, 'Mayonesa', 2.00),
+(11, 'Huevo', 4.00),
+(12, 'Salchicha', 5.00);
+
+
+-- ---------------------------------------------------------------------
+-- AGREGADOS FALTANTES: Componentes y Opciones de Intercambio para Combos
+-- ---------------------------------------------------------------------
+-- Componentes para 'Combo Git Mac Doble' (id_producto: 102)
+INSERT INTO combo_componente (id_componente, grupo, id_producto_combo) VALUES
+(1, 'Principal', 102),
+(2, 'Acompañamiento', 102),
+(3, 'Bebida', 102);
+
+-- Opciones intercambiables para el Combo Git Mac Doble
+INSERT INTO combo_opcion_intercambio (id_opcion, costo_extra, id_componente, id_producto_opcion) VALUES
+(1, 0.00, 1, 20), -- Git Mac Doble como principal
+(2, 0.00, 3, 87), -- Coca-Cola
+(3, 0.00, 3, 86), -- Sprite
+(4, 2.00, 3, 88); -- Coca Cola Zero con extra
+
+-- ---------------------------------------------------------------------
+-- AGREGADOS FALTANTES: Receta Base de Productos
+-- ---------------------------------------------------------------------
+INSERT INTO receta_producto (id_producto, id_ingrediente, cantidad_base, es_removible, es_extra_permitido) VALUES
+(20, 1, 2.00, 1, 1), -- Git Mac Doble incluye Pepinillos
+(20, 2, 2.00, 1, 1), -- Git Mac Doble incluye Queso Cheddar
+(20, 3, 1.00, 1, 1), -- Git Mac Doble incluye Cebolla
+(20, 4, 1.00, 1, 1), -- Git Mac Doble incluye Salsa Git Mac
+(20, 6, 2.00, 0, 1); -- Git Mac Doble incluye Torta de Res
+
 -- ---------------------------------------------------------------------
 -- Índices optimizados
 -- ---------------------------------------------------------------------

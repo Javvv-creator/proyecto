@@ -1,0 +1,56 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "dashboardAdmin",
+            "request": "launch",
+            "mainClass": "gui.dashboardAdmin",
+            "projectName": "proyecto_3e3a5145"
+        },
+        {
+            "type": "java",
+            "name": "pantallaLogin",
+            "request": "launch",
+            "mainClass": "gui.pantallaLogin",
+            "projectName": "proyecto_3e3a5145"
+        },
+        {
+            "type": "java",
+            "name": "pantallaEstadistica",
+            "request": "launch",
+            "mainClass": "gui.pantallaEstadistica",
+            "projectName": "proyecto_3e3a5145"
+        },
+        {
+            "type": "java",
+            "name": "Main",
+            "request": "launch",
+            "mainClass": "main.Main",
+            "projectName": "proyecto_3e3a5145"
+        },
+        {
+            "type": "java",
+            "name": "pantallaCajero",
+            "request": "launch",
+            "mainClass": "gui.pantallaCajero",
+            "projectName": "proyecto_3e3a5145"
+        },
+        {
+            "type": "java",
+            "name": "pantallaCajero",
+            "request": "launch",
+            "mainClass": "gui.pantallaCajero",
+            "projectName": "proyecto_b0b126fc"
+        },
+        {
+            "type": "java",
+            "name": "Current File",
+            "request": "launch",
+            "mainClass": "${file}"
+        }
+    ]
+}
