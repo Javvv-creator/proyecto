@@ -6,6 +6,41 @@
     "configurations": [
         {
             "type": "java",
+            "name": "dashboardAdmin",
+            "request": "launch",
+            "mainClass": "gui.dashboardAdmin",
+            "projectName": "proyecto_3e3a5145"
+        },
+        {
+            "type": "java",
+            "name": "pantallaLogin",
+            "request": "launch",
+            "mainClass": "gui.pantallaLogin",
+            "projectName": "proyecto_3e3a5145"
+        },
+        {
+            "type": "java",
+            "name": "pantallaEstadistica",
+            "request": "launch",
+            "mainClass": "gui.pantallaEstadistica",
+            "projectName": "proyecto_3e3a5145"
+        },
+        {
+            "type": "java",
+            "name": "Main",
+            "request": "launch",
+            "mainClass": "main.Main",
+            "projectName": "proyecto_3e3a5145"
+        },
+        {
+            "type": "java",
+            "name": "pantallaCajero",
+            "request": "launch",
+            "mainClass": "gui.pantallaCajero",
+            "projectName": "proyecto_3e3a5145"
+        },
+        {
+            "type": "java",
             "name": "pantallaCajero",
             "request": "launch",
             "mainClass": "gui.pantallaCajero",

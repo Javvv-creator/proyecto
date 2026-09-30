@@ -187,7 +187,7 @@ CREATE TABLE modificacion_orden (
 CREATE TABLE pago_orden (
     id_pago         INT AUTO_INCREMENT PRIMARY KEY,
     monto           DECIMAL(10,2) NOT NULL,
-    metodo_pago     ENUM('Efectivo', 'Tarjeta de Crédito', 'Tarjeta de Débito', 'Vale', 'Defecto de Fábrica') NOT NULL,
+    metodo_pago     ENUM('Efectivo', 'Tarjeta de Crédito', 'Tarjeta de Débito', 'Tarjeta', 'Mixto', 'Vale', 'Defecto de Fábrica') NOT NULL,
     id_orden        INT           NOT NULL,
     CONSTRAINT fk_pago_orden
         FOREIGN KEY (id_orden) REFERENCES orden(id_orden)

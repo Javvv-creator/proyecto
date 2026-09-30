@@ -4,6 +4,8 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.geom.Arc2D;
 import java.awt.geom.Path2D;
 import java.net.URL;
@@ -107,6 +109,12 @@ public class pantallaEstadistica extends JFrame {
         cargarFiltrosDB();
         selectTab(selectedTab);
         generarReporte();
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowActivated(WindowEvent e) {
+                generarReporte();
+            }
+        });
     }
 
     // Fuerza a la ventana a mostrarse maximizada
@@ -668,8 +676,11 @@ public class pantallaEstadistica extends JFrame {
                 double manana = rs.getDouble("manana");
                 double tarde = rs.getDouble("tarde");
                 double total = manana + tarde;
-                double pct = (total == 0) ? 0 : (manana / total) * 100.0;
-                turnoChart.setPorcentaje(pct);
+                if (total == 0) {
+                    turnoChart.setSinDatos();
+                } else {
+                    turnoChart.setPorcentaje((manana / total) * 100.0);
+                }
             }
         }
 
@@ -685,8 +696,11 @@ public class pantallaEstadistica extends JFrame {
                 double combos = rs.getDouble("combos");
                 double ind = rs.getDouble("ind");
                 double total = combos + ind;
-                double pct = (total == 0) ? 0 : (combos / total) * 100.0;
-                comboChart.setPorcentaje(pct);
+                if (total == 0) {
+                    comboChart.setSinDatos();
+                } else {
+                    comboChart.setPorcentaje((combos / total) * 100.0);
+                }
             }
         }
     }
@@ -790,6 +804,7 @@ public class pantallaEstadistica extends JFrame {
         private final Color color1, color2;
         private final String name1, name2;
         private double porcentaje;
+        private boolean hasData;
 
         PieChartPanel(String title, Color color1, String name1, Color color2, String name2, double porcentaje) {
             super(20, Color.WHITE);
@@ -801,7 +816,13 @@ public class pantallaEstadistica extends JFrame {
 
         // Calcula el pedazo del pastel
         void setPorcentaje(double porcentaje) {
+            hasData = true;
             this.porcentaje = Math.max(0, Math.min(100, porcentaje));
+            repaint();
+        }
+
+        void setSinDatos() {
+            hasData = false;
             repaint();
         }
 
@@ -821,16 +842,15 @@ public class pantallaEstadistica extends JFrame {
             
             int px = margin; int py = top + (availH - d) / 2;
             
-            // Si todo está en cero dibuja círculo gris
-            if(porcentaje == 0) {
+              if (!hasData) {
                  slice(g2, px, py, d, 90, -360, Color.LIGHT_GRAY);
                  int lx = px + d + 25;
                  legend(g2, color1, name1, "0%", lx, py + (int) (d * 0.30));
                  legend(g2, color2, name2, "0%", lx, py + (int) (d * 0.72));
             } else {
                  double ext = -360 * porcentaje / 100.0;
-                 slice(g2, px, py, d, 90, ext, color1);
-                 slice(g2, px, py, d, 90 + ext, -(360 + ext), color2);
+                  if (porcentaje > 0) slice(g2, px, py, d, 90, ext, color1);
+                  if (porcentaje < 100) slice(g2, px, py, d, 90 + ext, -(360 + ext), color2);
                  int lx = px + d + 25;
                  legend(g2, color1, name1, String.format("%.0f%%", porcentaje), lx, py + (int) (d * 0.30));
                  legend(g2, color2, name2, String.format("%.0f%%", 100 - porcentaje), lx, py + (int) (d * 0.72));

@@ -5,6 +5,11 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.RoundRectangle2D;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 import java.util.List;
 import main.Conexion.Conexion;
@@ -33,6 +38,8 @@ public class pantallaCajero extends JFrame {
     private final CardsGridPanel gridPanel;
     private final OrderPanel orderPanel;
     private final JLabel sectionTitle;
+    private final int idUsuario;
+    private final String nombreCajero;
     private final Map<String, JButton> tabButtons = new LinkedHashMap<>();
 
     // ---------- Menú por horario ----------
@@ -43,6 +50,7 @@ public class pantallaCajero extends JFrame {
     // ---------- Datos ----------
     static class MenuItem {
 
+        int idProducto;
         String name;
         double price;
         String category;
@@ -51,6 +59,11 @@ public class pantallaCajero extends JFrame {
 
         // Constructor original (usa el nombre para generar la ruta automáticamente)
         MenuItem(String name, double price, String category, String emoji) {
+            this(0, name, price, category, emoji);
+        }
+
+        MenuItem(int idProducto, String name, double price, String category, String emoji) {
+            this.idProducto = idProducto;
             this.name = name;
             this.price = price;
             this.category = category;
@@ -65,6 +78,11 @@ public class pantallaCajero extends JFrame {
 
         // Nuevo constructor (acepta directamente el nombre del archivo de imagen)
         MenuItem(String name, double price, String category, String emoji, String imageFile) {
+            this(0, name, price, category, emoji, imageFile);
+        }
+
+        MenuItem(int idProducto, String name, double price, String category, String emoji, String imageFile) {
+            this.idProducto = idProducto;
             this.name = name;
             this.price = price;
             this.category = category;
@@ -77,7 +95,13 @@ public class pantallaCajero extends JFrame {
     private final Map<String, List<MenuItem>> catalog = new LinkedHashMap<>();
 
     public pantallaCajero() {
+        this(0, "No identificado");
+    }
+
+    public pantallaCajero(int idUsuario, String nombreCajero) {
         super("Pantalla - Cajero");
+        this.idUsuario = idUsuario;
+        this.nombreCajero = nombreCajero;
 
         buildCatalog();
 
@@ -208,7 +232,7 @@ public class pantallaCajero extends JFrame {
     private void buildCatalog() {
         catalog.clear();
         String sqlCategorias = "SELECT nombre FROM categoria WHERE estado = 1 ORDER BY id_categoria";
-        String sqlProductos = "SELECT p.nombre, p.precio_base, p.imagen, p.seccion, c.nombre AS categoria "
+        String sqlProductos = "SELECT p.id_producto, p.nombre, p.precio_base, p.imagen, p.seccion, c.nombre AS categoria "
                 + "FROM producto p "
                 + "JOIN categoria c ON c.id_categoria = p.id_categoria "
                 + "WHERE p.estado = 1 AND c.estado = 1 "
@@ -243,6 +267,7 @@ public class pantallaCajero extends JFrame {
                 ps.setInt(1, turnoActual);
                 java.sql.ResultSet rs = ps.executeQuery();
                 while (rs.next()) {
+                    int idProducto = rs.getInt("id_producto");
                     String nombre = rs.getString("nombre");
                     double precio = rs.getDouble("precio_base");
                     String imagen = rs.getString("imagen");
@@ -259,9 +284,9 @@ public class pantallaCajero extends JFrame {
                     }
 
                     if (imagen != null && !imagen.isEmpty()) {
-                        lista.add(new MenuItem(nombre, precio, categoria, emoji, imagen));
+                        lista.add(new MenuItem(idProducto, nombre, precio, categoria, emoji, imagen));
                     } else {
-                        lista.add(new MenuItem(nombre, precio, categoria, emoji));
+                        lista.add(new MenuItem(idProducto, nombre, precio, categoria, emoji));
                     }
                 }
             }
@@ -550,7 +575,7 @@ public class pantallaCajero extends JFrame {
             JLabel l1 = new JLabel("Cajero: ");
             l1.setForeground(WHITE_TEXT);
             l1.setFont(new Font("SansSerif", Font.PLAIN, 15));
-            JLabel l2 = new JLabel("Luis Muñoz");
+            JLabel l2 = new JLabel(nombreCajero);
             l2.setForeground(YELLOW_BRIGHT);
             l2.setFont(new Font("SansSerif", Font.BOLD, 15));
             JLabel l3 = new JLabel("  -   Turno Tarde");
@@ -666,6 +691,14 @@ public class pantallaCajero extends JFrame {
                 if (pago == null) {
                     return; // canceló el pago
                 }
+                try {
+                    guardarVenta(pago);
+                } catch (SQLException ex) {
+                    JOptionPane.showMessageDialog(this,
+                            "No se pudo guardar la venta en la base de datos.\n" + ex.getMessage(),
+                            "Error al registrar la venta", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
                 JOptionPane.showMessageDialog(this, pago.summary(),
                         "Pago realizado", JOptionPane.INFORMATION_MESSAGE);
                 lines.clear();
@@ -693,6 +726,75 @@ public class pantallaCajero extends JFrame {
             add(centerWrap, BorderLayout.CENTER);
 
             updateTotal();
+        }
+
+        private void guardarVenta(PaymentResult pago) throws SQLException {
+            if (idUsuario <= 0) {
+                throw new SQLException("No hay un cajero autenticado para asociar la venta.");
+            }
+
+            double subtotalBruto = lines.stream().mapToDouble(line -> line.unitPrice * line.qty).sum();
+            if (subtotalBruto <= 0) {
+                throw new SQLException("El total de la orden no es válido.");
+            }
+
+            try (Connection conn = new Conexion().getConnection()) {
+                if (conn == null) {
+                    throw new SQLException("No hay conexión con MySQL.");
+                }
+                conn.setAutoCommit(false);
+                try {
+                    int idOrden;
+                    String sqlOrden = "INSERT INTO orden (fecha, hora, estado, total, id_usuario) "
+                            + "VALUES (CURRENT_DATE(), CURRENT_TIME(), 'Completada', ?, ?)";
+                    try (PreparedStatement ps = conn.prepareStatement(sqlOrden, Statement.RETURN_GENERATED_KEYS)) {
+                        ps.setDouble(1, pago.total);
+                        ps.setInt(2, idUsuario);
+                        ps.executeUpdate();
+                        try (ResultSet keys = ps.getGeneratedKeys()) {
+                            if (!keys.next()) {
+                                throw new SQLException("MySQL no devolvió el ID de la venta.");
+                            }
+                            idOrden = keys.getInt(1);
+                        }
+                    }
+
+                    String sqlDetalle = "INSERT INTO detalle_orden "
+                            + "(cantidad, precio_unitario, subtotal, es_agrandado, id_orden, id_producto) "
+                            + "VALUES (?, ?, ?, 0, ?, ?)";
+                    double totalRestante = pago.total;
+                    for (int i = 0; i < lines.size(); i++) {
+                        OrderLine line = lines.get(i);
+                        if (line.item.idProducto <= 0) {
+                            throw new SQLException("No se encontró el producto " + line.item.name + " en la base de datos.");
+                        }
+                        double subtotalLinea = i == lines.size() - 1
+                                ? totalRestante
+                                : round2(pago.total * (line.unitPrice * line.qty) / subtotalBruto);
+                        totalRestante = round2(totalRestante - subtotalLinea);
+                        try (PreparedStatement ps = conn.prepareStatement(sqlDetalle)) {
+                            ps.setInt(1, line.qty);
+                            ps.setDouble(2, line.unitPrice);
+                            ps.setDouble(3, subtotalLinea);
+                            ps.setInt(4, idOrden);
+                            ps.setInt(5, line.item.idProducto);
+                            ps.executeUpdate();
+                        }
+                    }
+
+                    String sqlPago = "INSERT INTO pago_orden (monto, metodo_pago, id_orden) VALUES (?, ?, ?)";
+                    try (PreparedStatement ps = conn.prepareStatement(sqlPago)) {
+                        ps.setDouble(1, pago.total);
+                        ps.setString(2, pago.method);
+                        ps.setInt(3, idOrden);
+                        ps.executeUpdate();
+                    }
+                    conn.commit();
+                } catch (SQLException ex) {
+                    conn.rollback();
+                    throw ex;
+                }
+            }
         }
 
         // Hace que el componente ocupe todo el ancho en un BoxLayout vertical
