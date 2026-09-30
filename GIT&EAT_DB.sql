@@ -341,6 +341,25 @@ INSERT INTO producto (nombre, precio_base, es_combo, id_categoria, id_turno, ima
 ('Chocolate', 18.00, 0, 2, NULL, 'chocolate.png', 'Calientes', 97),
 ('Té Caliente', 15.00, 0, 2, NULL, 'te_caliente.png', 'Calientes', 98);
 
+-- Postres / Helados McFlurry
+('McFlurry Oreo', 20.00, 0, 3, NULL, 'McFlurryOreo.png', 'Helados McFlurry', 99),
+('McFlurry Oreo Caramelo', 22.00, 0, 3, NULL, 'McFlurryOreoCaramelo.png', 'Helados McFlurry', 100),
+('McFlurry Oreo Chocolate', 22.00, 0, 3, NULL, 'McFlurryOreoChocolate.png', 'Helados McFlurry', 101),
+('McFlurry Oreo Fresa', 22.00, 0, 3, NULL, 'McFlurryOreoFresa.png', 'Helados McFlurry', 102),
+('McFlurry M&M''s', 20.00, 0, 3, NULL, 'McFlurryM&Ms.png', 'Helados McFlurry', 103),
+('McFlurry M&M''s Caramelo', 22.00, 0, 3, NULL, 'McFlurryM&MsCaramelo.png', 'Helados McFlurry', 104),
+('McFlurry M&M''s Chocolate', 22.00, 0, 3, NULL, 'McFlurryM&MsChocolate.png', 'Helados McFlurry', 105),
+('McFlurry M&M''s Fresa', 22.00, 0, 3, NULL, 'McFlurryM&MsFresa.png', 'Helados McFlurry', 106),
+
+-- Postres / Sundaes
+('Sundae de Caramelo', 15.00, 0, 3, NULL, 'SundaedeCaramelo.png', 'Sundaes', 107),
+('Sundae de Chocolate', 15.00, 0, 3, NULL, 'SundaedeChocolate.png', 'Sundaes', 108),
+('Sundae de Fresa', 15.00, 0, 3, NULL, 'SundaedeFresa.png', 'Sundaes', 109),
+
+-- Postres / Pasteles
+('Pastel de Manzana', 12.00, 0, 3, NULL, 'PasteldeManzana.png', 'Pasteles', 110),
+('Pastel de Queso', 12.00, 0, 3, NULL, 'PasteldeQueso.png', 'Pasteles', 111);
+
 -- ---------------------------------------------------------------------
 -- AGREGADOS FALTANTES: Usuarios Iniciales
 -- ---------------------------------------------------------------------
@@ -366,17 +385,6 @@ INSERT INTO ingrediente (id_ingrediente, nombre, precio_extra_defecto) VALUES
 (11, 'Huevo', 4.00),
 (12, 'Salchicha', 5.00);
 
--- ---------------------------------------------------------------------
--- AGREGADOS FALTANTES: Postres y Combos (Productos)
--- ---------------------------------------------------------------------
-INSERT INTO producto (id_producto, nombre, precio_base, es_combo, id_categoria, id_turno, imagen, seccion, orden_menu) VALUES
--- Postres
-(99, 'McFlurry Oreo', 20.00, 0, 3, NULL, 'mcflurry_oreo.png', 'Helados', 99),
-(100, 'Sundae de Chocolate', 15.00, 0, 3, NULL, 'sundae_chocolate.png', 'Helados', 100),
-(101, 'Pastelito de Manzana', 12.00, 0, 3, NULL, 'pastelito_manzana.png', 'Pasteles', 101),
--- Combos
-(102, 'Combo Git Mac Doble', 55.00, 1, 4, 2, 'combo_git_mac.png', 'Combos Tarde', 102),
-(103, 'Combo McMuffin Salchicha y Huevo', 42.00, 1, 4, 1, 'combo_mcmuffin.png', 'Combos Mañana', 103);
 
 -- ---------------------------------------------------------------------
 -- AGREGADOS FALTANTES: Componentes y Opciones de Intercambio para Combos
