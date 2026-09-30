@@ -630,6 +630,7 @@ public class dashboardAdmin extends JFrame {
         return COLOR_PREPARANDO;
     }
 
+    // Consulta los datos del dashboard y actualiza las gráficas, la tabla y los indicadores.
     private void refreshDashboardData() {
         try (Connection conn = new main.Conexion.Conexion().getConnection()) {
             if (conn == null) {
@@ -646,6 +647,7 @@ public class dashboardAdmin extends JFrame {
         }
     }
 
+    // Usa la fecha del servidor MySQL para mantener coherentes los rangos de consulta.
     private LocalDate getDatabaseDate(Connection conn) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement("SELECT CURDATE()");
                 ResultSet rs = ps.executeQuery()) {
@@ -654,6 +656,7 @@ public class dashboardAdmin extends JFrame {
         }
     }
 
+    // Llena la gráfica con los ingresos pagados de hoy y los seis días anteriores.
     private void cargarVentasSemanales(Connection conn, LocalDate today) throws SQLException {
         LocalDate firstDay = today.minusDays(6);
         Map<LocalDate, Double> salesByDay = new HashMap<>();
@@ -682,6 +685,7 @@ public class dashboardAdmin extends JFrame {
         weeklySalesChart.setData(labels, values);
     }
 
+    // Compara las ventas del mes actual por cajero y entrega los cinco primeros al gráfico.
     private void cargarRendimientoCajeros(Connection conn, LocalDate today) throws SQLException {
         LocalDate firstDay = today.withDayOfMonth(1);
         String sql = "SELECT CONCAT(u.nombre, ' ', u.apellido) AS cajero, COALESCE(SUM(po.monto), 0) AS ventas "
@@ -706,6 +710,7 @@ public class dashboardAdmin extends JFrame {
                 values.stream().mapToDouble(Double::doubleValue).toArray());
     }
 
+    // Reemplaza la tabla de ejemplo con los cinco pedidos más recientes de la base de datos.
     private void cargarPedidosRecientes(Connection conn) throws SQLException {
         String sql = "SELECT o.id_orden, COALESCE(CONCAT(u.nombre, ' ', u.apellido), 'Sin asignar') AS cajero, "
                 + "DATE_FORMAT(TIMESTAMP(o.fecha, o.hora), '%d/%m %H:%i') AS fecha_hora, o.total, o.estado "
@@ -725,6 +730,7 @@ public class dashboardAdmin extends JFrame {
         }
     }
 
+    // Actualiza el total cobrado hoy y cuenta pedidos que todavía no están cerrados.
     private void cargarIndicadores(Connection conn) throws SQLException {
         String sqlVentas = "SELECT COALESCE(SUM(po.monto), 0) FROM pago_orden po "
                 + "JOIN orden o ON o.id_orden = po.id_orden WHERE o.fecha = CURDATE()";

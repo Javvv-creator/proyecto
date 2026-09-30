@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
+// Pantalla para consultar y filtrar el catálogo de productos.
 public class gestionProductos extends JFrame {
 
     // Paleta de colores exacta
@@ -64,6 +65,7 @@ public class gestionProductos extends JFrame {
     private JLabel lblValCategorias;
     private JLabel lblValCombos;
 
+    // Prepara la ventana, crea los controles y carga las filas iniciales de la tabla.
     public gestionProductos() {
         setTitle("GIT & EAT! - Gestión de Menú / Productos");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -586,6 +588,7 @@ public class gestionProductos extends JFrame {
         return card;
     }
 
+    // Combina búsqueda, categoría, turno y estado para filtrar la vista de la tabla.
     private void applyFilters() {
         String searchText = txtSearch.getText().trim();
         String selectedCat = (String) cbCategoria.getSelectedItem();
@@ -657,6 +660,7 @@ public class gestionProductos extends JFrame {
         return card;
     }
 
+    // Carga filas de muestra para visualizar la tabla mientras no se conecte al CRUD.
     private void cargarDatosEjemplo() {
         model.setRowCount(0);
         model.addRow(new Object[] { "Hamburguesa", "Hamburguesas", "Q35.00", "Mañana", "Producto", "500", "Activo" });

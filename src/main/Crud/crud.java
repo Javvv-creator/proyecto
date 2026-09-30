@@ -10,11 +10,14 @@ import java.util.ArrayList;
 import java.util.List;
 import main.Conexion.Conexion;
 
+// Reúne las consultas para crear, consultar, editar y eliminar datos del sistema.
+// Las operaciones de escritura indican su resultado con true o false.
 public class crud {
 
     // Instancia de la clase Conexion
     private static final Conexion conexionDB = new Conexion();
 
+    // Las categorías se crean, consultan, actualizan o eliminan por su ID.
     // ==========================================
     // 1. CRUD CATEGORIA (CREAR, VER, EDITAR Y ELIMINAR)
     // ==========================================
@@ -104,6 +107,7 @@ public class crud {
         }
     }
 
+    // Los productos pueden vincularse opcionalmente con categoría y turno.
     // ==========================================
     // 2. CRUD PRODUCTO (CREAR, VER, EDITAR Y ELIMINAR)
     // ==========================================
@@ -242,6 +246,7 @@ public class crud {
         }
     }
 
+    // Los usuarios incluyen rol, estado, credenciales y turno de trabajo.
     // ==========================================
     // 3. CRUD USUARIO (CREAR, VER, EDITAR Y ELIMINAR)
     // ==========================================

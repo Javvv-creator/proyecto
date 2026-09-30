@@ -4,8 +4,10 @@ import gui.pantallaCarga;
 import javax.swing.JOptionPane;
 import main.Conexion.Conexion;
 
+// Inicia la aplicación después de comprobar que MySQL está disponible.
 public class Main {
 
+    // Verifica la conexión y luego muestra la pantalla de carga; si falla, informa al usuario.
     public static void main(String[] args) {
 
         try {

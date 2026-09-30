@@ -339,7 +339,7 @@ INSERT INTO producto (nombre, precio_base, es_combo, id_categoria, id_turno, ima
 ('Café', 15.00, 0, 2, NULL, 'cafe.png', 'Calientes', 95),
 ('Café Con Leche', 18.00, 0, 2, NULL, 'cafe_con_leche.png', 'Calientes', 96),
 ('Chocolate', 18.00, 0, 2, NULL, 'chocolate.png', 'Calientes', 97),
-('Té Caliente', 15.00, 0, 2, NULL, 'te_caliente.png', 'Calientes', 98);
+('Té Caliente', 15.00, 0, 2, NULL, 'te_caliente.png', 'Calientes', 98),
 
 -- Postres / Helados McFlurry
 ('McFlurry Oreo', 20.00, 0, 3, NULL, 'McFlurryOreo.png', 'Helados McFlurry', 99),

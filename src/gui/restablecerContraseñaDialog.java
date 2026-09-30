@@ -44,6 +44,7 @@ public class restablecerContraseñaDialog extends JDialog {
     private String nuevaContrasena = "";
     private final int idUsuario;
 
+    // Conserva el ID del empleado para validar y cambiar su contraseña en el CRUD.
     public restablecerContraseñaDialog(Frame parent, int idUsuario) {
         super(parent, "Restablecer Contraseña", true);
         this.idUsuario = idUsuario;
@@ -175,7 +176,7 @@ public class restablecerContraseñaDialog extends JDialog {
             return;
         }
 
-        // Validar la contraseña actual contra la base de datos
+        // La contraseña nueva solo se guarda si coincide la actual almacenada.
         String contrasenaGuardada = crud.obtenerContrasena(idUsuario);
 
         if (contrasenaGuardada == null) {
