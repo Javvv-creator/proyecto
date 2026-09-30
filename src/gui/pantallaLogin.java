@@ -194,7 +194,7 @@ public class pantallaLogin {
     // Consulta la base de datos para verificar credenciales y el estado activo del
     // usuario
     private static void validarUsuario(JFrame frame, String codigoEmpleado, String pin) {
-        String sql = "SELECT nombre, apellido, rol, estado FROM usuario WHERE codigo_empleado = ? AND contrasena = ?";
+        String sql = "SELECT id_usuario, nombre, apellido, rol, estado, turno FROM usuario WHERE codigo_empleado = ? AND contrasena = ?";
         Conexion conexionBD = new Conexion();
 
         try (Connection conn = conexionBD.getConnection()) {
@@ -228,6 +228,10 @@ public class pantallaLogin {
                         JOptionPane.showMessageDialog(frame,
                                 "¡Autenticación exitosa!\n\nBienvenido, " + nombre + " " + apellido + "\nRol: " + rol,
                                 "Git & Eat!", JOptionPane.INFORMATION_MESSAGE);
+
+                        int idUsuario = rs.getInt("id_usuario");
+                        String turno = rs.getString("turno");
+                        Sesion.iniciar(idUsuario, codigoEmpleado, nombre, apellido, rol, turno);
 
                         // 3. Cierra la ventana actual SOLO si la autenticación fue exitosa
                         frame.dispose();

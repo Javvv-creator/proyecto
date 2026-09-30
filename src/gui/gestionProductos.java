@@ -1,5 +1,7 @@
 package gui;
 
+import main.Crud.crud;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
@@ -14,12 +16,12 @@ import java.awt.event.FocusEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Path2D;
+import java.math.BigDecimal;
 import java.net.URL;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 public class gestionProductos extends JFrame {
@@ -44,10 +46,16 @@ public class gestionProductos extends JFrame {
     private static final Color COLOR_CARD_CATEGORIAS = new Color(106, 161, 46);
     private static final Color COLOR_CARD_COMBOS = new Color(211, 53, 58);
 
+    // Índices de columna del modelo (ya no incluye "Cantidad": el esquema de BD no maneja inventario)
+    private static final int COL_PRODUCTO = 0;
+    private static final int COL_CATEGORIA = 1;
+    private static final int COL_PRECIO = 2;
+    private static final int COL_TURNO = 3;
+    private static final int COL_TIPO = 4;
+    private static final int COL_ESTADO = 5;
+
     private int selectedMenuIndex = 1; // "Gestión de menú / productos" seleccionado por defecto
     private JPanel[] menuButtons;
-    private JLabel lblClock;
-    private JLabel lblDate;
 
     // Componentes para la funcionalidad dinámica
     private DefaultTableModel model;
@@ -87,10 +95,10 @@ public class gestionProductos extends JFrame {
         mainContainer.add(contentPanel, BorderLayout.CENTER);
         add(mainContainer);
 
-        cargarDatosEjemplo();
+        cargarProductosDesdeBD();
     }
 
-    
+
     // ==========================================
     // --- BARRA LATERAL (idéntica al resto + botón Cerrar Sesión) ---
     // ==========================================
@@ -172,16 +180,13 @@ public class gestionProductos extends JFrame {
                 }
 
                 @Override
-                public void mouseClicked(MouseEvent e) {            
-                
-                    if (index == 0) {
-                        gestionEmpleados app = new gestionEmpleados();
-                        app.setVisible(true);
-                        dispose();
+                public void mouseClicked(MouseEvent e) {
+
+                    if (index == selectedMenuIndex) {
                         return;
                     }
-                    if (index == 1) {
-                        gestionProductos app = new gestionProductos();
+                    if (index == 0) {
+                        gestionEmpleados app = new gestionEmpleados();
                         app.setVisible(true);
                         dispose();
                         return;
@@ -267,18 +272,6 @@ public class gestionProductos extends JFrame {
             lbl.setIcon(new SidebarVectorIcon(iconType, 28));
         }
         return lbl;
-    }
-
-    private void updateSidebarSelection() {
-        for (int i = 0; i < menuButtons.length; i++) {
-            RoundedPanel btn = (RoundedPanel) menuButtons[i];
-            if (i == selectedMenuIndex) {
-                btn.setBackgroundColor(COLOR_SIDEBAR_ACTIVE);
-            } else {
-                btn.setBackgroundColor(COLOR_SIDEBAR);
-            }
-            btn.repaint();
-        }
     }
 
     private JLabel createLogoLabel() {
@@ -372,7 +365,7 @@ public class gestionProductos extends JFrame {
 
         GridBagConstraints pGbc = new GridBagConstraints();
         pGbc.fill = GridBagConstraints.BOTH;
-        pGbc.anchor = GridBagConstraints.CENTER; // Corregido: 'anchor' en lugar de 'centerY'
+        pGbc.anchor = GridBagConstraints.CENTER;
 
         // Ícono de Lupa
         JLabel searchIcon = new JLabel("🔍");
@@ -436,8 +429,11 @@ public class gestionProductos extends JFrame {
         pGbc.insets = new Insets(0, 8, 0, 8);
         searchPill.add(createPipeLabel(), pGbc);
 
-        // Combobox Categoría
-        cbCategoria = createPillComboBox(new String[] { "Categoría", "Hamburguesas", "Combos", "Acompañantes" });
+        // Combobox Categoría (poblado desde la tabla categoria)
+        List<String> categorias = new ArrayList<>();
+        categorias.add("Categoría");
+        categorias.addAll(crud.listarCategoriasActivas());
+        cbCategoria = createPillComboBox(categorias.toArray(new String[0]));
         pGbc.gridx = 3;
         pGbc.weightx = 0.20;
         pGbc.insets = new Insets(0, 0, 0, 0);
@@ -523,7 +519,7 @@ public class gestionProductos extends JFrame {
         card.setLayout(new BorderLayout());
         card.setBorder(new EmptyBorder(12, 12, 12, 12));
 
-        String[] columns = { "Producto", "Categoría", "Precio", "Turno", "Tipo", "Cantidad", "Estado" };
+        String[] columns = { "Producto", "Categoría", "Precio", "Turno", "Tipo", "Estado" };
 
         model = new DefaultTableModel(columns, 0) {
             @Override
@@ -561,12 +557,12 @@ public class gestionProductos extends JFrame {
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(JLabel.CENTER);
 
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < COL_ESTADO; i++) {
             table.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
         }
 
         // Renderizado especial Columna Estado (Texto Verde / Rojo)
-        table.getColumnModel().getColumn(6).setCellRenderer((t, val, isS, hasF, row, col) -> {
+        table.getColumnModel().getColumn(COL_ESTADO).setCellRenderer((t, val, isS, hasF, row, col) -> {
             String estado = (String) val;
             JLabel lbl = new JLabel(estado, SwingConstants.CENTER);
             lbl.setFont(new Font("SansSerif", Font.BOLD, 16));
@@ -595,19 +591,19 @@ public class gestionProductos extends JFrame {
         List<RowFilter<DefaultTableModel, Object>> filters = new ArrayList<>();
 
         if (!searchText.isEmpty() && !searchText.equals(PLACEHOLDER_TEXT)) {
-            filters.add(RowFilter.regexFilter("(?i)" + Pattern.quote(searchText), 0));
+            filters.add(RowFilter.regexFilter("(?i)" + Pattern.quote(searchText), COL_PRODUCTO));
         }
 
         if (selectedCat != null && !selectedCat.equals("Categoría")) {
-            filters.add(RowFilter.regexFilter("^" + Pattern.quote(selectedCat) + "$", 1));
+            filters.add(RowFilter.regexFilter("^" + Pattern.quote(selectedCat) + "$", COL_CATEGORIA));
         }
 
         if (selectedTurno != null && !selectedTurno.equals("Turno")) {
-            filters.add(RowFilter.regexFilter("^" + Pattern.quote(selectedTurno) + "$", 3));
+            filters.add(RowFilter.regexFilter("^" + Pattern.quote(selectedTurno) + "$", COL_TURNO));
         }
 
         if (selectedEstado != null && !selectedEstado.equals("Estado")) {
-            filters.add(RowFilter.regexFilter("^" + Pattern.quote(selectedEstado) + "$", 6));
+            filters.add(RowFilter.regexFilter("^" + Pattern.quote(selectedEstado) + "$", COL_ESTADO));
         }
 
         if (filters.isEmpty()) {
@@ -621,10 +617,10 @@ public class gestionProductos extends JFrame {
         JPanel row = new JPanel(new GridLayout(1, 4, 15, 0));
         row.setOpaque(false);
 
-        lblValProductos = new JLabel("2", SwingConstants.CENTER);
-        lblValActivos = new JLabel("15", SwingConstants.CENTER);
-        lblValCategorias = new JLabel("11", SwingConstants.CENTER);
-        lblValCombos = new JLabel("4", SwingConstants.CENTER);
+        lblValProductos = new JLabel("0", SwingConstants.CENTER);
+        lblValActivos = new JLabel("0", SwingConstants.CENTER);
+        lblValCategorias = new JLabel("0", SwingConstants.CENTER);
+        lblValCombos = new JLabel("0", SwingConstants.CENTER);
 
         row.add(createMetricCard("Productos", lblValProductos, COLOR_CARD_PRODUCTOS, Color.WHITE));
         row.add(createMetricCard("Activos", lblValActivos, COLOR_CARD_ACTIVOS, Color.WHITE));
@@ -657,11 +653,46 @@ public class gestionProductos extends JFrame {
         return card;
     }
 
-    private void cargarDatosEjemplo() {
+    /** Carga los productos reales desde la tabla `producto` (JOIN con categoria y turno_menu). */
+    private void cargarProductosDesdeBD() {
         model.setRowCount(0);
-        model.addRow(new Object[] { "Hamburguesa", "Hamburguesas", "Q35.00", "Mañana", "Producto", "500", "Activo" });
-        model.addRow(new Object[] { "Combo Clásico", "Combos", "Q49", "Tarde", "Combo", "50", "Activo" });
-        model.addRow(new Object[] { "Papas fritas", "Acompañantes", "Q18.00", "Ambos", "Producto", "89", "Activo" });
+
+        List<Object[]> productos = crud.listarProductosTabla();
+        Set<String> categoriasVistas = new LinkedHashSet<>();
+        int activos = 0;
+        int combos = 0;
+
+        for (Object[] fila : productos) {
+            // fila: {id_producto, nombre, categoria, precio_base(BigDecimal), turno, tipo, estado}
+            String nombre = (String) fila[1];
+            String categoria = (String) fila[2];
+            BigDecimal precio = (BigDecimal) fila[3];
+            String turno = (String) fila[4];
+            String tipo = (String) fila[5];
+            String estado = (String) fila[6];
+
+            model.addRow(new Object[] {
+                nombre,
+                categoria,
+                String.format("Q%.2f", precio),
+                turno,
+                tipo,
+                estado
+            });
+
+            categoriasVistas.add(categoria);
+            if ("Activo".equals(estado)) {
+                activos++;
+            }
+            if ("Combo".equals(tipo)) {
+                combos++;
+            }
+        }
+
+        lblValProductos.setText(String.valueOf(productos.size()));
+        lblValActivos.setText(String.valueOf(activos));
+        lblValCategorias.setText(String.valueOf(categoriasVistas.size()));
+        lblValCombos.setText(String.valueOf(combos));
     }
 
     // --- CLASE DE ICONOS VECTORIALES ---

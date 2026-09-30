@@ -1,5 +1,8 @@
 package gui;
 
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -10,9 +13,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import javax.swing.table.DefaultTableModel;
 
 /**
  * Pantalla de Gestión de caja - GIT & EAT!
@@ -45,8 +45,8 @@ public class gestionCaja extends JFrame {
     }
 
     private static class EstadoCaja {
-        static String cajero = "Samantha Martinez";
-        static String turno = "Cajera - Turno tarde";
+        static String cajero = "Sin sesión iniciada";
+        static String turno = "";
 
         static boolean abierta = true;
         static String horaApertura = now();
@@ -87,6 +87,106 @@ public class gestionCaja extends JFrame {
     }
 
     // ------------------------------------------------------------------
+    // API PÚBLICA (para ser usada desde el login y desde pantallaCajero)
+    // ------------------------------------------------------------------
+    public enum MetodoPago {
+        EFECTIVO, TARJETA, TARJETA_REGALO
+    }
+
+    /** Instancia visible actualmente (para refrescar en vivo si está abierta). */
+    private static gestionCaja instanciaActual;
+
+    /**
+     * Debe llamarse desde el login al iniciar sesión.
+     * Ej: gestionCaja.setUsuarioActual("Samantha Martinez", "Cajera - Turno tarde");
+     */
+    public static synchronized void setUsuarioActual(String nombre, String rolOTurno) {
+        EstadoCaja.cajero = (nombre == null || nombre.trim().isEmpty()) ? "Sin sesión iniciada" : nombre.trim();
+        EstadoCaja.turno = rolOTurno == null ? "" : rolOTurno.trim();
+        refrescarSiVisible();
+    }
+
+    public static void setUsuarioActual(String nombre) {
+        setUsuarioActual(nombre, "");
+    }
+
+    /** Cierra la sesión del usuario (para llamar desde el botón de cerrar sesión). */
+    public static synchronized void limpiarUsuarioActual() {
+        setUsuarioActual(null, "");
+    }
+
+    public static boolean isCajaAbierta() {
+        return EstadoCaja.abierta;
+    }
+
+    /**
+     * Registra una venta de un pedido cobrado. Llamar desde pantallaCajero
+     * cuando se confirme el pago. Devuelve false si la caja está cerrada
+     * (en ese caso la venta NO se registra y pantallaCajero debería avisar).
+     *
+     * Ej: gestionCaja.registrarVenta(gestionCaja.MetodoPago.EFECTIVO, 85.50);
+     */
+    public static synchronized boolean registrarVenta(MetodoPago metodo, double monto) {
+        if (!EstadoCaja.abierta || metodo == null || monto <= 0 || Double.isNaN(monto) || Double.isInfinite(monto))
+            return false;
+        monto = round2(monto);
+        switch (metodo) {
+            case EFECTIVO:
+                EstadoCaja.ventasEfectivo += monto;
+                break;
+            case TARJETA:
+                EstadoCaja.ventasTarjeta += monto;
+                break;
+            case TARJETA_REGALO:
+                EstadoCaja.ventasRegalo += monto;
+                EstadoCaja.regalosCanjeados++;
+                EstadoCaja.regalosCanjeadosMonto += monto;
+                break;
+        }
+        EstadoCaja.efectivoContado = null; // el conteo anterior ya no es válido
+        refrescarSiVisible();
+        return true;
+    }
+
+    /** Registra la venta de una tarjeta de regalo (se asume cobrada en efectivo). */
+    public static synchronized boolean registrarVentaTarjetaRegalo(double monto) {
+        if (!EstadoCaja.abierta || monto <= 0 || Double.isNaN(monto) || Double.isInfinite(monto))
+            return false;
+        EstadoCaja.regalosVendidos++;
+        EstadoCaja.regalosVendidosMonto += round2(monto);
+        EstadoCaja.efectivoContado = null;
+        refrescarSiVisible();
+        return true;
+    }
+
+    /** Nombre a mostrar: usa la Sesion del login; si no hay, el valor de setUsuarioActual. */
+    private static String nombreUsuario() {
+        return Sesion.estaActiva() ? Sesion.getNombreCompleto() : EstadoCaja.cajero;
+    }
+
+    private static String rolUsuario() {
+        if (Sesion.estaActiva()) {
+            String t = Sesion.getTurno().isEmpty() ? "" : " - Turno " + Sesion.getTurno();
+            return Sesion.getRol() + t;
+        }
+        return EstadoCaja.turno;
+    }
+
+    private static void refrescarSiVisible() {
+        final gestionCaja g = instanciaActual;
+        if (g != null) {
+            SwingUtilities.invokeLater(g::refresh);
+        }
+    }
+
+    @Override
+    public void dispose() {
+        if (instanciaActual == this)
+            instanciaActual = null;
+        super.dispose();
+    }
+
+    // ------------------------------------------------------------------
     // COLORES
     // ------------------------------------------------------------------
     private static final Color COLOR_BG = new Color(231, 221, 202);
@@ -115,9 +215,9 @@ public class gestionCaja extends JFrame {
     private JLabel lblInicial, lblVentas, lblEfectivo, lblTarjeta, lblRegalo;
     private JLabel lblCanjeadasTxt, lblCanjeadasMonto, lblVendidasTxt, lblVendidasMonto;
     private JLabel lblEsperado, lblContado, lblDiferencia;
-    private JLabel statusText, dotLbl;
+    private JLabel statusText, dotLbl, nameLbl, roleLbl;
     private RoundedPanel statusBadge;
-    private ActionButton btnToggle, btnVenta, btnContar, btnHistorial;
+    private ActionButton btnToggle, btnContar, btnHistorial;
 
     public gestionCaja() {
         setTitle("GIT & EAT! - Gestión de caja");
@@ -143,6 +243,17 @@ public class gestionCaja extends JFrame {
         mainContainer.add(contentPanel, BorderLayout.CENTER);
         add(mainContainer);
 
+        // Tecla ESC: cierra el programa
+        KeyStroke esc = KeyStroke.getKeyStroke("ESCAPE");
+        getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(esc, "cerrarPrograma");
+        getRootPane().getActionMap().put("cerrarPrograma", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                System.exit(0);
+            }
+        });
+
+        instanciaActual = this;
         refresh();
     }
 
@@ -204,6 +315,9 @@ public class gestionCaja extends JFrame {
     private void refresh() {
         boolean abierta = EstadoCaja.abierta;
 
+        nameLbl.setText(nombreUsuario());
+        roleLbl.setText(rolUsuario());
+
         lblInicial.setText(q(EstadoCaja.inicial));
         lblVentas.setText(q(EstadoCaja.ventasTotales()));
         lblEfectivo.setText(q(EstadoCaja.ventasEfectivo));
@@ -234,7 +348,6 @@ public class gestionCaja extends JFrame {
 
         btnToggle.setContent(abierta ? CustomIcon.Type.CLOSE_X : CustomIcon.Type.PLUS,
                 abierta ? "Cerrar caja" : "Abrir caja");
-        btnVenta.setEnabledLook(abierta);
         btnContar.setEnabledLook(abierta);
     }
 
@@ -287,7 +400,7 @@ public class gestionCaja extends JFrame {
         if (r != JOptionPane.YES_OPTION)
             return;
 
-        EstadoCaja.historial.add(0, new Registro(EstadoCaja.horaApertura, EstadoCaja.now(), EstadoCaja.cajero,
+        EstadoCaja.historial.add(0, new Registro(EstadoCaja.horaApertura, EstadoCaja.now(), nombreUsuario(),
                 EstadoCaja.inicial, EstadoCaja.ventasTotales(), esperado, contado, dif));
         EstadoCaja.abierta = false;
         refresh();
@@ -302,43 +415,6 @@ public class gestionCaja extends JFrame {
             return false;
         }
         return true;
-    }
-
-    private void registrarMovimiento() {
-        if (!verificarAbierta())
-            return;
-
-        String[] tipos = { "Venta en efectivo", "Venta con tarjeta", "Pago con tarjeta de regalo (canje)",
-                "Venta de tarjeta de regalo" };
-        Object t = JOptionPane.showInputDialog(this, "Tipo de movimiento:", "Registrar venta",
-                JOptionPane.QUESTION_MESSAGE, null, tipos, tipos[0]);
-        if (t == null)
-            return;
-
-        Double monto = pedirMonto("Monto (Q):", "Registrar venta", false);
-        if (monto == null)
-            return;
-
-        switch (t.toString()) {
-            case "Venta en efectivo":
-                EstadoCaja.ventasEfectivo += monto;
-                break;
-            case "Venta con tarjeta":
-                EstadoCaja.ventasTarjeta += monto;
-                break;
-            case "Pago con tarjeta de regalo (canje)":
-                EstadoCaja.ventasRegalo += monto;
-                EstadoCaja.regalosCanjeados++;
-                EstadoCaja.regalosCanjeadosMonto += monto;
-                break;
-            default: // Venta de tarjeta de regalo (se cobra en efectivo)
-                EstadoCaja.regalosVendidos++;
-                EstadoCaja.regalosVendidosMonto += monto;
-                break;
-        }
-        // El conteo anterior ya no es válido tras un nuevo movimiento
-        EstadoCaja.efectivoContado = null;
-        refresh();
     }
 
     private void contarEfectivo() {
@@ -385,19 +461,15 @@ public class gestionCaja extends JFrame {
                 JOptionPane.QUESTION_MESSAGE);
         if (r != JOptionPane.YES_OPTION)
             return;
-        // Ajuste el nombre de su pantalla de login aquí si es distinto:
-        if (!abrirPantalla("gui.login", "gui.Login", "gui.loginFrame", "gui.pantallaLogin", "gui.inicioSesion")) {
-            JOptionPane.showMessageDialog(this, "Sesión cerrada.");
-            dispose();
-        }
+        Sesion.cerrar();
+        limpiarUsuarioActual();
+        new pantallaLogin().setVisible(true);
+        dispose();
     }
 
     private void volverDashboard() {
-        // Ajuste el nombre de su pantalla de dashboard aquí si es distinto:
-        if (!abrirPantalla("gui.dashboard", "gui.Dashboard", "gui.pantallaDashboard", "gui.menuPrincipal")) {
-            JOptionPane.showMessageDialog(this, "No se encontró la pantalla del Dashboard.", "Aviso",
-                    JOptionPane.WARNING_MESSAGE);
-        }
+        new dashboardAdmin().setVisible(true);
+        dispose();
     }
 
     // ------------------------------------------------------------------
@@ -630,11 +702,11 @@ public class gestionCaja extends JFrame {
         textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
         textPanel.setOpaque(false);
 
-        JLabel nameLbl = new JLabel(EstadoCaja.cajero);
+        nameLbl = new JLabel(nombreUsuario());
         nameLbl.setFont(new Font("SansSerif", Font.BOLD, 18));
         nameLbl.setForeground(COLOR_TEXT_BROWN);
 
-        JLabel roleLbl = new JLabel(EstadoCaja.turno);
+        roleLbl = new JLabel(rolUsuario());
         roleLbl.setFont(new Font("SansSerif", Font.PLAIN, 15));
         roleLbl.setForeground(Color.DARK_GRAY);
 
@@ -812,12 +884,10 @@ public class gestionCaja extends JFrame {
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
 
         btnToggle = new ActionButton(CustomIcon.Type.CLOSE_X, "Cerrar caja", this::accionToggleCaja);
-        btnVenta = new ActionButton(CustomIcon.Type.PLUS, "Registrar venta", this::registrarMovimiento);
         btnContar = new ActionButton(CustomIcon.Type.COIN, "Contar efectivo", this::contarEfectivo);
         btnHistorial = new ActionButton(CustomIcon.Type.HISTORY, "Historial de cajas", this::mostrarHistorial);
 
         row.add(btnToggle);
-        row.add(btnVenta);
         row.add(btnContar);
         row.add(btnHistorial);
 

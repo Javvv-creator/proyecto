@@ -8,11 +8,16 @@ import java.awt.geom.RoundRectangle2D;
 import java.util.*;
 import java.util.List;
 import main.Conexion.Conexion;
+import main.Crud.crud;
 
 /**
  * MenuPOS - Interfaz de punto de venta para restaurante de hamburguesas.
- * Replica el diseño: barra de categorías, grilla de productos y panel de orden
- * actual.
+ * Barra de categorías, grilla de productos y panel de orden actual.
+ *
+ * - El menú se lee de la base de datos GITEAT según el turno vigente (Mañana / Tarde).
+ * - Las hamburguesas se pueden personalizar (ingredientes, extras, nota).
+ * - Al pagar (efectivo, tarjeta o mixto, con cupones) la venta se guarda con VentaDAO
+ *   y se registra automáticamente en la caja (gestionCaja).
  */
 public class pantallaCajero extends JFrame {
 
@@ -35,6 +40,11 @@ public class pantallaCajero extends JFrame {
     private final JLabel sectionTitle;
     private final Map<String, JButton> tabButtons = new LinkedHashMap<>();
 
+    // ---------- Cajero que tiene la sesión abierta ----------
+    private final int idUsuarioCajero;
+    private final String nombreCajero;
+    private final String turnoCajero;
+
     // ---------- Menú por horario ----------
     private int turnoActual = -1;                 // id_turno del menú que se está mostrando
     private String categoriaActual = "Todos";     // pestaña seleccionada
@@ -43,41 +53,55 @@ public class pantallaCajero extends JFrame {
     // ---------- Datos ----------
     static class MenuItem {
 
-        String name;
-        double price;
-        String category;
-        String emoji;
-        String imagePath;
+        final int idProducto; // -1 para las tarjetas de encabezado de sección (no son productos reales)
+        final String name;
+        final double price;
+        final String category;
+        final String emoji;
+        final String imagePath;
 
-        // Constructor original (usa el nombre para generar la ruta automáticamente)
-        MenuItem(String name, double price, String category, String emoji) {
+        /** Producto real, cargado desde la base de datos. */
+        MenuItem(int idProducto, String name, double price, String category, String imagenArchivo) {
+            this.idProducto = idProducto;
             this.name = name;
             this.price = price;
             this.category = category;
-            this.emoji = emoji;
-            // Genera la ruta a partir del nombre
-            this.imagePath = "/gui/images/" + name.toLowerCase()
+            this.emoji = "Bebidas".equals(category) ? "🥤" : "🍔";
+            if (idProducto < 0) {
+                this.imagePath = null; // los encabezados no llevan imagen
+            } else if (imagenArchivo != null && !imagenArchivo.isBlank()) {
+                this.imagePath = "/gui/images/" + imagenArchivo;
+            } else {
+                this.imagePath = rutaDesdeNombre(name); // sin imagen en BD: se genera desde el nombre
+            }
+        }
+
+        /** Tarjeta de encabezado de sección (ej. "Desayunos", "Sodas"); no es un producto comprable. */
+        static MenuItem encabezado(String texto, String category) {
+            return new MenuItem(-1, texto, 0.0, category, null);
+        }
+
+        boolean esEncabezado() {
+            return idProducto < 0;
+        }
+
+        private static String rutaDesdeNombre(String name) {
+            return "/gui/images/" + name.toLowerCase()
                     .replace(" ", "_")
                     .replace("á", "a").replace("é", "e").replace("í", "i")
                     .replace("ó", "o").replace("ú", "u").replace("ñ", "n")
                     + ".png";
         }
-
-        // Nuevo constructor (acepta directamente el nombre del archivo de imagen)
-        MenuItem(String name, double price, String category, String emoji, String imageFile) {
-            this.name = name;
-            this.price = price;
-            this.category = category;
-            this.emoji = emoji;
-            // Usa directamente el archivo que le pases
-            this.imagePath = "/gui/images/" + imageFile;
-        }
     }
 
     private final Map<String, List<MenuItem>> catalog = new LinkedHashMap<>();
 
-    public pantallaCajero() {
+    /** Abre la pantalla usando un cajero específico (por ejemplo, tras un login real). */
+    public pantallaCajero(int idUsuarioCajero, String nombreCajero, String turnoCajero) {
         super("Pantalla - Cajero");
+        this.idUsuarioCajero = idUsuarioCajero;
+        this.nombreCajero = nombreCajero;
+        this.turnoCajero = turnoCajero == null ? "" : turnoCajero;
 
         buildCatalog();
 
@@ -106,15 +130,15 @@ public class pantallaCajero extends JFrame {
         JPanel pillWrap = new JPanel(new GridBagLayout());
         pillWrap.setOpaque(false);
         pillWrap.add(menuPill);
-
         pillWrap.setBorder(new EmptyBorder(0, 20, 0, 0));
+
         leftPanel.add(tabsBar, BorderLayout.NORTH);
 
         JPanel centerArea = new JPanel(new BorderLayout());
         centerArea.setOpaque(false);
         centerArea.setBorder(new EmptyBorder(25, 0, 0, 0));
 
-        sectionTitle = new JLabel("Hamburguesas");
+        sectionTitle = new JLabel("Todos los productos");
         sectionTitle.setFont(new Font("SansSerif", Font.BOLD, 34));
         sectionTitle.setForeground(BROWN_DARK);
 
@@ -154,10 +178,48 @@ public class pantallaCajero extends JFrame {
         javax.swing.Timer relojMenu = new javax.swing.Timer(60_000, e -> revisarCambioDeTurno());
         relojMenu.start();
 
-        // Salir con ESC (ya que la ventana no tiene decoración)
-        root.registerKeyboardAction(e -> System.exit(0),
+        // ESC: regresa a la pantalla anterior
+        root.registerKeyboardAction(e -> regresar(),
                 KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
                 JComponent.WHEN_IN_FOCUSED_WINDOW);
+    }
+
+    /** Abre la pantalla con el primer cajero activo registrado en la base de datos (uso sin login). */
+    public pantallaCajero() {
+        this(cajeroPorDefectoId(), cajeroPorDefectoNombre(), cajeroPorDefectoTurno());
+    }
+
+    private static Object[] cajeroPorDefecto;
+
+    private static Object[] resolverCajeroPorDefecto() {
+        if (cajeroPorDefecto == null) {
+            cajeroPorDefecto = crud.obtenerCajeroPredeterminado();
+            if (cajeroPorDefecto == null) {
+                // No hay ningún cajero activo en la tabla usuario; se usa un valor de reserva
+                // para que la pantalla siga siendo utilizable. Los pedidos no podrán guardarse
+                // hasta que exista un usuario válido en la base de datos.
+                cajeroPorDefecto = new Object[]{-1, "Sin cajero asignado", "N/A"};
+            }
+        }
+        return cajeroPorDefecto;
+    }
+
+    private static int cajeroPorDefectoId() {
+        return (Integer) resolverCajeroPorDefecto()[0];
+    }
+
+    private static String cajeroPorDefectoNombre() {
+        return (String) resolverCajeroPorDefecto()[1];
+    }
+
+    private static String cajeroPorDefectoTurno() {
+        return (String) resolverCajeroPorDefecto()[2];
+    }
+
+    // Vuelve a la pantalla anterior (login / gestión de caja)
+    private void regresar() {
+        new pantallaLogin().setVisible(true);
+        dispose();
     }
 
     // ---------- Turno del menú según la hora ----------
@@ -208,7 +270,7 @@ public class pantallaCajero extends JFrame {
     private void buildCatalog() {
         catalog.clear();
         String sqlCategorias = "SELECT nombre FROM categoria WHERE estado = 1 ORDER BY id_categoria";
-        String sqlProductos = "SELECT p.nombre, p.precio_base, p.imagen, p.seccion, c.nombre AS categoria "
+        String sqlProductos = "SELECT p.id_producto, p.nombre, p.precio_base, p.imagen, p.seccion, c.nombre AS categoria "
                 + "FROM producto p "
                 + "JOIN categoria c ON c.id_categoria = p.id_categoria "
                 + "WHERE p.estado = 1 AND c.estado = 1 "
@@ -241,27 +303,24 @@ public class pantallaCajero extends JFrame {
             Map<String, String> ultimaSeccion = new HashMap<>();
             try (java.sql.PreparedStatement ps = con.prepareStatement(sqlProductos)) {
                 ps.setInt(1, turnoActual);
-                java.sql.ResultSet rs = ps.executeQuery();
-                while (rs.next()) {
-                    String nombre = rs.getString("nombre");
-                    double precio = rs.getDouble("precio_base");
-                    String imagen = rs.getString("imagen");
-                    String seccion = rs.getString("seccion");
-                    String categoria = rs.getString("categoria");
+                try (java.sql.ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        int idProducto = rs.getInt("id_producto");
+                        String nombre = rs.getString("nombre");
+                        double precio = rs.getDouble("precio_base");
+                        String imagen = rs.getString("imagen");
+                        String seccion = rs.getString("seccion");
+                        String categoria = rs.getString("categoria");
 
-                    List<MenuItem> lista = catalog.computeIfAbsent(categoria, k -> new ArrayList<>());
-                    String emoji = categoria.equals("Bebidas") ? "🥤" : "🍔";
+                        List<MenuItem> lista = catalog.computeIfAbsent(categoria, k -> new ArrayList<>());
 
-                    // Cuando cambia la sección, se agrega el "mensajito" (Desayunos, Pollo, Sodas...)
-                    if (seccion != null && !seccion.equals(ultimaSeccion.get(categoria))) {
-                        lista.add(new MenuItem(seccion, 0.00, categoria, "📌"));
-                        ultimaSeccion.put(categoria, seccion);
-                    }
+                        // Cuando cambia la sección, se agrega el "mensajito" (Desayunos, Pollo, Sodas...)
+                        if (seccion != null && !seccion.equals(ultimaSeccion.get(categoria))) {
+                            lista.add(MenuItem.encabezado(seccion, categoria));
+                            ultimaSeccion.put(categoria, seccion);
+                        }
 
-                    if (imagen != null && !imagen.isEmpty()) {
-                        lista.add(new MenuItem(nombre, precio, categoria, emoji, imagen));
-                    } else {
-                        lista.add(new MenuItem(nombre, precio, categoria, emoji));
+                        lista.add(new MenuItem(idProducto, nombre, precio, categoria, imagen));
                     }
                 }
             }
@@ -272,11 +331,6 @@ public class pantallaCajero extends JFrame {
                     "Error de conexión", JOptionPane.ERROR_MESSAGE);
         }
 
-        // Asegura que las pestañas existan aunque no haya datos
-        for (String cat : new String[]{"Hamburguesas", "Bebidas", "Postres", "Combos"}) {
-            catalog.putIfAbsent(cat, new ArrayList<>());
-        }
-
         // ----- Todos -----
         List<MenuItem> todos = new ArrayList<>();
         for (List<MenuItem> l : catalog.values()) {
@@ -285,10 +339,15 @@ public class pantallaCajero extends JFrame {
         catalog.put("Todos", todos);
     }
 
+    // Las pestañas salen de las categorías activas de la base de datos
     private JPanel buildTabsBar() {
         JPanel bar = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
         bar.setOpaque(false);
-        String[] cats = {"Todos", "Hamburguesas", "Bebidas", "Postres", "Combos"};
+
+        List<String> cats = new ArrayList<>();
+        cats.add("Todos");
+        cats.addAll(crud.listarCategoriasActivas());
+
         for (String cat : cats) {
             JButton btn = new PillButton(cat);
             btn.addActionListener(e -> showCategory(cat));
@@ -376,10 +435,21 @@ public class pantallaCajero extends JFrame {
             gc.insets = new Insets(14, 14, 14, 14);
             gc.fill = GridBagConstraints.NONE;
             int cols = 4;
-            for (int i = 0; i < items.size(); i++) {
-                gc.gridx = i % cols;
-                gc.gridy = i / cols;
-                add(new ItemCard(items.get(i)), gc);
+
+            if (items.isEmpty()) {
+                gc.gridx = 0;
+                gc.gridy = 0;
+                gc.gridwidth = cols;
+                JLabel empty = new JLabel("No hay productos en esta categoría todavía.");
+                empty.setFont(new Font("SansSerif", Font.PLAIN, 18));
+                empty.setForeground(BROWN_TEXT);
+                add(empty, gc);
+            } else {
+                for (int i = 0; i < items.size(); i++) {
+                    gc.gridx = i % cols;
+                    gc.gridy = i / cols;
+                    add(new ItemCard(items.get(i)), gc);
+                }
             }
             revalidate();
             repaint();
@@ -402,14 +472,14 @@ public class pantallaCajero extends JFrame {
             JLabel pictureLabel = new JLabel("", SwingConstants.CENTER);
 
             // Cargar la imagen utilizando el recurso del proyecto (getResource)
-            java.net.URL imgURL = getClass().getResource(item.imagePath);
+            java.net.URL imgURL = item.imagePath == null ? null : getClass().getResource(item.imagePath);
             if (imgURL != null) {
                 ImageIcon rawIcon = new ImageIcon(imgURL);
                 Image scaled = rawIcon.getImage().getScaledInstance(140, 110, Image.SCALE_SMOOTH);
                 pictureLabel.setIcon(new ImageIcon(scaled));
             } else {
-                // Si la imagen no existe en la ruta dada, muestra el emoji de respaldo
-                pictureLabel.setText(item.emoji);
+                // Si la imagen no existe (o es una tarjeta de encabezado), muestra un emoji de respaldo
+                pictureLabel.setText(item.esEncabezado() ? "📌" : item.emoji);
                 pictureLabel.setFont(new Font("SansSerif", Font.PLAIN, 64));
             }
 
@@ -428,7 +498,7 @@ public class pantallaCajero extends JFrame {
             nameLabel.setForeground(YELLOW_TEXT);
             nameLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
-            JLabel priceLabel = new JLabel(String.format("Q %.2f", item.price), SwingConstants.CENTER);
+            JLabel priceLabel = new JLabel(item.esEncabezado() ? " " : String.format("Q %.2f", item.price), SwingConstants.CENTER);
             priceLabel.setFont(new Font("SansSerif", Font.PLAIN, 17));
             priceLabel.setForeground(BROWN_TEXT);
 
@@ -445,36 +515,39 @@ public class pantallaCajero extends JFrame {
             content.add(textPanel, BorderLayout.CENTER);
             add(content, BorderLayout.CENTER);
 
-            addMouseListener(new MouseAdapter() {
-                @Override
-                public void mouseClicked(MouseEvent e) {
-                    // Hamburguesas con receta: abrir ventana de ingredientes
-                    Recipe recipe = RECIPES.get(item.name);
-                    if ("Hamburguesas".equals(item.category) && recipe != null) {
-                        content.setBorder(new EmptyBorder(18, 12, 18, 12));
-                        Customization c = CustomizeDialog.open(pantallaCajero.this, item, recipe, null);
-                        if (c != null) {
-                            orderPanel.addCustom(item, c);
+            // Los encabezados de sección no son clicables
+            if (!item.esEncabezado()) {
+                addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseClicked(MouseEvent e) {
+                        // Hamburguesas con receta: abrir ventana de ingredientes
+                        Recipe recipe = RECIPES.get(item.name);
+                        if ("Hamburguesas".equals(item.category) && recipe != null) {
+                            content.setBorder(new EmptyBorder(18, 12, 18, 12));
+                            Customization c = CustomizeDialog.open(pantallaCajero.this, item, recipe, null);
+                            if (c != null) {
+                                orderPanel.addCustom(item, c);
+                            }
+                        } else {
+                            orderPanel.addItem(item);
                         }
-                    } else {
-                        orderPanel.addItem(item);
                     }
-                }
 
-                @Override
-                public void mouseEntered(MouseEvent e) {
-                    content.setBorder(BorderFactory.createCompoundBorder(
-                            BorderFactory.createLineBorder(YELLOW_TEXT, 2, true),
-                            new EmptyBorder(16, 10, 16, 10)));
-                    repaint();
-                }
+                    @Override
+                    public void mouseEntered(MouseEvent e) {
+                        content.setBorder(BorderFactory.createCompoundBorder(
+                                BorderFactory.createLineBorder(YELLOW_TEXT, 2, true),
+                                new EmptyBorder(16, 10, 16, 10)));
+                        repaint();
+                    }
 
-                @Override
-                public void mouseExited(MouseEvent e) {
-                    content.setBorder(new EmptyBorder(18, 12, 18, 12));
-                    repaint();
-                }
-            });
+                    @Override
+                    public void mouseExited(MouseEvent e) {
+                        content.setBorder(new EmptyBorder(18, 12, 18, 12));
+                        repaint();
+                    }
+                });
+            }
         }
     }
 
@@ -502,7 +575,7 @@ public class pantallaCajero extends JFrame {
     }
 
     // =====================================================================
-    // ---------- Panel derecho: orden actual (REDISEÑADO) ----------
+    // ---------- Panel derecho: orden actual ----------
     // =====================================================================
 
     // Colores extra para el panel de orden
@@ -542,7 +615,19 @@ public class pantallaCajero extends JFrame {
             JLabel title = new JLabel("Orden actual");
             title.setFont(new Font("SansSerif", Font.BOLD, 30));
             title.setForeground(WHITE_TEXT);
-            title.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+            // Botón Regresar
+            RoundedButton backBtn = new RoundedButton("← Regresar",
+                    new Color(0x5A, 0x3A, 0x24), new Color(0x74, 0x4C, 0x30), 15);
+            backBtn.setPreferredSize(new Dimension(130, 40));
+            backBtn.addActionListener(e -> regresar());
+
+            JPanel titleRow = new JPanel(new BorderLayout());
+            titleRow.setOpaque(false);
+            titleRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+            titleRow.add(title, BorderLayout.WEST);
+            titleRow.add(backBtn, BorderLayout.EAST);
+            titleRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, titleRow.getPreferredSize().height));
 
             JPanel cashierRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
             cashierRow.setOpaque(false);
@@ -550,10 +635,10 @@ public class pantallaCajero extends JFrame {
             JLabel l1 = new JLabel("Cajero: ");
             l1.setForeground(WHITE_TEXT);
             l1.setFont(new Font("SansSerif", Font.PLAIN, 15));
-            JLabel l2 = new JLabel("Luis Muñoz");
+            JLabel l2 = new JLabel(nombreCajero);
             l2.setForeground(YELLOW_BRIGHT);
             l2.setFont(new Font("SansSerif", Font.BOLD, 15));
-            JLabel l3 = new JLabel("  -   Turno Tarde");
+            JLabel l3 = new JLabel(turnoCajero.isEmpty() ? "" : "  -   Turno " + turnoCajero);
             l3.setForeground(WHITE_TEXT);
             l3.setFont(new Font("SansSerif", Font.PLAIN, 15));
             cashierRow.add(l1);
@@ -565,7 +650,7 @@ public class pantallaCajero extends JFrame {
             sep.setBackground(new Color(0x6B, 0x4A, 0x30));
             sep.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-            header.add(title);
+            header.add(titleRow);
             header.add(Box.createVerticalStrut(8));
             header.add(cashierRow);
             header.add(Box.createVerticalStrut(14));
@@ -657,6 +742,19 @@ public class pantallaCajero extends JFrame {
                             "Ir al pago", JOptionPane.WARNING_MESSAGE);
                     return;
                 }
+                if (idUsuarioCajero < 0) {
+                    JOptionPane.showMessageDialog(this,
+                            "No hay ningún cajero activo registrado en la base de datos.\n"
+                            + "No se puede guardar el pedido.",
+                            "Ir al pago", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                if (!gestionCaja.isCajaAbierta()) {
+                    JOptionPane.showMessageDialog(this,
+                            "La caja está cerrada. Pida al administrador que la abra.",
+                            "Caja cerrada", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
                 double subtotal = 0;
                 for (OrderLine l : lines) {
                     subtotal += l.unitPrice * l.qty;
@@ -666,7 +764,27 @@ public class pantallaCajero extends JFrame {
                 if (pago == null) {
                     return; // canceló el pago
                 }
-                JOptionPane.showMessageDialog(this, pago.summary(),
+
+                // 1) Guardar en la base de datos (si falla, NO se limpia la orden)
+                int idOrden;
+                try {
+                    idOrden = VentaDAO.guardar(idUsuarioCajero, pago, lines);
+                } catch (java.sql.SQLException ex) {
+                    JOptionPane.showMessageDialog(this,
+                            "No se pudo guardar la venta:\n" + ex.getMessage(),
+                            "Error al guardar", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                // 2) Reflejar la venta en la caja
+                if (pago.cash > 0) {
+                    gestionCaja.registrarVenta(gestionCaja.MetodoPago.EFECTIVO, pago.cash);
+                }
+                if (pago.card > 0) {
+                    gestionCaja.registrarVenta(gestionCaja.MetodoPago.TARJETA, pago.card);
+                }
+
+                JOptionPane.showMessageDialog(this, "Orden #" + idOrden + "\n\n" + pago.summary(),
                         "Pago realizado", JOptionPane.INFORMATION_MESSAGE);
                 lines.clear();
                 model.clear();
@@ -713,12 +831,12 @@ public class pantallaCajero extends JFrame {
         }
 
         void addItem(MenuItem item) {
-            // Los "mensajitos" de sección (📌) no se agregan a la orden
-            if ("📌".equals(item.emoji)) {
+            // Los encabezados de sección no se agregan a la orden
+            if (item.esEncabezado()) {
                 return;
             }
             for (OrderLine line : lines) {
-                if (line.custom == null && line.item.name.equals(item.name) && line.notes.isEmpty()) {
+                if (line.custom == null && line.item.idProducto == item.idProducto && line.notes.isEmpty()) {
                     line.qty++;
                     refresh();
                     return;
@@ -736,7 +854,7 @@ public class pantallaCajero extends JFrame {
             String notes = c.describe();
             double price = c.unitPrice(item);
             for (OrderLine line : lines) {
-                if (line.item.name.equals(item.name) && line.notes.equals(notes)
+                if (line.item.idProducto == item.idProducto && line.notes.equals(notes)
                         && Math.abs(line.unitPrice - price) < 0.001) {
                     line.qty++;
                     refresh();
@@ -760,7 +878,7 @@ public class pantallaCajero extends JFrame {
         }
 
         private void editNote(OrderLine line) {
-            // Si es hamburguesa, se reabre la ventana de ingredientes
+            // Si es hamburguesa con receta, se reabre la ventana de ingredientes
             Recipe recipe = RECIPES.get(line.item.name);
             if (recipe != null) {
                 Customization c = CustomizeDialog.open(this, line.item, recipe, line.custom);
@@ -935,6 +1053,9 @@ public class pantallaCajero extends JFrame {
 
         // Carga y escala la imagen una sola vez (se guarda en caché)
         static ImageIcon loadIcon(String path) {
+            if (path == null) {
+                return null;
+            }
             if (ICON_CACHE.containsKey(path)) {
                 return ICON_CACHE.get(path);
             }
@@ -1071,7 +1192,7 @@ public class pantallaCajero extends JFrame {
         }
     }
 
-    // ---------- Botón redondeado genérico (el verde) ----------
+    // ---------- Botón redondeado genérico ----------
     static class RoundedButton extends JButton {
 
         private final Color base, hoverColor;
@@ -1853,6 +1974,9 @@ public class pantallaCajero extends JFrame {
         }
 
         private static ImageIcon loadBig(String path) {
+            if (path == null) {
+                return null;
+            }
             java.net.URL url = CustomizeDialog.class.getResource(path);
             if (url == null) {
                 return null;
@@ -1919,12 +2043,32 @@ public class pantallaCajero extends JFrame {
         }
     }
 
-    // Resultado del pago (para el comprobante)
-    static class PaymentResult {
+    /** Resultado del pago: total, descuento/cupón aplicados, cómo se dividió el pago y datos para el comprobante. */
+    public static class PaymentResult {
 
-        String method;
-        double subtotal, discount, total, card, cash, cashReceived, change;
-        String couponCode, cardLast4 = "";
+        public String method = "Efectivo";
+        public double subtotal, discount, total, card, cash, cashReceived, change;
+        public String couponCode;
+        public String cardLast4 = "";
+
+        public PaymentResult() {
+        }
+
+        /** Constructor corto (total, descuento, cupón, efectivo, tarjeta). */
+        public PaymentResult(double total, double discount, String couponCode, double cash, double card) {
+            this.total = total;
+            this.discount = discount;
+            this.couponCode = couponCode;
+            this.cash = cash;
+            this.card = card;
+            this.subtotal = total + discount;
+            this.cashReceived = cash;
+            if (card > 0 && cash > 0) {
+                this.method = "Mixto";
+            } else if (card > 0) {
+                this.method = "Tarjeta";
+            }
+        }
 
         String summary() {
             StringBuilder sb = new StringBuilder();

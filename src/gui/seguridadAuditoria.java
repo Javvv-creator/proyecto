@@ -11,21 +11,28 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Path2D;
 import java.net.URL;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Pantalla de Seguridad y auditoría - GIT & EAT!
- * Interfaz ajustada: Tarjetas y filtros con tamaño fijo proporcional,
- * y tabla anclada firmemente usando un JScrollPane.
+ * Lee la bitácora (tabla auditoria) mediante AuditoriaDAO y permite filtrar por
+ * rango de fechas, usuario y tipo de acción. Las tarjetas de arriba muestran el
+ * total de cada tipo de evento dentro del rango y usuario elegidos.
  */
 public class seguridadAuditoria extends JFrame {
 
-    // Paleta de colores 
+    // Paleta de colores
     private static final Color COLOR_BG = new Color(231, 221, 202);
     private static final Color COLOR_SIDEBAR = new Color(139, 94, 52);
     private static final Color COLOR_HEADER = new Color(139, 94, 52);
     private static final Color COLOR_TEXT_BROWN = new Color(92, 53, 22);
     private static final Color COLOR_TABLE_HEADER = new Color(92, 53, 22);
-    private static final Color COLOR_TABLE_GRID = new Color(222, 210, 191);
     private static final Color COLOR_SIDEBAR_HOVER = new Color(160, 110, 65);
     private static final Color COLOR_SIDEBAR_ACTIVE = new Color(110, 72, 38);
     private static final Color COLOR_BTN_NUEVO = new Color(243, 205, 59);
@@ -40,8 +47,25 @@ public class seguridadAuditoria extends JFrame {
     private static final Color COLOR_CARD_DIFERENCIAS = new Color(243, 205, 59);
     private static final Color COLOR_CARD_CAMBIOS = new Color(106, 161, 46);
 
-    private int selectedMenuIndex = 5; 
+    private static final DateTimeFormatter FMT_FECHA = DateTimeFormatter.ofPattern("dd/MM/uuuu")
+            .withResolverStyle(ResolverStyle.STRICT);
+    private static final DateTimeFormatter FMT_FECHA_HORA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
+    private int selectedMenuIndex = 5;
     private JPanel[] menuButtons;
+
+    // ---------- Componentes con datos ----------
+    private JTextField tfDesde;
+    private JTextField tfHasta;
+    private JComboBox<String> cbUsuarios;
+    private JComboBox<String> cbTipoAccion;
+    private RoundedPanel btnFiltrar;
+    private JLabel lblFiltrar;
+    private DefaultTableModel tableModel;
+    private final JLabel lblNumCancelaciones = new JLabel("0");
+    private final JLabel lblNumDiferencias = new JLabel("0");
+    private final JLabel lblNumCambios = new JLabel("0");
+    private boolean cargando = false;
 
     public seguridadAuditoria() {
         setTitle("GIT & EAT! - Seguridad y Auditoría");
@@ -65,7 +89,138 @@ public class seguridadAuditoria extends JFrame {
 
         mainContainer.add(contentPanel, BorderLayout.CENTER);
         add(mainContainer);
+
+        // Primera carga de datos (últimos 30 días)
+        cargarDatos();
     }
+
+    // =====================================================================
+    // ---------- Carga de datos ----------
+    // =====================================================================
+
+    /**
+     * Lee y valida las fechas escritas. Devuelve {desde, hasta} o null si hay un
+     * error (ya avisó al usuario).
+     */
+    private LocalDate[] leerRango() {
+        LocalDate desde;
+        LocalDate hasta;
+        try {
+            desde = LocalDate.parse(tfDesde.getText().trim(), FMT_FECHA);
+            hasta = LocalDate.parse(tfHasta.getText().trim(), FMT_FECHA);
+        } catch (DateTimeParseException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Escribe las fechas con el formato dd/mm/aaaa (por ejemplo 15/09/2026).",
+                    "Fecha no válida", JOptionPane.WARNING_MESSAGE);
+            return null;
+        }
+        if (desde.isAfter(hasta)) {
+            JOptionPane.showMessageDialog(this,
+                    "La fecha \"Desde\" no puede ser posterior a la fecha \"Hasta\".",
+                    "Rango no válido", JOptionPane.WARNING_MESSAGE);
+            return null;
+        }
+        return new LocalDate[] { desde, hasta };
+    }
+
+    private AuditoriaDAO.Tipo tipoSeleccionado() {
+        switch (cbTipoAccion.getSelectedIndex()) {
+            case 1:
+                return AuditoriaDAO.Tipo.CANCELACION;
+            case 2:
+                return AuditoriaDAO.Tipo.CAMBIO_PRECIO;
+            case 3:
+                return AuditoriaDAO.Tipo.DIFERENCIA_CAJA;
+            default:
+                return null; // "Todas"
+        }
+    }
+
+    /**
+     * Consulta la base de datos (en segundo plano) y refresca tarjetas, filtro de
+     * usuarios y tabla.
+     */
+    private void cargarDatos() {
+        if (cargando) {
+            return;
+        }
+        LocalDate[] rango = leerRango();
+        if (rango == null) {
+            return;
+        }
+        final LocalDate desde = rango[0];
+        final LocalDate hasta = rango[1];
+        final String usuario = cbUsuarios.getSelectedIndex() <= 0 ? null : String.valueOf(cbUsuarios.getSelectedItem());
+        final AuditoriaDAO.Tipo tipo = tipoSeleccionado();
+
+        cargando = true;
+        lblFiltrar.setText("Cargando...");
+
+        new SwingWorker<Object[], Void>() {
+            @Override
+            protected Object[] doInBackground() throws Exception {
+                List<AuditoriaDAO.Registro> registros = AuditoriaDAO.listar(desde, hasta, usuario, tipo);
+                Map<AuditoriaDAO.Tipo, Integer> conteo = AuditoriaDAO.contar(desde, hasta, usuario);
+                List<String> usuarios = AuditoriaDAO.usuarios();
+                return new Object[] { registros, conteo, usuarios };
+            }
+
+            @Override
+            @SuppressWarnings("unchecked")
+            protected void done() {
+                cargando = false;
+                lblFiltrar.setText("🔍  Filtrar");
+                try {
+                    Object[] r = get();
+                    mostrarResultados((List<AuditoriaDAO.Registro>) r[0],
+                            (Map<AuditoriaDAO.Tipo, Integer>) r[1],
+                            (List<String>) r[2]);
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                } catch (ExecutionException ex) {
+                    Throwable causa = ex.getCause() != null ? ex.getCause() : ex;
+                    JOptionPane.showMessageDialog(seguridadAuditoria.this,
+                            "No se pudo cargar la bitácora de auditoría:\n" + causa.getMessage(),
+                            "Error de base de datos", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }.execute();
+    }
+
+    private void mostrarResultados(List<AuditoriaDAO.Registro> registros,
+            Map<AuditoriaDAO.Tipo, Integer> conteo, List<String> usuarios) {
+        // Tarjetas
+        lblNumCancelaciones.setText(String.valueOf(conteo.get(AuditoriaDAO.Tipo.CANCELACION)));
+        lblNumDiferencias.setText(String.valueOf(conteo.get(AuditoriaDAO.Tipo.DIFERENCIA_CAJA)));
+        lblNumCambios.setText(String.valueOf(conteo.get(AuditoriaDAO.Tipo.CAMBIO_PRECIO)));
+
+        // Filtro de usuarios (conserva la selección si sigue existiendo)
+        String seleccionado = cbUsuarios.getSelectedIndex() <= 0 ? null : String.valueOf(cbUsuarios.getSelectedItem());
+        DefaultComboBoxModel<String> modelo = new DefaultComboBoxModel<>();
+        modelo.addElement("Todos");
+        for (String u : usuarios) {
+            modelo.addElement(u);
+        }
+        cbUsuarios.setModel(modelo);
+        if (seleccionado != null && usuarios.contains(seleccionado)) {
+            cbUsuarios.setSelectedItem(seleccionado);
+        }
+
+        // Tabla
+        tableModel.setRowCount(0);
+        for (AuditoriaDAO.Registro r : registros) {
+            tableModel.addRow(new Object[] {
+                    FMT_FECHA_HORA.format(r.fechaHora),
+                    r.usuario,
+                    r.tipo.etiqueta,
+                    r.detalle
+            });
+        }
+    }
+
+    // =====================================================================
+    // ---------- Barra lateral ----------
+    // =====================================================================
 
     private JPanel createSidebarPanel() {
         RoundedPanel sidebar = new RoundedPanel(25, COLOR_SIDEBAR);
@@ -79,7 +234,14 @@ public class seguridadAuditoria extends JFrame {
         logoCard.add(createLogoLabel());
         logoCard.setCursor(new Cursor(Cursor.HAND_CURSOR));
         logoCard.setToolTipText("Volver al Dashboard");
-        
+        logoCard.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                new dashboardAdmin().setVisible(true);
+                dispose();
+            }
+        });
+
         sidebar.add(logoCard, BorderLayout.NORTH);
 
         JPanel centerWrapper = new JPanel(new BorderLayout(0, 15));
@@ -89,12 +251,14 @@ public class seguridadAuditoria extends JFrame {
         menuPanel.setOpaque(false);
 
         Object[][] items = {
-            {SidebarVectorIcon.IconType.EMPLOYEES, "gui/images/employees.png", "<html>Gestión de<br>empleados (cajeros)</html>"},
-            {SidebarVectorIcon.IconType.MENU, "gui/images/menu.png", "<html>Gestión de menú /<br>productos</html>"},
-            {SidebarVectorIcon.IconType.ORDERS, "gui/images/orders.png", "Gestión de pedidos"},
-            {SidebarVectorIcon.IconType.REPORTS, "gui/images/reports.png", "Reportes y estadísticas"},
-            {SidebarVectorIcon.IconType.CASH, "gui/images/cash.png", "Gestión de caja"},
-            {SidebarVectorIcon.IconType.SECURITY, "gui/images/security.png", "Seguridad y auditoría"}
+                { SidebarVectorIcon.IconType.EMPLOYEES, "gui/images/employees.png",
+                        "<html>Gestión de<br>empleados (cajeros)</html>" },
+                { SidebarVectorIcon.IconType.MENU, "gui/images/menu.png",
+                        "<html>Gestión de menú /<br>productos</html>" },
+                { SidebarVectorIcon.IconType.ORDERS, "gui/images/orders.png", "Gestión de pedidos" },
+                { SidebarVectorIcon.IconType.REPORTS, "gui/images/reports.png", "Reportes y estadísticas" },
+                { SidebarVectorIcon.IconType.CASH, "gui/images/cash.png", "Gestión de caja" },
+                { SidebarVectorIcon.IconType.SECURITY, "gui/images/security.png", "Seguridad y auditoría" }
         };
 
         menuButtons = new JPanel[items.length];
@@ -133,46 +297,32 @@ public class seguridadAuditoria extends JFrame {
                         btnPanel.repaint();
                     }
                 }
+
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    
-                    if (index == 0) {
-                        gestionEmpleados app = new gestionEmpleados();
-                        app.setVisible(true);
-                        dispose();
-                        return;
+                    if (index == selectedMenuIndex) {
+                        return; // ya estamos en esta pantalla
                     }
-                    if (index == 1) {
-                        gestionProductos app = new gestionProductos();
-                        app.setVisible(true);
-                        dispose();
-                        return;
+                    switch (index) {
+                        case 0:
+                            new gestionEmpleados().setVisible(true);
+                            break;
+                        case 1:
+                            new gestionProductos().setVisible(true);
+                            break;
+                        case 2:
+                            new gestionPedidos().setVisible(true);
+                            break;
+                        case 3:
+                            new pantallaEstadistica().setVisible(true);
+                            break;
+                        case 4:
+                            new gestionCaja().setVisible(true);
+                            break;
+                        default:
+                            return;
                     }
-                    else if (index == 2) {
-                        gestionPedidos app = new gestionPedidos();
-                        app.setVisible(true);
-                        dispose();
-                        return;
-                    }
-                    else if (index == 3) {
-                        pantallaEstadistica app = new pantallaEstadistica();
-                        app.setVisible(true);
-                        dispose();
-                        return;
-                    }
-                    else if (index == 4) {
-                        gestionCaja app = new gestionCaja();
-                        app.setVisible(true);
-                        dispose();
-                        return;
-                    }
-                    else if (index == 6) {
-                        seguridadAuditoria app = new seguridadAuditoria();
-                        app.setVisible(true);
-                        dispose();
-                        return;
-                    }
-                
+                    dispose();
                 }
             });
 
@@ -229,8 +379,10 @@ public class seguridadAuditoria extends JFrame {
     private JLabel createSidebarIconLabel(SidebarVectorIcon.IconType iconType, String resourcePath) {
         JLabel lbl = new JLabel();
         URL imgUrl = getClass().getResource("/" + resourcePath);
-        if (imgUrl == null) imgUrl = getClass().getResource("/" + resourcePath.replace("gui/", ""));
-        
+        if (imgUrl == null) {
+            imgUrl = getClass().getResource("/" + resourcePath.replace("gui/", ""));
+        }
+
         if (imgUrl != null) {
             ImageIcon icon = new ImageIcon(imgUrl);
             Image img = icon.getImage();
@@ -244,7 +396,9 @@ public class seguridadAuditoria extends JFrame {
     private JLabel createLogoLabel() {
         JLabel lblLogo = new JLabel();
         URL logoUrl = getClass().getResource("/gui/images/logo.png");
-        if (logoUrl == null) logoUrl = getClass().getResource("/images/logo.png");
+        if (logoUrl == null) {
+            logoUrl = getClass().getResource("/images/logo.png");
+        }
 
         if (logoUrl != null) {
             ImageIcon icon = new ImageIcon(logoUrl);
@@ -253,16 +407,21 @@ public class seguridadAuditoria extends JFrame {
             int h = img.getHeight(null);
             if (w > 0 && h > 0) {
                 double scale = Math.min(270.0 / w, 120.0 / h);
-                lblLogo.setIcon(new ImageIcon(img.getScaledInstance((int) (w * scale), (int) (h * scale), Image.SCALE_SMOOTH)));
+                lblLogo.setIcon(
+                        new ImageIcon(img.getScaledInstance((int) (w * scale), (int) (h * scale), Image.SCALE_SMOOTH)));
             } else {
                 lblLogo.setIcon(icon);
             }
         } else {
-            lblLogo.setText("<html><center><font size='7' color='#6EA32E'><b>&lt; 🍴 &gt;</b></font><br>" +
-                    "<font size='5'><b color='#6EA32E'>GIT & </b><b color='#D13941'>EAT!</b></font></center></html>");
+            lblLogo.setText("<html><center><font size='7' color='#6EA32E'><b>&lt; 🍴 &gt;</b></font><br>"
+                    + "<font size='5'><b color='#6EA32E'>GIT & </b><b color='#D13941'>EAT!</b></font></center></html>");
         }
         return lblLogo;
     }
+
+    // =====================================================================
+    // ---------- Encabezado y cuerpo ----------
+    // =====================================================================
 
     private JPanel createHeaderPanel() {
         RoundedPanel header = new RoundedPanel(20, COLOR_HEADER);
@@ -275,19 +434,14 @@ public class seguridadAuditoria extends JFrame {
         title.setForeground(Color.WHITE);
         header.add(title, BorderLayout.WEST);
 
-        JPanel rightHeader = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 10));
-        rightHeader.setOpaque(false);
-
         return header;
     }
 
     private JPanel createMainBody() {
-        // Usamos un BorderLayout en vez de GridBagLayout para evitar estiramientos no deseados
         JPanel body = new JPanel(new BorderLayout(0, 20));
         body.setOpaque(false);
         body.setBorder(new EmptyBorder(8, 6, 8, 6));
 
-        // Contenedor superior para Filtros y Tarjetas (se ajusta a su contenido y no crece infinito)
         JPanel topWrapper = new JPanel();
         topWrapper.setLayout(new BoxLayout(topWrapper, BoxLayout.Y_AXIS));
         topWrapper.setOpaque(false);
@@ -297,8 +451,6 @@ public class seguridadAuditoria extends JFrame {
         topWrapper.add(createAlertCardsRow());
 
         body.add(topWrapper, BorderLayout.NORTH);
-        
-        // El centro toma todo el espacio restante para la tabla anclada
         body.add(createTableCard(), BorderLayout.CENTER);
 
         return body;
@@ -309,60 +461,90 @@ public class seguridadAuditoria extends JFrame {
         panel.setOpaque(false);
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
-        // Fila 1: Desde / Hasta
+        // Fila 1: Desde / Hasta (por defecto, los últimos 30 días)
         JPanel row1 = new JPanel(new GridBagLayout());
         row1.setOpaque(false);
-        row1.setMaximumSize(new Dimension(Integer.MAX_VALUE, 75)); // Fija la altura máxima para evitar estirarse
-        
+        row1.setMaximumSize(new Dimension(Integer.MAX_VALUE, 75));
+
         GridBagConstraints gbc1 = new GridBagConstraints();
         gbc1.fill = GridBagConstraints.HORIZONTAL;
         gbc1.insets = new Insets(0, 0, 0, 20);
         gbc1.weighty = 1.0;
 
-        JLabel lblDesdeTxt = new JLabel("01/02/2026");
-        JComponent campoDesde = createOutlinedField("📅", lblDesdeTxt, false);
-        JPanel desdeGroup = createLabeledField("Desde:", campoDesde);
+        LocalDate hoy = LocalDate.now();
+        tfDesde = new JTextField(FMT_FECHA.format(hoy.minusDays(30)));
+        tfHasta = new JTextField(FMT_FECHA.format(hoy));
+        tfDesde.setEditable(false);
+        tfHasta.setEditable(false);
+        tfDesde.setToolTipText("Clic para elegir la fecha");
+        tfHasta.setToolTipText("Clic para elegir la fecha");
 
-        JLabel lblHastaTxt = new JLabel("01/08/2026");
-        JComponent campoHasta = createOutlinedField("📅", lblHastaTxt, false);
+        JComponent campoDesde = createOutlinedField("📅", tfDesde, false);
+        JComponent campoHasta = createOutlinedField("📅", tfHasta, false);
+        // "Desde": sin mínimo. Si se elige una fecha posterior a "Hasta", "Hasta" se
+        // ajusta a esa fecha.
+        habilitarCalendario(campoDesde, tfDesde, null, fecha -> {
+            try {
+                LocalDate hasta = LocalDate.parse(tfHasta.getText().trim(), FMT_FECHA);
+                if (fecha.isAfter(hasta)) {
+                    tfHasta.setText(FMT_FECHA.format(fecha));
+                }
+            } catch (DateTimeParseException ignored) {
+            }
+        });
+
+        // "Hasta": no permite fechas anteriores a "Desde"
+        habilitarCalendario(campoHasta, tfHasta, this::fechaDesde, null);
+
+        JPanel desdeGroup = createLabeledField("Desde:", campoDesde);
         JPanel hastaGroup = createLabeledField("Hasta:", campoHasta);
 
-        gbc1.gridx = 0; gbc1.weightx = 0.5;
+        gbc1.gridx = 0;
+        gbc1.weightx = 0.5;
         row1.add(desdeGroup, gbc1);
-        gbc1.gridx = 1; gbc1.weightx = 0.5; gbc1.insets = new Insets(0, 0, 0, 0);
+        gbc1.gridx = 1;
+        gbc1.weightx = 0.5;
+        gbc1.insets = new Insets(0, 0, 0, 0);
         row1.add(hastaGroup, gbc1);
 
         // Fila 2: Usuarios / Tipo de acción / Filtrar
         JPanel row2 = new JPanel(new GridBagLayout());
         row2.setOpaque(false);
-        row2.setMaximumSize(new Dimension(Integer.MAX_VALUE, 75)); // Fija la altura máxima
+        row2.setMaximumSize(new Dimension(Integer.MAX_VALUE, 75));
 
         GridBagConstraints gbc2 = new GridBagConstraints();
         gbc2.fill = GridBagConstraints.HORIZONTAL;
         gbc2.insets = new Insets(0, 0, 0, 20);
         gbc2.weighty = 1.0;
 
-        JComboBox<String> cbUsuarios = new FlatComboBox<>(new String[]{"Todos", "Administrador", "Cajero"});
+        cbUsuarios = new FlatComboBox<>(new String[] { "Todos" });
         cbUsuarios.setFont(new Font("SansSerif", Font.BOLD, 15));
         cbUsuarios.setForeground(COLOR_TEXT_BROWN);
         JComponent campoUsuarios = createOutlinedField("👤", cbUsuarios, true);
         JPanel usuariosGroup = createLabeledField("Usuarios:", campoUsuarios);
 
-        JComboBox<String> cbTipoAccion = new FlatComboBox<>(new String[]{"Todas", "Cancelaciones", "Cambios de precio", "Diferencias de caja"});
+        cbTipoAccion = new FlatComboBox<>(
+                new String[] { "Todas", "Cancelaciones", "Cambios de precio", "Diferencias de caja" });
         cbTipoAccion.setFont(new Font("SansSerif", Font.BOLD, 15));
         cbTipoAccion.setForeground(COLOR_TEXT_BROWN);
         JComponent campoTipoAccion = createOutlinedField("🎚️", cbTipoAccion, true);
         JPanel tipoAccionGroup = createLabeledField("Tipo de accion:", campoTipoAccion);
 
-        RoundedPanel btnFiltrar = new RoundedPanel(18, COLOR_BTN_NUEVO);
+        btnFiltrar = new RoundedPanel(18, COLOR_BTN_NUEVO);
         btnFiltrar.setLayout(new GridBagLayout());
         btnFiltrar.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnFiltrar.setPreferredSize(new Dimension(0, 46));
 
-        JLabel lblFiltrar = new JLabel("🔍  Filtrar");
+        lblFiltrar = new JLabel("🔍  Filtrar");
         lblFiltrar.setFont(new Font("SansSerif", Font.BOLD, 16));
         lblFiltrar.setForeground(Color.WHITE);
         btnFiltrar.add(lblFiltrar);
+        btnFiltrar.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                cargarDatos();
+            }
+        });
 
         JPanel filtrarGroup = new JPanel();
         filtrarGroup.setOpaque(false);
@@ -375,11 +557,15 @@ public class seguridadAuditoria extends JFrame {
         filtrarGroup.add(Box.createRigidArea(new Dimension(0, 6)));
         filtrarGroup.add(btnFiltrar);
 
-        gbc2.gridx = 0; gbc2.weightx = 0.38;
+        gbc2.gridx = 0;
+        gbc2.weightx = 0.38;
         row2.add(usuariosGroup, gbc2);
-        gbc2.gridx = 1; gbc2.weightx = 0.38;
+        gbc2.gridx = 1;
+        gbc2.weightx = 0.38;
         row2.add(tipoAccionGroup, gbc2);
-        gbc2.gridx = 2; gbc2.weightx = 0.24; gbc2.insets = new Insets(0, 0, 0, 0);
+        gbc2.gridx = 2;
+        gbc2.weightx = 0.24;
+        gbc2.insets = new Insets(0, 0, 0, 0);
         row2.add(filtrarGroup, gbc2);
 
         panel.add(row1);
@@ -400,7 +586,6 @@ public class seguridadAuditoria extends JFrame {
         label.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         field.setAlignmentX(Component.LEFT_ALIGNMENT);
-        // Fuerza el campo a no superar la altura deseada
         field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 46));
         field.setPreferredSize(new Dimension(0, 46));
 
@@ -409,6 +594,48 @@ public class seguridadAuditoria extends JFrame {
         panel.add(field);
 
         return panel;
+    }
+
+    /**
+     * Al hacer clic en el campo (o en su ícono) se abre el calendario y la fecha
+     * elegida se escribe en el campo.
+     */
+    private void habilitarCalendario(JComponent campo, JTextField destino,
+            java.util.function.Supplier<LocalDate> minimo, java.util.function.Consumer<LocalDate> alElegir) {
+        MouseAdapter abrir = new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                LocalDate actual;
+                try {
+                    actual = LocalDate.parse(destino.getText().trim(), FMT_FECHA);
+                } catch (DateTimeParseException ex) {
+                    actual = LocalDate.now();
+                }
+                LocalDate min = minimo == null ? null : minimo.get();
+                CalendarPopup.mostrar(campo, actual, min, fecha -> {
+                    destino.setText(FMT_FECHA.format(fecha));
+                    if (alElegir != null) {
+                        alElegir.accept(fecha);
+                    }
+                });
+            }
+        };
+        campo.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        destino.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        campo.addMouseListener(abrir);
+        destino.addMouseListener(abrir);
+        for (Component c : campo.getComponents()) {
+            c.addMouseListener(abrir);
+        }
+    }
+
+    /** Lee la fecha escrita en "Desde" (o null si no es válida). */
+    private LocalDate fechaDesde() {
+        try {
+            return LocalDate.parse(tfDesde.getText().trim(), FMT_FECHA);
+        } catch (DateTimeParseException ex) {
+            return null;
+        }
     }
 
     private JComponent createOutlinedField(String iconEmoji, JComponent centerComponent, boolean showChevron) {
@@ -423,6 +650,13 @@ public class seguridadAuditoria extends JFrame {
         if (centerComponent instanceof JLabel) {
             ((JLabel) centerComponent).setFont(new Font("SansSerif", Font.BOLD, 15));
             ((JLabel) centerComponent).setForeground(COLOR_TEXT_BROWN);
+        }
+        if (centerComponent instanceof JTextField) {
+            JTextField tf = (JTextField) centerComponent;
+            tf.setFont(new Font("SansSerif", Font.BOLD, 15));
+            tf.setForeground(COLOR_TEXT_BROWN);
+            tf.setCaretColor(COLOR_TEXT_BROWN);
+            tf.setBorder(BorderFactory.createEmptyBorder());
         }
         centerComponent.setOpaque(false);
         wrapper.add(centerComponent, BorderLayout.CENTER);
@@ -440,19 +674,19 @@ public class seguridadAuditoria extends JFrame {
     private JPanel createAlertCardsRow() {
         JPanel row = new JPanel(new GridLayout(1, 3, 15, 0));
         row.setOpaque(false);
-        
-        // Bloqueamos la altura para que no se vean excesivamente grandes
+
         row.setPreferredSize(new Dimension(0, 110));
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 110));
 
-        row.add(createAlertCard("cancel", "0", "Cancelaciones", COLOR_CARD_CANCELACIONES));
-        row.add(createAlertCard("warning", "0", "<html>Diferencias de caja</html>", COLOR_CARD_DIFERENCIAS));
-        row.add(createAlertCard("swap", "0", "<html>Cambios de precio</html>", COLOR_CARD_CAMBIOS));
+        row.add(createAlertCard("cancel", lblNumCancelaciones, "Cancelaciones", COLOR_CARD_CANCELACIONES));
+        row.add(createAlertCard("warning", lblNumDiferencias, "<html>Diferencias de caja</html>",
+                COLOR_CARD_DIFERENCIAS));
+        row.add(createAlertCard("swap", lblNumCambios, "<html>Cambios de precio</html>", COLOR_CARD_CAMBIOS));
 
         return row;
     }
 
-    private JPanel createAlertCard(String iconType, String number, String labelHtml, Color bg) {
+    private JPanel createAlertCard(String iconType, JLabel numberLbl, String labelHtml, Color bg) {
         RoundedPanel card = new RoundedPanel(20, bg);
         card.setLayout(new BorderLayout(18, 0));
         card.setBorder(new EmptyBorder(15, 25, 15, 25));
@@ -464,7 +698,6 @@ public class seguridadAuditoria extends JFrame {
         textPanel.setOpaque(false);
         textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
 
-        JLabel numberLbl = new JLabel(number);
         numberLbl.setFont(new Font("SansSerif", Font.BOLD, 36));
         numberLbl.setForeground(Color.BLACK);
         numberLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -485,18 +718,19 @@ public class seguridadAuditoria extends JFrame {
     private JPanel createTableCard() {
         RoundedPanel card = new RoundedPanel(20, Color.WHITE);
         card.setLayout(new BorderLayout());
-        card.setBorder(new EmptyBorder(10, 10, 10, 10)); // Padding interno para que no pegue a los bordes redondeados
+        card.setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        String[] columns = {"Fecha y hora:", "Usuario:", "Accion:", "Detalle:"};
-        Object[][] data = {};
+        String[] columns = { "Fecha y hora:", "Usuario:", "Accion:", "Detalle:" };
 
-        DefaultTableModel model = new DefaultTableModel(data, columns) {
+        tableModel = new DefaultTableModel(new Object[][] {}, columns) {
             @Override
-            public boolean isCellEditable(int row, int column) { return false; }
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
         };
 
         // Sobrescribimos el JTable para dibujar la marca de agua cuando está vacía
-        JTable table = new JTable(model) {
+        JTable table = new JTable(tableModel) {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
@@ -516,14 +750,38 @@ public class seguridadAuditoria extends JFrame {
         table.setFont(new Font("SansSerif", Font.PLAIN, 15));
         table.setFillsViewportHeight(true);
         table.setBackground(COLOR_BG.brighter());
+        table.setSelectionBackground(new Color(243, 205, 59, 120));
+        table.setSelectionForeground(COLOR_TEXT_BROWN);
+
+        table.getColumnModel().getColumn(0).setPreferredWidth(170);
+        table.getColumnModel().getColumn(1).setPreferredWidth(190);
+        table.getColumnModel().getColumn(2).setPreferredWidth(190);
+        table.getColumnModel().getColumn(3).setPreferredWidth(600);
+
+        // Celdas con margen a la izquierda y filas alternadas
+        table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable t, Object value, boolean isSelected,
+                    boolean hasFocus, int row, int column) {
+                super.getTableCellRendererComponent(t, value, isSelected, false, row, column);
+                setBorder(new EmptyBorder(0, 20, 0, 10));
+                if (!isSelected) {
+                    setForeground(COLOR_TEXT_BROWN);
+                    setBackground(row % 2 == 0 ? COLOR_BG.brighter() : new Color(240, 232, 217));
+                }
+                setToolTipText(value == null ? null : value.toString());
+                return this;
+            }
+        });
 
         JTableHeader header = table.getTableHeader();
         header.setPreferredSize(new Dimension(0, 48));
         header.setReorderingAllowed(false);
         header.setDefaultRenderer(new DefaultTableCellRenderer() {
             @Override
-            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-                JLabel lbl = new JLabel(value.toString(), SwingConstants.LEFT);
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+                    boolean hasFocus, int row, int column) {
+                JLabel lbl = new JLabel(String.valueOf(value), SwingConstants.LEFT);
                 lbl.setBorder(new EmptyBorder(0, 20, 0, 0));
                 lbl.setOpaque(true);
                 lbl.setBackground(COLOR_TABLE_HEADER);
@@ -533,7 +791,6 @@ public class seguridadAuditoria extends JFrame {
             }
         });
 
-        // El uso de JScrollPane fija la tabla y permite hacer scroll interno si hay muchos datos
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.getViewport().setBackground(COLOR_BG.brighter());
@@ -542,8 +799,16 @@ public class seguridadAuditoria extends JFrame {
         return card;
     }
 
+    // =====================================================================
+    // ---------- Íconos y componentes de apoyo ----------
+    // =====================================================================
+
     private static class SidebarVectorIcon implements Icon {
-        public enum IconType { EMPLOYEES, MENU, ORDERS, REPORTS, CASH, SETTINGS, SECURITY }
+
+        public enum IconType {
+            EMPLOYEES, MENU, ORDERS, REPORTS, CASH, SETTINGS, SECURITY
+        }
+
         private final IconType type;
         private final int size;
 
@@ -551,8 +816,17 @@ public class seguridadAuditoria extends JFrame {
             this.type = type;
             this.size = size;
         }
-        @Override public int getIconWidth() { return size; }
-        @Override public int getIconHeight() { return size; }
+
+        @Override
+        public int getIconWidth() {
+            return size;
+        }
+
+        @Override
+        public int getIconHeight() {
+            return size;
+        }
+
         @Override
         public void paintIcon(Component c, Graphics g, int x, int y) {
             Graphics2D g2 = (Graphics2D) g.create();
@@ -614,18 +888,33 @@ public class seguridadAuditoria extends JFrame {
                     check.lineTo(21, 11);
                     g2.draw(check);
                     break;
-                default: break;
+                default:
+                    break;
             }
             g2.dispose();
         }
     }
 
     private static class AlertIcon implements Icon {
+
         private final String type;
         private final int size;
-        AlertIcon(String type, int size) { this.type = type; this.size = size; }
-        @Override public int getIconWidth() { return size; }
-        @Override public int getIconHeight() { return size; }
+
+        AlertIcon(String type, int size) {
+            this.type = type;
+            this.size = size;
+        }
+
+        @Override
+        public int getIconWidth() {
+            return size;
+        }
+
+        @Override
+        public int getIconHeight() {
+            return size;
+        }
+
         @Override
         public void paintIcon(Component c, Graphics g, int x, int y) {
             Graphics2D g2 = (Graphics2D) g.create();
@@ -645,8 +934,8 @@ public class seguridadAuditoria extends JFrame {
                     g2.drawLine(size - pad, pad, pad, size - pad);
                     break;
                 case "warning":
-                    int[] xs = {size / 2, pad, size - pad};
-                    int[] ys = {pad, size - pad, size - pad};
+                    int[] xs = { size / 2, pad, size - pad };
+                    int[] ys = { pad, size - pad, size - pad };
                     g2.drawPolygon(xs, ys, 3);
                     g2.drawLine(size / 2, size / 2 - 4, size / 2, size / 2 + 4);
                     g2.fillOval(size / 2 - 2, size / 2 + 8, 4, 4);
@@ -668,25 +957,31 @@ public class seguridadAuditoria extends JFrame {
     }
 
     private static class FlatComboBox<E> extends JComboBox<E> {
+
         FlatComboBox(E[] items) {
             super(items);
             setOpaque(false);
             setBorder(BorderFactory.createEmptyBorder());
             setFocusable(false);
             setUI(new BasicComboBoxUI() {
-                @Override protected JButton createArrowButton() {
+                @Override
+                protected JButton createArrowButton() {
                     JButton btn = new JButton();
                     btn.setPreferredSize(new Dimension(0, 0));
                     btn.setBorder(BorderFactory.createEmptyBorder());
                     btn.setContentAreaFilled(false);
                     return btn;
                 }
-                @Override public void paintCurrentValueBackground(Graphics g, Rectangle bounds, boolean hasFocus) {}
+
+                @Override
+                public void paintCurrentValueBackground(Graphics g, Rectangle bounds, boolean hasFocus) {
+                }
             });
         }
     }
 
     private static class RoundedOutlinePanel extends JPanel {
+
         private final int radius;
         private final Color fill;
         private final Color border;
@@ -715,6 +1010,7 @@ public class seguridadAuditoria extends JFrame {
     }
 
     private static class RoundedPanel extends JPanel {
+
         private final int cornerRadius;
         private Color backgroundColor;
 
@@ -741,7 +1037,8 @@ public class seguridadAuditoria extends JFrame {
     public static void main(String[] args) {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
 
         SwingUtilities.invokeLater(() -> {
             seguridadAuditoria app = new seguridadAuditoria();
