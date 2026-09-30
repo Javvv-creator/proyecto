@@ -340,7 +340,70 @@ INSERT INTO producto (nombre, precio_base, es_combo, id_categoria, id_turno, ima
 ('Café Con Leche', 18.00, 0, 2, NULL, 'cafe_con_leche.png', 'Calientes', 96),
 ('Chocolate', 18.00, 0, 2, NULL, 'chocolate.png', 'Calientes', 97),
 ('Té Caliente', 15.00, 0, 2, NULL, 'te_caliente.png', 'Calientes', 98);
- 
+
+-- ---------------------------------------------------------------------
+-- AGREGADOS FALTANTES: Usuarios Iniciales
+-- ---------------------------------------------------------------------
+INSERT INTO usuario (id_usuario, nombre, apellido, codigo_empleado, contrasena, rol, estado, turno) VALUES
+(1, 'Admin', 'General', 'ADM001', 'admin123', 'ADMINISTRADOR', 1, 'Mañana'),
+(2, 'Carlos', 'Gómez', 'CAJ001', 'cajero123', 'CAJERO', 1, 'Mañana'),
+(3, 'Ana', 'Martínez', 'CAJ002', 'cajero123', 'CAJERO', 1, 'Tarde');
+
+-- ---------------------------------------------------------------------
+-- AGREGADOS FALTANTES: Ingredientes
+-- ---------------------------------------------------------------------
+INSERT INTO ingrediente (id_ingrediente, nombre, precio_extra_defecto) VALUES
+(1, 'Pepinillos', 3.00),
+(2, 'Queso Cheddar', 5.00),
+(3, 'Cebolla', 2.00),
+(4, 'Salsa Git Mac', 4.00),
+(5, 'Tocino', 6.00),
+(6, 'Torta de Res', 12.00),
+(7, 'Papas Fritas Medianas', 10.00),
+(8, 'Lechuga', 2.50),
+(9, 'Tomate', 3.00),
+(10, 'Mayonesa', 2.00),
+(11, 'Huevo', 4.00),
+(12, 'Salchicha', 5.00);
+
+-- ---------------------------------------------------------------------
+-- AGREGADOS FALTANTES: Postres y Combos (Productos)
+-- ---------------------------------------------------------------------
+INSERT INTO producto (id_producto, nombre, precio_base, es_combo, id_categoria, id_turno, imagen, seccion, orden_menu) VALUES
+-- Postres
+(99, 'McFlurry Oreo', 20.00, 0, 3, NULL, 'mcflurry_oreo.png', 'Helados', 99),
+(100, 'Sundae de Chocolate', 15.00, 0, 3, NULL, 'sundae_chocolate.png', 'Helados', 100),
+(101, 'Pastelito de Manzana', 12.00, 0, 3, NULL, 'pastelito_manzana.png', 'Pasteles', 101),
+-- Combos
+(102, 'Combo Git Mac Doble', 55.00, 1, 4, 2, 'combo_git_mac.png', 'Combos Tarde', 102),
+(103, 'Combo McMuffin Salchicha y Huevo', 42.00, 1, 4, 1, 'combo_mcmuffin.png', 'Combos Mañana', 103);
+
+-- ---------------------------------------------------------------------
+-- AGREGADOS FALTANTES: Componentes y Opciones de Intercambio para Combos
+-- ---------------------------------------------------------------------
+-- Componentes para 'Combo Git Mac Doble' (id_producto: 102)
+INSERT INTO combo_componente (id_componente, grupo, id_producto_combo) VALUES
+(1, 'Principal', 102),
+(2, 'Acompañamiento', 102),
+(3, 'Bebida', 102);
+
+-- Opciones intercambiables para el Combo Git Mac Doble
+INSERT INTO combo_opcion_intercambio (id_opcion, costo_extra, id_componente, id_producto_opcion) VALUES
+(1, 0.00, 1, 20), -- Git Mac Doble como principal
+(2, 0.00, 3, 87), -- Coca-Cola
+(3, 0.00, 3, 86), -- Sprite
+(4, 2.00, 3, 88); -- Coca Cola Zero con extra
+
+-- ---------------------------------------------------------------------
+-- AGREGADOS FALTANTES: Receta Base de Productos
+-- ---------------------------------------------------------------------
+INSERT INTO receta_producto (id_producto, id_ingrediente, cantidad_base, es_removible, es_extra_permitido) VALUES
+(20, 1, 2.00, 1, 1), -- Git Mac Doble incluye Pepinillos
+(20, 2, 2.00, 1, 1), -- Git Mac Doble incluye Queso Cheddar
+(20, 3, 1.00, 1, 1), -- Git Mac Doble incluye Cebolla
+(20, 4, 1.00, 1, 1), -- Git Mac Doble incluye Salsa Git Mac
+(20, 6, 2.00, 0, 1); -- Git Mac Doble incluye Torta de Res
+
 -- ---------------------------------------------------------------------
 -- Índices optimizados
 -- ---------------------------------------------------------------------
